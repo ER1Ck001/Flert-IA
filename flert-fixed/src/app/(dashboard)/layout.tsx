@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Link href="/" className="flex items-center gap-2.5">
             <Heart className="h-5 w-5 text-brand-500 fill-brand-500 flex-shrink-0" />
             <span className="font-display text-lg font-bold tracking-tight text-foreground">
-              Flert<span className="text-brand-500">.</span>IA
+              Lumme<span className="text-brand-500">.</span>IA
             </span>
           </Link>
           <button
@@ -154,7 +154,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Link href="/" className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-brand-500 fill-brand-500" />
             <span className="font-display text-base font-bold tracking-tight">
-              Flert<span className="text-brand-500">.</span>IA
+              Lumme<span className="text-brand-500">.</span>IA
             </span>
           </Link>
           <div className="w-8" />

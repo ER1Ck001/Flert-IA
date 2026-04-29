@@ -10,12 +10,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Flert IA - Seu Assistente de Conversas e Flertes",
-  description: "Transforme suas conversas com o poder da Inteligência Artificial. Respostas inteligentes, flertes envolventes e conexões reais.",
-  keywords: ["flerte", "IA", "conversas", "dating", "inteligência artificial", "chat"],
-  authors: [{ name: "Flert IA Team" }],
+  title: "Lumme IA - Seu Assistente de Conversas",
+  description: "Transforme suas conversas com o poder da Inteligência Artificial. Respostas inteligentes, envolventes e conexões reais.",
+  keywords: ["lumme", "IA", "conversas", "dating", "inteligência artificial", "chat"],
+  authors: [{ name: "Lumme IA Team" }],
   openGraph: {
-    title: "Flert IA - Seu Assistente de Conversas e Flertes",
+    title: "Lumme IA - Seu Assistente de Conversas",
     description: "Transforme suas conversas com o poder da Inteligência Artificial.",
     type: "website",
     locale: "pt_BR",
