@@ -1,0 +1,1 @@
+UPDATE subscription_statuses SET status = 'LIFETIME', "activatedAt" = NOW() WHERE "userId" = 'cmog9itgk0000wtpgxjxwcfxu';
