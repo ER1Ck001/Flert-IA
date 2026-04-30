@@ -360,7 +360,7 @@ export default function HomePage() {
               <span className="font-semibold text-white">Flert IA</span>
             </div>
             <p className="text-sm text-white/30">
-              © 2024 Flert IA. Todos os direitos reservados.
+              © 2026 Flert IA. Todos os direitos reservados.
             </p>
             <div className="flex items-center gap-6">
               <Link href="#" className="text-sm text-white/30 hover:text-white/60 transition-colors">Termos</Link>
