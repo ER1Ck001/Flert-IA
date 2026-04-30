@@ -31,7 +31,7 @@ export default function HomePage() {
               <div className="absolute inset-0 bg-brand-500/20 blur-lg rounded-full" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-brand-500 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-              Lumme IA
+              Flert IA
             </span>
           </Link>
 
@@ -88,7 +88,7 @@ export default function HomePage() {
               </h1>
 
               <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed font-light">
-                O Lumme IA usa inteligência artificial avançada para analisar conversas e criar
+                O Flert IA usa inteligência artificial avançada para analisar conversas e criar
                 respostas envolventes que geram conexões verdadeiras.
               </p>
 
@@ -138,7 +138,7 @@ export default function HomePage() {
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-white">
                 Por que escolher o{" "}
                 <span className="bg-gradient-to-r from-brand-500 to-purple-400 bg-clip-text text-transparent">
-                  Lumme IA
+                  Flert IA
                 </span>?
               </h2>
               <p className="text-white/50 max-w-2xl mx-auto text-lg font-light">
@@ -298,7 +298,7 @@ export default function HomePage() {
 
             <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
               <TestimonialCard
-                content="O Lumme IA mudou completamente minhas conversas no Tinder. Consegui matches incríveis graças às sugestões!"
+                content="O Flert IA mudou completamente minhas conversas no Tinder. Consegui matches incríveis graças às sugestões!"
                 author="Pedro H."
                 role="Usuário Premium"
               />
@@ -357,10 +357,10 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
               <Heart className="h-5 w-5 text-brand-500 fill-brand-500" />
-              <span className="font-semibold text-white">Lumme IA</span>
+              <span className="font-semibold text-white">Flert IA</span>
             </div>
             <p className="text-sm text-white/30">
-              © 2024 Lumme IA. Todos os direitos reservados.
+              © 2024 Flert IA. Todos os direitos reservados.
             </p>
             <div className="flex items-center gap-6">
               <Link href="#" className="text-sm text-white/30 hover:text-white/60 transition-colors">Termos</Link>

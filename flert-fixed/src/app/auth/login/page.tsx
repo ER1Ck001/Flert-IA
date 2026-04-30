@@ -71,7 +71,7 @@ function LoginForm() {
             <div className="absolute inset-0 bg-brand-500/20 blur-lg rounded-full" />
           </div>
           <span className="text-2xl font-bold bg-gradient-to-r from-brand-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
-            Lumme IA
+            Flert IA
           </span>
         </Link>
 
