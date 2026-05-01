@@ -84,6 +84,16 @@ body {
   box-shadow: 0 0 8px var(--rose-glow);
 }
 
+/* ── 3D card perspective container ── */
+.perspective { perspective: 1200px; }
+
+/* ── Motion performance hints ── */
+[data-framer-motion],
+.motion-card {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
 /* ── Utility ── */
 .text-gradient {
   background: linear-gradient(135deg, var(--rose) 0%, var(--pink) 50%, #ffb3d9 100%);
