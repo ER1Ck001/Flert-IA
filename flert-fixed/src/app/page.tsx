@@ -309,18 +309,30 @@ export default function HomePage() {
                 <h2>Preços <em>simples</em><br />e transparentes.</h2>
               </div>
               <div className="fl-pg fl-r" data-d="80ms">
-                <div className="fl-pc fl-pc--f">
-                  <span className="fl-badge">Mais Popular</span>
-                  <p className="fl-pname">Premium</p>
+                <div className="fl-pc">
+                  <p className="fl-pname">Mensal</p>
                   <div className="fl-pamt">R$ 29,90</div>
                   <p className="fl-pper">por mês</p>
-                  <p className="fl-pdesc">Para quem leva a sério</p>
+                  <p className="fl-pdesc">Para começar</p>
                   <ul className="fl-pf">
-                    {["Mensagens ilimitadas","Respostas avançadas","Análise de perfil","Suporte prioritário","Modo personalizado"].map(f => (
+                    {["Análises ilimitadas","Respostas avançadas com IA","Análise de perfil","Suporte prioritário","Uploads ilimitados"].map(f => (
                       <li key={f}>{f}</li>
                     ))}
                   </ul>
-                  <Link href="/auth/register?plan=premium" className="fl-pbtn fl-pbtn--p emoji-btn">Assinar Premium</Link>
+                  <Link href="/auth/register?plan=monthly" className="fl-pbtn emoji-btn">Assinar Mensal</Link>
+                </div>
+                <div className="fl-pc fl-pc--f">
+                  <span className="fl-badge">Mais Popular</span>
+                  <p className="fl-pname">Anual</p>
+                  <div className="fl-pamt">R$ 147</div>
+                  <p className="fl-pper">por ano</p>
+                  <p className="fl-pdesc">Economia de R$ 211/ano</p>
+                  <ul className="fl-pf">
+                    {["Tudo do plano Mensal","2 meses grátis","Análise de perfil completa","Alertas de padrões","Suporte prioritário"].map(f => (
+                      <li key={f}>{f}</li>
+                    ))}
+                  </ul>
+                  <Link href="/auth/register?plan=annual" className="fl-pbtn fl-pbtn--p emoji-btn">Assinar Anual</Link>
                 </div>
                 <div className="fl-pc">
                   <p className="fl-pname">Vitalício</p>
@@ -328,7 +340,7 @@ export default function HomePage() {
                   <p className="fl-pper">pagamento único</p>
                   <p className="fl-pdesc">Acesso para sempre</p>
                   <ul className="fl-pf">
-                    {["Todos os recursos Premium","Acesso vitalício","Updates futuros inclusos","Suporte VIP","Early access a features"].map(f => (
+                    {["Tudo do plano Anual","Acesso vitalício","Updates futuros inclusos","Suporte VIP","Early access a features"].map(f => (
                       <li key={f}>{f}</li>
                     ))}
                   </ul>
@@ -609,7 +621,7 @@ const CSS = `
 .fl-stepd { font-size: .875rem; line-height: 1.65; color: rgba(240,236,228,.38); font-weight: 300; }
 
 /* pricing */
-.fl-pg { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.06); }
+.fl-pg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.06); }
 .fl-pc { padding: 3.5rem; background: #080808; position: relative; transition: background .3s; }
 .fl-pc:hover { background: rgba(255,255,255,.012); }
 .fl-pc--f { background: rgba(255,45,120,.03); }
@@ -718,7 +730,7 @@ const CSS = `
   .fl-frow { grid-template-columns: 2.5rem 1fr; grid-template-rows: auto auto; }
   .fl-fdesc { grid-column: 2; }
   .fl-farr { display: none; }
-  .fl-pg { grid-template-columns: 1fr; }
+  .fl-pg { grid-template-columns: 1fr; max-width: 420px; }
   .fl-tg { grid-template-columns: 1fr; }
   .fl-tm { border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); }
   .fl-stats { grid-template-columns: 1fr 1fr; }
