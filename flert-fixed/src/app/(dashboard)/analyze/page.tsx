@@ -15,8 +15,10 @@ const tones = [
   { value: "flirty",  label: "Flertando", emoji: "😏" },
   { value: "funny",   label: "Engraçado", emoji: "😄" },
   { value: "casual",  label: "Casual",    emoji: "😊" },
-  { value: "witty",   label: "Afiado",      emoji: "✨" },
+  { value: "witty",   label: "Afiado",    emoji: "✨" },
   { value: "serious", label: "Sério",     emoji: "🤔" },
+  { value: "pickup",  label: "Cantada",   emoji: "🔥" },
+  { value: "stories", label: "Stories",   emoji: "📱" },
 ];
 
 const pageContainer = {
@@ -76,7 +78,8 @@ export default function AnalyzePage() {
   };
 
   const handleCopy = (text: string, index: number) => {
-    navigator.clipboard.writeText(text);
+    const clean = text.replace(/^[\d\.\-\*•]\s*/, "").trim();
+    navigator.clipboard.writeText(clean);
     setCopiedIndex(index);
     toast.success("Copiado!");
     setTimeout(() => setCopiedIndex(null), 2000);

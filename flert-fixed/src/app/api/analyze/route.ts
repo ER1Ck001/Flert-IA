@@ -41,63 +41,71 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prompt para a OpenAI
     const stylePrompts: Record<string, string> = {
-      funny: "engraçadas e bem-humoradas",
-      flirty: "flertantes e atraentes",
-      serious: "sérias e sinceras",
-      casual: "casuais e naturais",
-      witty: "engeniosas e inteligentes",
+      flirty:  "flertantes, com insinuação leve e charme natural",
+      funny:   "engraçadas, usando humor inteligente e leveza",
+      casual:  "casuais e naturais, sem forçar nada",
+      witty:   "afiadas e inteligentes, com resposta rápida e sagacidade",
+      serious: "sérias e sinceras, diretas ao ponto",
+      pickup:  "cantadas criativas e originais, com impacto imediato e sem vergonha",
+      stories: "respostas para stories do Instagram: curtas, descontraídas, com gancho para continuar a conversa",
     };
 
-    const stylePrompt = stylePrompts[style] || "flertantes e atraentes";
+    const stylePrompt = stylePrompts[style] || stylePrompts.flirty;
 
     const response = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL || "gpt-4o",
       messages: [
         {
           role: "system",
-          content: `Você é um assistente especializado em análise de conversas e flertes.
-          Sua tarefa é analisar imagens de conversas e sugerir 3 respostas ${stylePrompt}.
-          As respostas devem ser curtas (máximo 2 frases), naturais e em português brasileiro.
-          Use emojis de forma moderada e apropriada.`,
+          content: `Você é um especialista em conversas, flertes e conquista. Analise a imagem da conversa e gere EXATAMENTE 3 sugestões de resposta ${stylePrompt}.
+
+REGRAS OBRIGATÓRIAS:
+- Retorne APENAS as 3 respostas, uma por linha, sem numeração, sem prefixos, sem introduções
+- Não escreva "Claro!", "Aqui estão", "Sugestão 1:", "1.", "•" ou qualquer texto antes/depois das respostas
+- Cada resposta deve ser independente e pronta para copiar e enviar
+- Máximo 2 frases por resposta
+- Português brasileiro natural, como uma pessoa real escreveria
+- Emojis só quando soarem naturais, não forçados
+- Nunca repita a mesma ideia nas 3 opções — cada uma deve ter abordagem diferente`,
         },
         {
           role: "user",
           content: [
-            {
-              type: "image_url",
-              image_url: { url: imageUrl },
-            },
+            { type: "image_url", image_url: { url: imageUrl } },
             {
               type: "text",
               text: context
-                ? `Contexto adicional: ${context}. Gere 3 sugestões de resposta ${stylePrompt}.`
-                : `Gere 3 sugestões de resposta ${stylePrompt} para esta conversa.`,
+                ? `Contexto: ${context}\n\nGere 3 respostas ${stylePrompt}.`
+                : `Gere 3 respostas ${stylePrompt} para esta conversa.`,
             },
           ],
         },
       ],
-      max_tokens: 500,
+      max_tokens: 600,
     });
 
-    const suggestions = response.choices[0]?.message?.content
-      ?.split("\n")
-      .filter((line) => line.trim())
-      .map((line) => line.replace(/^[-*•]\s*/, "").trim())
-      .slice(0, 3) || [
+    const raw = response.choices[0]?.message?.content || "";
+    const suggestions = raw
+      .split("\n")
+      .map((line) => line.replace(/^[\d\.\-\*•]\s*/, "").replace(/^\*\*.*?\*\*:?\s*/, "").trim())
+      .filter((line) => line.length > 4)
+      .slice(0, 3);
+
+    const fallback = [
       "Que interessante! Me conta mais sobre isso? 😊",
       "Haha, adorei! Você sempre tem as melhores histórias ✨",
-      "Isso me lembra uma coisa... quer saber, melhor te contar depois 😉",
+      "Isso me lembra uma coisa... melhor te contar depois 😉",
     ];
 
-    // Salvar no histórico
+    const finalSuggestions = suggestions.length >= 3 ? suggestions : fallback;
+
     await prisma.conversation.create({
       data: {
         userId: session.user.id,
         title: `Análise ${style} - ${new Date().toLocaleDateString("pt-BR")}`,
         messages: {
-          create: suggestions.map((suggestion) => ({
+          create: finalSuggestions.map((suggestion) => ({
             role: "assistant",
             content: suggestion,
           })),
@@ -105,7 +113,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ suggestions });
+    return NextResponse.json({ suggestions: finalSuggestions });
   } catch (error) {
     console.error("Analyze error:", error);
     return NextResponse.json(
