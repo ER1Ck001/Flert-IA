@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Check, Zap, Crown } from "lucide-react";
+import { Check, Zap, Crown, Star } from "lucide-react";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
@@ -22,11 +22,11 @@ type Plan = {
 
 const plans: Plan[] = [
   {
-    id: "premium",
-    name: "Premium",
+    id: "monthly",
+    name: "Mensal",
     price: "R$ 29,90",
     period: "/mês",
-    description: "Para quem leva a sério",
+    description: "Para começar",
     features: [
       "Análises ilimitadas",
       "Respostas avançadas com IA",
@@ -35,9 +35,26 @@ const plans: Plan[] = [
       "Modo personalizado",
       "Uploads ilimitados",
     ],
-    cta: "Assinar Premium",
-    featured: true,
+    cta: "Assinar Mensal",
     icon: Zap,
+  },
+  {
+    id: "annual",
+    name: "Anual",
+    price: "R$ 147",
+    period: "/ano",
+    description: "Economia de R$ 211/ano",
+    features: [
+      "Tudo do plano Mensal",
+      "2 meses grátis",
+      "Análise de perfil completa",
+      "Alertas de padrões",
+      "Suporte prioritário",
+      "Uploads ilimitados",
+    ],
+    cta: "Assinar Anual",
+    featured: true,
+    icon: Star,
   },
   {
     id: "lifetime",
@@ -46,7 +63,7 @@ const plans: Plan[] = [
     period: "pagamento único",
     description: "Acesso para sempre",
     features: [
-      "Tudo do Premium",
+      "Tudo do plano Anual",
       "Acesso vitalício",
       "Updates futuros inclusos",
       "Suporte VIP",
@@ -108,7 +125,7 @@ export default function PricingPage() {
       </div>
 
       {/* ── Plans grid ── */}
-      <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
+      <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto w-full">
         {plans.map((plan) => {
           const Icon = plan.icon;
           const isLoading = loading === plan.id;
