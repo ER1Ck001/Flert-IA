@@ -117,7 +117,7 @@ function SidebarInner({
               <Zap className="h-3 w-3 text-brand-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-brand-400 leading-tight">Upgrade Premium</p>
+              <p className="text-xs font-semibold text-brand-400 leading-tight">Seja Premium</p>
               <p className="text-xs text-muted-foreground leading-tight">Recursos ilimitados</p>
             </div>
           </motion.div>

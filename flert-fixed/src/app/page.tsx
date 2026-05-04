@@ -340,7 +340,7 @@ export default function HomePage() {
                   <p className="fl-pper">pagamento único</p>
                   <p className="fl-pdesc">Acesso para sempre</p>
                   <ul className="fl-pf">
-                    {["Tudo do plano Anual","Acesso vitalício","Updates futuros inclusos","Suporte VIP","Early access a features"].map(f => (
+                    {["Tudo do plano Anual","Acesso vitalício","Updates futuros inclusos","Suporte VIP","Acesso antecipado a novidades"].map(f => (
                       <li key={f}>{f}</li>
                     ))}
                   </ul>

@@ -67,7 +67,7 @@ const plans: Plan[] = [
       "Acesso vitalício",
       "Updates futuros inclusos",
       "Suporte VIP",
-      "Early access a novidades",
+      "Acesso antecipado a novidades",
       "Badge exclusivo",
     ],
     cta: "Comprar Vitalício",
