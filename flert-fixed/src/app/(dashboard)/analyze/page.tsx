@@ -15,7 +15,7 @@ const tones = [
   { value: "flirty",  label: "Flertando", emoji: "😏" },
   { value: "funny",   label: "Engraçado", emoji: "😄" },
   { value: "casual",  label: "Casual",    emoji: "😊" },
-  { value: "witty",   label: "Espirituoso", emoji: "✨" },
+  { value: "witty",   label: "Afiado",      emoji: "✨" },
   { value: "serious", label: "Sério",     emoji: "🤔" },
 ];
 
