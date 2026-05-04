@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://flertia.com.br"),
+  metadataBase: new URL("https://flertia.com"),
   title: "Flert IA - Seu Assistente de Conversas",
   description: "Transforme suas conversas com o poder da Inteligência Artificial. Respostas inteligentes, envolventes e conexões reais.",
   keywords: ["flert", "IA", "conversas", "dating", "inteligência artificial", "chat"],
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Flert IA - Seu Assistente de Conversas",
     description: "Transforme suas conversas com o poder da Inteligência Artificial.",
-    url: "https://flertia.com.br",
+    url: "https://flertia.com",
     siteName: "Flert IA",
     type: "website",
     locale: "pt_BR",
