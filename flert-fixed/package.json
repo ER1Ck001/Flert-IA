@@ -47,7 +47,7 @@
     "next": "14.2.5",
     "next-auth": "4.24.7",
     "next-themes": "^0.3.0",
-    "nodemailer": "^6.9.14",
+    "nodemailer": "^7.0.13",
     "openai": "^4.104.0",
     "prisma": "^5.22.0",
     "qrcode": "^1.5.4",
@@ -67,7 +67,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.14.14",
-    "@types/nodemailer": "^6.4.15",
+    "@types/nodemailer": "^6.4.23",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
