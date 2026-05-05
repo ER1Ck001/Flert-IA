@@ -107,7 +107,7 @@ function SidebarInner({
 
       {/* Support */}
       <div className="px-2 pb-2">
-        <a href="mailto:erickdev@flertia.com.br">
+        <a href="https://mail.google.com/mail/?view=cm&to=erickdev@flertia.com.br&su=Suporte Flert IA" target="_blank" rel="noopener noreferrer">
           <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
