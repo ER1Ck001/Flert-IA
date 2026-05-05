@@ -24,11 +24,6 @@ function getGreeting(name?: string | null) {
   return `Boa noite, ${first}`;
 }
 
-const stats = [
-  { label: "Análises",        value: "12",  icon: MessageCircle },
-  { label: "Esta semana",     value: "5",   icon: Clock },
-  { label: "Taxa de sucesso", value: "95%", icon: TrendingUp },
-];
 
 const quickLinks = [
   { label: "Histórico",  href: "/history", icon: History },
@@ -55,11 +50,21 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [stats, setStats] = useState({ total: 0, thisWeek: 0 });
 
   useEffect(() => {
     setMounted(true);
     if (status === "unauthenticated") router.push("/auth/login");
   }, [status, router]);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetch("/api/stats")
+        .then((r) => r.json())
+        .then((d) => setStats({ total: d.total ?? 0, thisWeek: d.thisWeek ?? 0 }))
+        .catch(() => {});
+    }
+  }, [status]);
 
   if (!mounted || status === "loading") {
     return (
@@ -133,7 +138,11 @@ export default function DashboardPage() {
           Seus números
         </p>
         <div className="grid grid-cols-3 gap-3">
-          {stats.map((stat) => (
+          {[
+            { label: "Análises",           value: stats.total,         icon: MessageCircle },
+            { label: "Esta semana",        value: stats.thisWeek,      icon: Clock },
+            { label: "Sugestões geradas",  value: stats.total * 3,     icon: TrendingUp },
+          ].map((stat) => (
             <HoverCard
               key={stat.label}
               className="rounded-xl border border-border/50 bg-card/40 px-4 py-4 hover:border-border/80 transition-colors"
