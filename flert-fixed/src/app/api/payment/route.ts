@@ -44,10 +44,10 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.ABACATEPAY_BASE_URL;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    const productMap: Record<string, { externalId: string; name: string; price: number; status: string }> = {
-      monthly:  { externalId: "monthly",  name: "Flertia Premium Mensal",   price: 2990,  status: "PREMIUM"  },
-      annual:   { externalId: "annual",   name: "Flertia Premium Anual",    price: 14700, status: "PREMIUM"  },
-      lifetime: { externalId: "lifetime", name: "Flertia Acesso Vitalício", price: 29700, status: "LIFETIME" },
+    const productMap: Record<string, { id: string; methods: string[]; status: string }> = {
+      monthly:  { id: process.env.ABACATEPAY_PRODUCT_ID_MONTHLY  || "", methods: ["CARD"],       status: "PREMIUM"  },
+      annual:   { id: process.env.ABACATEPAY_PRODUCT_ID_ANNUAL   || "", methods: ["CARD"],       status: "PREMIUM"  },
+      lifetime: { id: process.env.ABACATEPAY_PRODUCT_ID_LIFETIME || "", methods: ["PIX", "CARD"], status: "LIFETIME" },
     };
 
     const selected = productMap[plan];
@@ -61,26 +61,10 @@ export async function POST(request: NextRequest) {
     }
 
     const requestBody = {
-      frequency: "ONE_TIME",
-      methods: ["PIX"],
-      products: [
-        {
-          externalId: selected.externalId,
-          name: selected.name,
-          quantity: 1,
-          price: selected.price,
-        },
-      ],
+      items: [{ id: selected.id, quantity: 1 }],
+      methods: selected.methods,
       returnUrl: `${appUrl}/dashboard?payment=success`,
       completionUrl: `${appUrl}/dashboard?payment=success`,
-      customer: {
-        metadata: {
-          name: session.user.name,
-          email: session.user.email,
-          cellphone: "11999999999",
-          taxId: "000.000.000-00",
-        },
-      },
       metadata: {
         userId: session.user.id,
         plan: selected.status,
@@ -89,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     console.log("AbacatePay request:", JSON.stringify(requestBody));
 
-    const abacateResponse = await fetch(`${baseUrl}/billing/create`, {
+    const abacateResponse = await fetch(`${baseUrl}/checkouts/create`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
