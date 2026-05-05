@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Check, Zap, Crown, Star } from "lucide-react";
@@ -86,6 +86,20 @@ export default function PricingPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [userStatus, setUserStatus] = useState<string>("FREE");
+
+  useEffect(() => {
+    fetch("/api/payment")
+      .then((r) => r.json())
+      .then((d) => setUserStatus(d.status || "FREE"))
+      .catch(() => {});
+  }, []);
+
+  const visiblePlans = plans.filter((p) => {
+    if (userStatus === "LIFETIME") return p.id === "lifetime";
+    if (userStatus === "PREMIUM")  return p.id === "annual" || p.id === "lifetime";
+    return true;
+  });
 
   const handleSubscribe = async (plan: string) => {
     if (!session) { router.push("/auth/login"); return; }
@@ -125,8 +139,8 @@ export default function PricingPage() {
       </div>
 
       {/* ── Plans grid ── */}
-      <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto w-full">
-        {plans.map((plan) => {
+      <div className={cn("grid gap-4 max-w-3xl mx-auto w-full", visiblePlans.length === 1 ? "max-w-sm" : visiblePlans.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3")}>
+        {visiblePlans.map((plan) => {
           const Icon = plan.icon;
           const isLoading = loading === plan.id;
 
