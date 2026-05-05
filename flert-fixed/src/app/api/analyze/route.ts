@@ -79,7 +79,7 @@ As 3 respostas devem ser completamente diferentes em abordagem.`;
     const styleInstruction = styleInstructions[style] || styleInstructions.flirty;
 
     const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-5.4",
+      model: process.env.OPENAI_MODEL || "gpt-4o",
       messages: [
         { role: "system", content: systemBase },
         {
