@@ -60,36 +60,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const requestBody = {
+      frequency: selected.frequency,
+      methods: ["PIX"],
+      products: [{ externalId: selected.id, quantity: 1 }],
+      returnUrl: `${appUrl}/dashboard?payment=success`,
+      completionUrl: `${appUrl}/dashboard?payment=success`,
+      customer: {
+        metadata: {
+          name: session.user.name,
+          email: session.user.email,
+          cellphone: "11999999999",
+          taxId: "000.000.000-00",
+        },
+      },
+      metadata: {
+        userId: session.user.id,
+        plan: selected.status,
+      },
+    };
+
+    console.log("AbacatePay request:", JSON.stringify(requestBody));
+
     const abacateResponse = await fetch(`${baseUrl}/billing/create`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        frequency: selected.frequency,
-        methods: ["PIX"],
-        products: [
-          {
-            externalId: selected.id,
-            quantity: 1,
-          },
-        ],
-        returnUrl: `${appUrl}/dashboard?payment=success`,
-        completionUrl: `${appUrl}/dashboard?payment=success`,
-        customer: {
-          metadata: {
-            name: session.user.name,
-            email: session.user.email,
-            cellphone: "11999999999",
-            taxId: "000.000.000-00",
-          },
-        },
-        metadata: {
-          userId: session.user.id,
-          plan: selected.status,
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!abacateResponse.ok) {
