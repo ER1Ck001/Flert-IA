@@ -101,6 +101,12 @@ export default function PricingPage() {
     return true;
   });
 
+  const isActivePlan = (planId: string) => {
+    if (userStatus === "LIFETIME" && planId === "lifetime") return true;
+    if (userStatus === "PREMIUM"  && planId === "monthly")  return true;
+    return false;
+  };
+
   const handleSubscribe = async (plan: string) => {
     if (!session) { router.push("/auth/login"); return; }
     setLoading(plan);
@@ -208,11 +214,13 @@ export default function PricingPage() {
 
               {/* CTA */}
               <button
-                disabled={plan.disabled || isLoading}
-                onClick={() => !plan.disabled && handleSubscribe(plan.id)}
+                disabled={plan.disabled || isLoading || isActivePlan(plan.id)}
+                onClick={() => !plan.disabled && !isActivePlan(plan.id) && handleSubscribe(plan.id)}
                 className={cn(
                   "w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-150",
-                  plan.disabled
+                  isActivePlan(plan.id)
+                    ? "bg-brand-500/10 border border-brand-500/30 text-brand-400 cursor-default"
+                    : plan.disabled
                     ? "bg-muted/50 text-muted-foreground cursor-not-allowed"
                     : plan.featured
                     ? "bg-brand-500 hover:bg-brand-600 text-white shadow-sm shadow-brand-500/20 hover:shadow-brand-500/35"
@@ -220,7 +228,12 @@ export default function PricingPage() {
                   isLoading && "opacity-60 cursor-wait"
                 )}
               >
-                {isLoading ? (
+                {isActivePlan(plan.id) ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Check className="h-3.5 w-3.5" />
+                    Plano ativo
+                  </span>
+                ) : isLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="h-3 w-3 rounded-full border-[1.5px] border-current border-t-transparent animate-spin" />
                     Processando...
