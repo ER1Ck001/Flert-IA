@@ -42,18 +42,23 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.ABACATEPAY_API_KEY;
     const baseUrl = process.env.ABACATEPAY_BASE_URL;
-    const productId = process.env.ABACATEPAY_PRODUCT_ID;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    if (!apiKey || !baseUrl || !productId) {
-      console.error("AbacatePay: variáveis de ambiente ausentes", { apiKey: !!apiKey, baseUrl, productId });
+    const productMap: Record<string, { id: string; frequency: string; status: string }> = {
+      monthly:  { id: process.env.ABACATEPAY_PRODUCT_ID_MONTHLY  || "", frequency: "MONTHLY",  status: "PREMIUM"  },
+      annual:   { id: process.env.ABACATEPAY_PRODUCT_ID_ANNUAL   || "", frequency: "YEARLY",   status: "PREMIUM"  },
+      lifetime: { id: process.env.ABACATEPAY_PRODUCT_ID_LIFETIME || "", frequency: "ONE_TIME", status: "LIFETIME" },
+    };
+
+    const selected = productMap[plan];
+
+    if (!apiKey || !baseUrl || !selected?.id) {
+      console.error("AbacatePay: configuração incompleta", { apiKey: !!apiKey, baseUrl, plan, productId: selected?.id });
       return NextResponse.json(
         { error: "Configuração de pagamento incompleta" },
         { status: 500 }
       );
     }
-
-    const isLifetime = plan === "lifetime";
 
     const abacateResponse = await fetch(`${baseUrl}/billing/create`, {
       method: "POST",
@@ -62,11 +67,11 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        frequency: "ONE_TIME",
+        frequency: selected.frequency,
         methods: ["PIX"],
         products: [
           {
-            externalId: productId,
+            externalId: selected.id,
             quantity: 1,
           },
         ],
@@ -82,7 +87,7 @@ export async function POST(request: NextRequest) {
         },
         metadata: {
           userId: session.user.id,
-          plan: isLifetime ? "LIFETIME" : "PREMIUM",
+          plan: selected.status,
         },
       }),
     });
