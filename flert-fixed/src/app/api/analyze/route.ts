@@ -64,7 +64,7 @@ FORMATO DE SAÍDA — LEI:
 Retorne EXATAMENTE 3 linhas. Cada linha é uma resposta completa e pronta.
 ZERO introduções. ZERO explicações. ZERO numeração. ZERO meta-comentários.
 Máximo 2 frases por linha. Emojis com moderação — só 1 por resposta no máximo, nunca forçado. PROIBIDO usar a palavra "look".
-As 3 respostas devem ser completamente diferentes em abordagem.`;
+As 3 respostas DEVEM ser completamente diferentes: abordagem diferente, vocabulário diferente, ângulo diferente. PROIBIDO repetir a mesma palavra-chave, metáfora ou conceito nas 3 respostas. Se a resposta 1 usou "episódio", a 2 e a 3 não podem usar "episódio".`;
 
     const styleInstructions: Record<string, string> = {
       flirty:  "ESTILO FLERTANDO: Use insinuação baseada em algo específico da conversa. Crie tensão e deixe ela curiosa para responder. A resposta deve parecer que você é charmoso e confiante — não desesperado. Personalize com algo que ela disse ou fez.",
@@ -110,7 +110,13 @@ As 3 respostas devem ser completamente diferentes em abordagem.`;
     const raw = response.choices[0]?.message?.content || "";
     const suggestions = raw
       .split("\n")
-      .map((line) => line.replace(/^[\d\.\-\*•]\s*/, "").replace(/^\*\*.*?\*\*:?\s*/, "").trim())
+      .map((line) =>
+        line
+          .replace(/^\d+[\.\)]\s*/, "")
+          .replace(/^[\.\-\*•]\s*/, "")
+          .replace(/^\*\*.*?\*\*:?\s*/, "")
+          .trim()
+      )
       .filter((line) => line.length > 4)
       .filter((line) => !metaPatterns.some((p) => p.test(line)))
       .slice(0, 3);
