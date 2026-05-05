@@ -61,19 +61,10 @@ export async function POST(request: NextRequest) {
     }
 
     const requestBody = {
-      frequency: selected.frequency,
+      items: [{ id: selected.id, quantity: 1 }],
       methods: ["PIX"],
-      products: [{ externalId: selected.id, quantity: 1 }],
       returnUrl: `${appUrl}/dashboard?payment=success`,
       completionUrl: `${appUrl}/dashboard?payment=success`,
-      customer: {
-        metadata: {
-          name: session.user.name,
-          email: session.user.email,
-          cellphone: "11999999999",
-          taxId: "000.000.000-00",
-        },
-      },
       metadata: {
         userId: session.user.id,
         plan: selected.status,
@@ -82,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     console.log("AbacatePay request:", JSON.stringify(requestBody));
 
-    const abacateResponse = await fetch(`${baseUrl}/billing/create`, {
+    const abacateResponse = await fetch(`${baseUrl}/checkouts/create`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
