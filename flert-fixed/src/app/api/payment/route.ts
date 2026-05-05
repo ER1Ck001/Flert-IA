@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     const productMap: Record<string, { id: string; frequency: string; status: string }> = {
-      monthly:  { id: process.env.ABACATEPAY_PRODUCT_ID_MONTHLY  || "", frequency: "MONTHLY",  status: "PREMIUM"  },
-      annual:   { id: process.env.ABACATEPAY_PRODUCT_ID_ANNUAL   || "", frequency: "YEARLY",   status: "PREMIUM"  },
+      monthly:  { id: process.env.ABACATEPAY_PRODUCT_ID_MONTHLY  || "", frequency: "ONE_TIME", status: "PREMIUM"  },
+      annual:   { id: process.env.ABACATEPAY_PRODUCT_ID_ANNUAL   || "", frequency: "ONE_TIME", status: "PREMIUM"  },
       lifetime: { id: process.env.ABACATEPAY_PRODUCT_ID_LIFETIME || "", frequency: "ONE_TIME", status: "LIFETIME" },
     };
 
