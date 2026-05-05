@@ -63,7 +63,7 @@ O QUE FUNCIONA NO BRASIL:
 FORMATO DE SAÍDA — LEI:
 Retorne EXATAMENTE 3 linhas. Cada linha é uma resposta completa e pronta.
 ZERO introduções. ZERO explicações. ZERO numeração. ZERO meta-comentários.
-Máximo 2 frases por linha. SEM emojis — escreva só texto.
+Máximo 2 frases por linha. Emoji só se a conversa já usa muito emoji — nunca force.
 As 3 respostas devem ser completamente diferentes em abordagem.`;
 
     const styleInstructions: Record<string, string> = {
@@ -79,7 +79,7 @@ As 3 respostas devem ser completamente diferentes em abordagem.`;
     const styleInstruction = styleInstructions[style] || styleInstructions.flirty;
 
     const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o",
+      model: process.env.OPENAI_MODEL || "gpt-4.5",
       messages: [
         { role: "system", content: systemBase },
         {
