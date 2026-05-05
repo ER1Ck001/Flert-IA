@@ -17,6 +17,7 @@ import {
   Heart,
   CreditCard,
   Zap,
+  LifeBuoy,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -103,6 +104,26 @@ function SidebarInner({
           );
         })}
       </nav>
+
+      {/* Support */}
+      <div className="px-2 pb-2">
+        <a href="mailto:erickdev@flertia.com.br">
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 28 }}
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-border/30 hover:border-border/60 hover:bg-accent/20 transition-colors mb-1"
+          >
+            <div className="h-6 w-6 rounded-md bg-muted/80 flex items-center justify-center flex-shrink-0">
+              <LifeBuoy className="h-3 w-3 text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-foreground leading-tight">Suporte</p>
+              <p className="text-xs text-muted-foreground leading-tight">erickdev@flertia.com.br</p>
+            </div>
+          </motion.div>
+        </a>
+      </div>
 
       {/* Upgrade nudge */}
       <div className="px-2 pb-2">
