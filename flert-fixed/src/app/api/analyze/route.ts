@@ -63,7 +63,7 @@ O QUE FUNCIONA NO BRASIL:
 FORMATO DE SAÍDA — LEI:
 Retorne EXATAMENTE 3 linhas. Cada linha é uma resposta completa e pronta.
 ZERO introduções. ZERO explicações. ZERO numeração. ZERO meta-comentários.
-Máximo 2 frases por linha. PROIBIDO usar qualquer emoji — somente texto.
+Máximo 2 frases por linha. Emojis com moderação — só 1 por resposta no máximo, nunca forçado. PROIBIDO usar a palavra "look".
 As 3 respostas devem ser completamente diferentes em abordagem.`;
 
     const styleInstructions: Record<string, string> = {
