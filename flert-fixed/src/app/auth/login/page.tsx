@@ -4,11 +4,6 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Heart, Mail, Lock, Loader2, Chrome, Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import toast from "react-hot-toast";
 
 function LoginForm() {
@@ -17,26 +12,21 @@ function LoginForm() {
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const result = await signIn("credentials", {
         email: formData.email,
         password: formData.password,
         redirect: false,
       });
-
       if (result?.error) {
         toast.error("Email ou senha inválidos");
       } else {
-        toast.success("Login realizado com sucesso!");
+        toast.success("Bem-vindo de volta.");
         router.push(callbackUrl);
         router.refresh();
       }
@@ -47,162 +37,253 @@ function LoginForm() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await signIn("google", { callbackUrl });
-    } catch {
-      toast.error("Erro ao entrar com Google");
-    }
+  const handleGoogle = async () => {
+    try { await signIn("google", { callbackUrl }); }
+    catch { toast.error("Erro ao entrar com Google"); }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-40" />
-      </div>
-
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <Link href="/" className="flex items-center justify-center gap-2.5 mb-8 group">
-          <div className="relative">
-            <Heart className="h-8 w-8 text-brand-500 fill-brand-500 transition-transform group-hover:scale-110" />
-            <div className="absolute inset-0 bg-brand-500/20 blur-lg rounded-full" />
+    <>
+      <style dangerouslySetInnerHTML={{ __html: AUTH_CSS }} />
+      <div className="au">
+        {/* Left panel */}
+        <div className="au-left">
+          <div className="au-left-wm" aria-hidden>F</div>
+          <Link href="/" className="au-back">
+            <span className="au-back-line" />
+            voltar ao site
+          </Link>
+          <div className="au-left-body">
+            <p className="au-left-label">— Flert IA —</p>
+            <h2 className="au-left-title">
+              Suas conversas<br />merecem<br /><em>mais.</em>
+            </h2>
+            <p className="au-left-sub">
+              Inteligência artificial para quem quer se conectar de verdade.
+            </p>
           </div>
-          <span className="text-2xl font-bold bg-gradient-to-r from-brand-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
-            Flert IA
-          </span>
-        </Link>
+          <p className="au-left-copy">© 2026 Flert IA</p>
+        </div>
 
-        <Card className="border-border/50 shadow-xl shadow-black/5">
-          <CardHeader className="text-center space-y-4 pb-6">
-            <div>
-              <CardTitle className="text-2xl font-bold">Bem-vindo de volta</CardTitle>
-              <CardDescription className="mt-2">
-                Entre na sua conta para continuar
-              </CardDescription>
+        {/* Right panel — form */}
+        <div className="au-right">
+          <div className="au-form-wrap">
+            <div className="au-form-head">
+              <Link href="/" className="au-logo">Flert<em>.</em>IA</Link>
+              <h1 className="au-title">Bem-vindo<br />de volta.</h1>
+              <p className="au-sub">Entre na sua conta para continuar.</p>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  Email
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    className="pl-10 h-11"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                  />
-                </div>
+
+            <form onSubmit={handleSubmit} className="au-form">
+              <div className="au-field">
+                <input
+                  id="email"
+                  type="email"
+                  placeholder=" "
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  autoComplete="email"
+                />
+                <label htmlFor="email">Email</label>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-medium">
-                    Senha
-                  </Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="text-xs text-muted-foreground hover:text-brand-500 transition-colors"
-                  >
-                    Esqueci a senha
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="pl-10 pr-10 h-11"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setShowPassword((v) => !v)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
+              <div className="au-field">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder=" "
+                  value={formData.password}
+                  onChange={e => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  autoComplete="current-password"
+                />
+                <label htmlFor="password">Senha</label>
+                <button type="button" className="au-eye" onClick={() => setShowPassword(v => !v)} tabIndex={-1}>
+                  {showPassword ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  )}
+                </button>
               </div>
 
-              <Button
-                type="submit"
-                className="w-full h-11 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-lg shadow-brand-500/25"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Entrando...
-                  </>
-                ) : (
-                  "Entrar"
-                )}
-              </Button>
+              <div className="au-row-end">
+                <Link href="/auth/forgot-password" className="au-link-sm">Esqueci a senha</Link>
+              </div>
+
+              <button type="submit" className="au-btn" disabled={loading}>
+                {loading ? <span className="au-spin" /> : "Entrar"}
+              </button>
             </form>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-3 text-muted-foreground font-medium">
-                  Ou continue com
-                </span>
-              </div>
-            </div>
+            <div className="au-divider"><span>ou</span></div>
 
-            <Button
-              variant="outline"
-              className="w-full h-11"
-              onClick={handleGoogleSignIn}
-            >
-              <Chrome className="mr-2 h-4 w-4" />
-              Google
-            </Button>
+            <button className="au-google" onClick={handleGoogle}>
+              <svg width="16" height="16" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Continuar com Google
+            </button>
 
-            <p className="text-center text-sm text-muted-foreground pt-2">
-              Não tem uma conta?{" "}
-              <Link
-                href="/auth/register"
-                className="text-brand-500 hover:text-brand-600 font-medium transition-colors"
-              >
-                Cadastre-se grátis
-              </Link>
+            <p className="au-foot">
+              Não tem conta?{" "}
+              <Link href="/auth/register" className="au-link">Criar conta grátis</Link>
             </p>
-          </CardContent>
-        </Card>
-
-        {/* Trust indicators */}
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          🔒 Suas informações estão seguras e criptografadas
-        </p>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
-      </div>
-    }>
+    <Suspense fallback={<div className="au-loading"><span className="au-spin au-spin--lg" /></div>}>
       <LoginForm />
     </Suspense>
   );
 }
+
+const AUTH_CSS = `
+.au { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; background: var(--bg); }
+
+/* ── LEFT PANEL ── */
+.au-left {
+  position: relative; overflow: hidden;
+  background: var(--wine);
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 2.5rem clamp(2rem, 5vw, 4rem);
+  min-height: 100vh;
+}
+.au-left-wm {
+  position: absolute; bottom: -0.2em; right: -0.05em;
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: clamp(200px, 30vw, 380px); font-weight: 700; font-style: italic;
+  color: transparent; -webkit-text-stroke: 1px rgba(201,168,76,0.12);
+  line-height: 1; pointer-events: none; user-select: none;
+  letter-spacing: -0.05em;
+}
+.au-back {
+  display: inline-flex; align-items: center; gap: 0.75rem;
+  font-size: 9.5px; letter-spacing: 0.24em; text-transform: uppercase; font-weight: 700;
+  color: rgba(242,237,232,0.4); transition: color 0.2s;
+  position: relative; z-index: 1;
+}
+.au-back:hover { color: rgba(242,237,232,0.7); }
+.au-back-line { width: 28px; height: 1px; background: currentColor; display: block; transition: width 0.3s; }
+.au-back:hover .au-back-line { width: 40px; }
+.au-left-body { position: relative; z-index: 1; }
+.au-left-label { font-size: 9.5px; letter-spacing: 0.3em; text-transform: uppercase; font-weight: 600; color: rgba(201,168,76,0.6); margin-bottom: 1.5rem; }
+.au-left-title {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: clamp(3rem, 5vw, 5.5rem); font-weight: 600;
+  line-height: 1.05; letter-spacing: -0.02em; color: #F2EDE8;
+  margin-bottom: 1.5rem;
+}
+.au-left-title em { font-style: italic; color: var(--gold); }
+.au-left-sub { font-size: 0.875rem; line-height: 1.8; color: rgba(242,237,232,0.45); font-weight: 300; max-width: 280px; }
+.au-left-copy { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(242,237,232,0.2); position: relative; z-index: 1; }
+
+/* ── RIGHT PANEL ── */
+.au-right {
+  display: flex; align-items: center; justify-content: center;
+  padding: 3rem clamp(2rem, 6vw, 5rem);
+  border-left: 1px solid var(--bd);
+}
+.au-form-wrap { width: 100%; max-width: 400px; }
+.au-form-head { margin-bottom: 3rem; }
+.au-logo { font-family: var(--font-cormorant), Georgia, serif; font-size: 1.35rem; font-weight: 600; font-style: italic; display: block; margin-bottom: 2rem; color: var(--tx); }
+.au-logo em { color: var(--gold); font-style: normal; }
+.au-title { font-family: var(--font-cormorant), Georgia, serif; font-size: clamp(2.2rem, 4vw, 3.2rem); font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; color: var(--tx); margin-bottom: 0.75rem; }
+.au-sub { font-size: 0.875rem; color: var(--tx-2); font-weight: 300; }
+
+/* ── FORM FIELDS ── */
+.au-form { display: flex; flex-direction: column; gap: 1.75rem; }
+.au-field { position: relative; }
+.au-field input {
+  width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--bd);
+  padding: 1.1rem 2.2rem 0.5rem 0; font-size: 16px; color: var(--tx);
+  font-family: 'Cabinet Grotesk', sans-serif; outline: none;
+  transition: border-color 0.3s;
+}
+.au-field input:focus { border-bottom-color: var(--gold); }
+.au-field input:focus + label,
+.au-field input:not(:placeholder-shown) + label {
+  transform: translateY(-1.4rem) scale(0.78);
+  color: var(--gold); letter-spacing: 0.18em;
+}
+.au-field label {
+  position: absolute; left: 0; top: 1rem;
+  font-size: 0.875rem; color: var(--tx-3); pointer-events: none;
+  transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), color 0.25s, letter-spacing 0.25s;
+  transform-origin: left top; font-weight: 500;
+}
+.au-eye {
+  position: absolute; right: 0; top: 50%; transform: translateY(-30%);
+  background: none; border: none; color: var(--tx-3); cursor: pointer;
+  padding: 6px; transition: color 0.2s; display: flex; align-items: center;
+}
+.au-eye:hover { color: var(--tx-2); }
+
+/* Forgot password link */
+.au-row-end { display: flex; justify-content: flex-end; margin-top: -0.75rem; }
+.au-link-sm { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600; color: var(--tx-3); transition: color 0.2s; }
+.au-link-sm:hover { color: var(--gold); }
+
+/* Submit button */
+.au-btn {
+  width: 100%; padding: 1rem; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+  font-weight: 700; font-family: 'Cabinet Grotesk', sans-serif;
+  background: var(--wine); color: #F2EDE8; border: none; cursor: pointer;
+  transition: background 0.25s; min-height: 52px;
+  display: flex; align-items: center; justify-content: center;
+}
+.au-btn:hover:not(:disabled) { background: var(--wine-2); }
+.au-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Divider */
+.au-divider { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0; }
+.au-divider::before, .au-divider::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
+.au-divider span { font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--tx-3); font-weight: 600; }
+
+/* Google */
+.au-google {
+  width: 100%; padding: 0.85rem 1rem; border: 1px solid var(--bd);
+  background: transparent; color: var(--tx-2); font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; font-weight: 600; font-family: 'Cabinet Grotesk', sans-serif;
+  cursor: pointer; transition: border-color 0.2s, color 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 0.75rem; min-height: 48px;
+}
+.au-google:hover { border-color: var(--bd-2); color: var(--tx); }
+
+/* Footer */
+.au-foot { text-align: center; font-size: 0.85rem; color: var(--tx-2); margin-top: 1.5rem; font-weight: 300; }
+.au-link { color: var(--gold); font-weight: 600; transition: opacity 0.2s; }
+.au-link:hover { opacity: 0.7; }
+
+/* Spinner */
+.au-spin {
+  width: 16px; height: 16px; border: 1.5px solid rgba(242,237,232,0.3);
+  border-top-color: #F2EDE8; border-radius: 50%;
+  animation: au-rot 0.7s linear infinite; display: inline-block;
+}
+.au-spin--lg { width: 28px; height: 28px; border-color: rgba(139,10,42,0.2); border-top-color: var(--wine); }
+@keyframes au-rot { to { transform: rotate(360deg); } }
+.au-loading { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  .au { grid-template-columns: 1fr; }
+  .au-left { display: none; }
+  .au-right { border-left: none; padding: 2.5rem 1.5rem; min-height: 100vh; align-items: flex-start; padding-top: 4rem; }
+}
+`;
