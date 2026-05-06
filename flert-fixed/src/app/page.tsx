@@ -146,7 +146,7 @@ export default function HomePage() {
             <div className="pg-badge-rot" aria-hidden>
               <svg viewBox="0 0 120 120" className="pg-badge-svg">
                 <path id="circlePath" d="M 60,60 m -44,0 a 44,44 0 1,1 88,0 a 44,44 0 1,1 -88,0" fill="none"/>
-                <text fontSize="9.5" letterSpacing="4" fill="currentColor" fontFamily="'Cabinet Grotesk'" fontWeight="600" textTransform="uppercase">
+                <text fontSize="9.5" letterSpacing="4" fill="currentColor" fontFamily="'Cabinet Grotesk'" fontWeight="600">
                   <textPath href="#circlePath">FLERT IA · INTELIGÊNCIA ARTIFICIAL · </textPath>
                 </text>
               </svg>
