@@ -40,6 +40,24 @@ const marqueeItems = [
   "Seu jeito, amplificado",
 ];
 
+const burst = (e: React.MouseEvent) => {
+  const emos = ["❤️","💕","✨","💘","🥰","💖","🔥"];
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  for (let i = 0; i < 9; i++) {
+    const el = document.createElement("span");
+    el.textContent = emos[Math.floor(Math.random() * emos.length)];
+    const angle = (i / 9) * Math.PI * 2;
+    const dist = 55 + Math.random() * 60;
+    const tx = Math.cos(angle) * dist;
+    const ty = Math.sin(angle) * dist - 25;
+    el.style.cssText = `position:fixed;pointer-events:none;z-index:9999;font-size:${14+Math.random()*10}px;left:${cx}px;top:${cy}px;--tx:${tx}px;--ty:${ty}px;animation:emoji-fly 1s ease-out forwards;`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1050);
+  }
+};
+
 export default function HomePage() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -126,7 +144,9 @@ export default function HomePage() {
         {/* ── NAVBAR ── */}
         <nav className={`p-nav${scrolled ? " p-nav--on" : ""}`}>
           <div className="p-nw">
-            <Link href="/" className="p-logo">Flert<em>.</em>IA</Link>
+            <Link href="/" className="p-logo">
+              <span className="p-heart">♥</span>Flert<em>.</em>IA
+            </Link>
             <div className="p-nl">
               <a href="#features">Funcionalidades</a>
               <a href="#como-funciona">Como Funciona</a>
@@ -148,7 +168,7 @@ export default function HomePage() {
                 )}
               </button>
               <Link href="/auth/login" className="p-ghost">Entrar</Link>
-              <Link href="/auth/register" className="p-cta">Começar</Link>
+              <Link href="/auth/register" className="p-cta" onClick={burst}>Começar</Link>
               <button className="p-ham" onClick={() => setMenuOpen(true)} aria-label="Menu">
                 <span/><span/><span/>
               </button>
@@ -162,6 +182,11 @@ export default function HomePage() {
                HERO
           ══════════════════════════════════ */}
           <section className="p-hero">
+            {/* Animated orbs */}
+            <div className="p-hero-orb p-hero-orb--1" aria-hidden/>
+            <div className="p-hero-orb p-hero-orb--2" aria-hidden/>
+            <div className="p-hero-orb p-hero-orb--3" aria-hidden/>
+
             {/* Background letter */}
             <div className="p-wm" aria-hidden>F</div>
 
@@ -203,7 +228,9 @@ export default function HomePage() {
                     melhor versão de você.
                   </p>
                   <div className="p-hcta hero-cta">
-                    <Link href="/auth/register" className="p-cta p-cta--lg">Começar agora</Link>
+                    <Link href="/auth/register" className="p-cta p-cta--lg" onClick={burst}>
+                      Começar agora
+                    </Link>
                     <a href="#como-funciona" className="p-ghost-link">
                       <span className="p-gl-line"/>ver como funciona
                     </a>
@@ -354,6 +381,7 @@ export default function HomePage() {
                 <h2>Preços <em>simples.</em><br/>Sem surpresas.</h2>
               </div>
               <div className="p-pg r" data-d="80ms">
+
                 {/* Mensal */}
                 <div className="p-pc">
                   <p className="p-pc-n">Mensal</p>
@@ -366,11 +394,14 @@ export default function HomePage() {
                   <ul className="p-pc-f">
                     {["Análises ilimitadas","Respostas avançadas com IA","Análise de perfil","Suporte prioritário","Uploads ilimitados"].map(f => <li key={f}>{f}</li>)}
                   </ul>
-                  <Link href="/auth/register?plan=monthly" className="p-pc-btn">Assinar Mensal</Link>
+                  <Link href="/auth/register?plan=monthly" className="p-pc-btn" onClick={burst}>
+                    Assinar Mensal
+                  </Link>
                 </div>
+
                 {/* Anual — featured */}
                 <div className="p-pc p-pc--hot">
-                  <span className="p-pc-hot-badge">Mais Popular</span>
+                  <span className="p-pc-hot-badge">✦ Mais Popular</span>
                   <p className="p-pc-n">Anual</p>
                   <div className="p-pc-price">
                     <span className="p-pc-currency">R$</span>
@@ -380,8 +411,11 @@ export default function HomePage() {
                   <ul className="p-pc-f">
                     {["Tudo do plano Mensal","2 meses grátis","Análise de perfil completa","Alertas de padrões","Suporte prioritário"].map(f => <li key={f}>{f}</li>)}
                   </ul>
-                  <Link href="/auth/register?plan=annual" className="p-pc-btn p-pc-btn--inv">Assinar Anual</Link>
+                  <Link href="/auth/register?plan=annual" className="p-pc-btn p-pc-btn--inv" onClick={burst}>
+                    Assinar Anual
+                  </Link>
                 </div>
+
                 {/* Vitalício */}
                 <div className="p-pc">
                   <p className="p-pc-n">Vitalício</p>
@@ -393,7 +427,9 @@ export default function HomePage() {
                   <ul className="p-pc-f">
                     {["Tudo do plano Anual","Acesso vitalício","Updates futuros inclusos","Suporte VIP","Acesso antecipado a novidades"].map(f => <li key={f}>{f}</li>)}
                   </ul>
-                  <Link href="/auth/register?plan=lifetime" className="p-pc-btn">Comprar Vitalício</Link>
+                  <Link href="/auth/register?plan=lifetime" className="p-pc-btn" onClick={burst}>
+                    Comprar Vitalício
+                  </Link>
                 </div>
               </div>
             </div>
@@ -471,13 +507,16 @@ export default function HomePage() {
           ══════════════════════════════════ */}
           <section className="p-cta-sec">
             <div className="p-cta-bg" aria-hidden/>
+            <div className="p-cta-orb" aria-hidden/>
             <div className="p-w">
               <p className="p-lbl r">— Pronto para começar? —</p>
               <h2 className="p-cta-h r" data-d="80ms">
                 Transforme<br/>suas <em>conversas</em><br/>agora.
               </h2>
               <div className="r" data-d="200ms" style={{ marginTop: "3rem" }}>
-                <Link href="/auth/register" className="p-cta p-cta--lg">Criar conta gratuita</Link>
+                <Link href="/auth/register" className="p-cta p-cta--lg p-cta--pulse" onClick={burst}>
+                  Criar conta gratuita
+                </Link>
               </div>
             </div>
           </section>
@@ -489,7 +528,9 @@ export default function HomePage() {
           <div className="p-ft-line"/>
           <div className="p-w">
             <div className="p-fi">
-              <Link href="/" className="p-flogo">Flert<em>.</em>IA</Link>
+              <Link href="/" className="p-flogo">
+                <span className="p-heart p-heart--sm">♥</span>Flert<em>.</em>IA
+              </Link>
               <p className="p-fcopy">© 2026 Flert IA. Todos os direitos reservados.</p>
               <div className="p-flinks">
                 <a href="#">Termos</a>
@@ -509,10 +550,37 @@ export default function HomePage() {
    CSS
 ══════════════════════════════════════════════ */
 const CSS = `
+@keyframes emoji-fly {
+  0%   { opacity:1; transform:translate(-50%,-50%) scale(0); }
+  60%  { opacity:1; }
+  100% { opacity:0; transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.1) rotate(20deg); }
+}
+@keyframes hb   { 0%,100%{transform:scale(1)} 14%{transform:scale(1.35)} 28%{transform:scale(1)} 42%{transform:scale(1.18)} 70%{transform:scale(1)} }
+@keyframes orb1 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(40px,-30px) scale(1.1)} 66%{transform:translate(-25px,20px) scale(0.93)} }
+@keyframes orb2 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-30px,25px) scale(0.9)} 66%{transform:translate(25px,-20px) scale(1.08)} }
+@keyframes orb3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(20px,30px) scale(1.05)} }
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(139,10,42,0.5), 0 8px 32px rgba(139,10,42,0.4); }
+  70%  { box-shadow: 0 0 0 14px rgba(139,10,42,0), 0 8px 32px rgba(139,10,42,0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(139,10,42,0), 0 8px 32px rgba(139,10,42,0.4); }
+}
+@keyframes shine {
+  0%   { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(220%) skewX(-20deg); }
+}
+
 .p *, .p *::before, .p *::after { box-sizing: border-box; margin: 0; padding: 0; }
 .p { background: var(--bg); color: var(--tx); min-height: 100vh; overflow-x: hidden; font-family: 'Cabinet Grotesk', sans-serif; -webkit-font-smoothing: antialiased; }
 .p a { color: inherit; text-decoration: none; }
 .p-w { max-width: 1380px; margin: 0 auto; padding: 0 clamp(1.5rem, 5vw, 5rem); }
+
+/* ── HEART ── */
+.p-heart {
+  color: var(--wine); display: inline-block; transform-origin: center;
+  animation: hb 1.8s ease-in-out infinite; margin-right: 0.3rem;
+  font-style: normal; font-size: 1em;
+}
+.p-heart--sm { font-size: 0.8em; margin-right: 0.25rem; }
 
 /* ── REVEAL ── */
 .r { opacity: 0; transform: translateY(32px); transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1), transform 0.85s cubic-bezier(0.16,1,0.3,1); }
@@ -533,7 +601,11 @@ const CSS = `
 [data-theme="light"] .p-nav--on { background: rgba(245,240,232,0.94); }
 .p-nw { max-width: 1380px; margin: 0 auto; height: 68px; display: flex; align-items: center; justify-content: space-between; }
 
-.p-logo { font-family: var(--font-cormorant), Georgia, serif; font-size: 1.45rem; font-weight: 600; font-style: italic; letter-spacing: -0.01em; }
+.p-logo {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: 1.45rem; font-weight: 600; font-style: italic; letter-spacing: -0.01em;
+  display: inline-flex; align-items: center;
+}
 .p-logo em { color: var(--gold); font-style: normal; }
 
 .p-nl { display: flex; gap: 2.5rem; }
@@ -550,9 +622,29 @@ const CSS = `
 .p-ghost { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 600; color: var(--tx-2); transition: color 0.2s; padding: 0 0.5rem; min-height: 44px; display: flex; align-items: center; }
 .p-ghost:hover { color: var(--tx); }
 
-.p-cta { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 700; color: var(--tx); border: 1px solid var(--bd-2); padding: 0.6rem 1.4rem; transition: background 0.25s, color 0.25s, border-color 0.25s; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
-.p-cta:hover { background: var(--wine); border-color: var(--wine); color: #fff; }
-.p-cta--lg { padding: 1rem 2.5rem; font-size: 11px; letter-spacing: 0.24em; }
+/* ── CTA BUTTON — enhanced ── */
+.p-cta {
+  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 700;
+  color: var(--tx); border: 1px solid var(--bd-2); padding: 0.6rem 1.4rem;
+  transition: background 0.25s, color 0.25s, border-color 0.25s, transform 0.15s, box-shadow 0.25s;
+  min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  white-space: nowrap; position: relative; overflow: hidden;
+}
+.p-cta::before {
+  content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transform: skewX(-20deg); opacity: 0; transition: opacity 0.2s;
+}
+.p-cta:hover { background: var(--wine); border-color: var(--wine); color: #fff; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(139,10,42,0.4); }
+.p-cta:hover::before { opacity: 1; animation: shine 0.6s ease-out; }
+.p-cta:active { transform: translateY(0) !important; box-shadow: none !important; }
+
+.p-cta--lg { padding: 1.1rem 2.8rem; font-size: 11px; letter-spacing: 0.26em; }
+.p-cta--lg:hover { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(139,10,42,0.45); }
+
+/* Pulse ring on final CTA */
+.p-cta--pulse { background: var(--wine); border-color: var(--wine); color: #F2EDE8; }
+.p-cta--pulse:hover { background: var(--wine-2) !important; border-color: var(--wine-2) !important; animation: pulse-ring 1.8s ease-out infinite; }
 
 .p-ham { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 8px; }
 .p-ham span { display: block; width: 22px; height: 1px; background: var(--tx-2); transition: background 0.2s; }
@@ -575,14 +667,31 @@ const CSS = `
 ══════════════════════════════════════════ */
 .p-hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; padding: 130px 0 100px; }
 
+/* Animated orbs */
+.p-hero-orb { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(120px); }
+.p-hero-orb--1 {
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(139,10,42,0.13) 0%, transparent 70%);
+  top: -150px; right: -150px; animation: orb1 14s ease-in-out infinite;
+}
+.p-hero-orb--2 {
+  width: 450px; height: 450px;
+  background: radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%);
+  bottom: 5%; left: 5%; animation: orb2 11s ease-in-out infinite;
+}
+.p-hero-orb--3 {
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(139,10,42,0.07) 0%, transparent 70%);
+  top: 35%; left: -80px; animation: orb3 9s ease-in-out infinite 1.5s;
+}
+
 /* Watermark */
 .p-wm {
   position: absolute; top: 50%; right: -0.08em; transform: translateY(-50%);
   font-family: var(--font-cormorant), Georgia, serif;
   font-size: clamp(220px, 40vw, 600px); font-weight: 700; font-style: italic;
   color: transparent; -webkit-text-stroke: 1px rgba(201,168,76,0.07);
-  line-height: 1; pointer-events: none; user-select: none;
-  letter-spacing: -0.05em;
+  line-height: 1; pointer-events: none; user-select: none; letter-spacing: -0.05em;
 }
 
 /* Left spine — vertical text */
@@ -590,13 +699,11 @@ const CSS = `
   position: absolute; left: 0; top: 0; bottom: 0;
   width: clamp(1.5rem, 4vw, 4rem);
   display: flex; align-items: center; justify-content: center;
-  border-right: 1px solid var(--bd);
-  pointer-events: none;
+  border-right: 1px solid var(--bd); pointer-events: none;
 }
 .p-spine span {
   font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase; font-weight: 600;
-  color: var(--tx-3); writing-mode: vertical-lr; transform: rotate(180deg);
-  white-space: nowrap;
+  color: var(--tx-3); writing-mode: vertical-lr; transform: rotate(180deg); white-space: nowrap;
 }
 
 /* Horizontal rule — gold, draws in */
@@ -608,18 +715,14 @@ const CSS = `
 }
 @keyframes hrule-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
-.p-hero-inner { padding-left: clamp(1.5rem, 4vw, 4rem); }
-
+.p-hero-inner { padding-left: clamp(1.5rem, 4vw, 4rem); position: relative; z-index: 1; }
 .p-hero-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
 
 .p-lbl {
   font-size: 9.5px; letter-spacing: 0.3em; text-transform: uppercase; font-weight: 600;
   color: var(--tx-3); display: flex; align-items: center; gap: 1rem;
 }
-.p-lbl::before, .p-lbl::after {
-  content: ''; height: 1px; background: var(--bd-2); flex-shrink: 0;
-  width: 20px;
-}
+.p-lbl::before, .p-lbl::after { content: ''; height: 1px; background: var(--bd-2); flex-shrink: 0; width: 20px; }
 
 /* Rotating badge */
 .p-hero-badge-wrap { flex-shrink: 0; }
@@ -637,15 +740,12 @@ const CSS = `
 .p-h1 {
   font-family: var(--font-cormorant), Georgia, serif;
   font-size: clamp(72px, 11.5vw, 168px);
-  font-weight: 600; line-height: 0.92; letter-spacing: -0.03em;
-  color: var(--tx); margin-bottom: 0;
+  font-weight: 600; line-height: 0.92; letter-spacing: -0.03em; color: var(--tx); margin-bottom: 0;
 }
 .p-h1 em { font-style: italic; color: var(--wine); display: block; }
 
 .p-hero-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: end; margin-top: 3.5rem; padding-top: 2.5rem; border-top: 1px solid var(--bd); }
-
 .p-sub { font-size: 0.9rem; line-height: 1.85; font-weight: 300; color: var(--tx-2); max-width: 340px; }
-
 .p-hcta { display: flex; align-items: center; gap: 2.5rem; flex-wrap: wrap; justify-content: flex-end; }
 
 .p-ghost-link { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 600; color: var(--tx-3); display: flex; align-items: center; gap: 0.8rem; transition: color 0.25s; min-height: 44px; }
@@ -719,10 +819,7 @@ const CSS = `
 /* ══════════════════════════════════════════
    INVERTED SECTION — wine background
 ══════════════════════════════════════════ */
-.p-invert {
-  background: var(--wine); padding: 100px 0;
-  position: relative; overflow: hidden;
-}
+.p-invert { background: var(--wine); padding: 100px 0; position: relative; overflow: hidden; }
 .p-invert::before {
   content: ''; position: absolute; top: 50%; right: -100px; transform: translateY(-50%);
   width: 500px; height: 500px;
@@ -752,14 +849,21 @@ const CSS = `
 .p-step-d { font-size: 0.85rem; line-height: 1.72; color: var(--tx-2); font-weight: 300; }
 
 /* ══════════════════════════════════════════
-   PRICING
+   PRICING — enhanced interactions
 ══════════════════════════════════════════ */
-.p-pricing-sec { }
 .p-pg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--bd); border: 1px solid var(--bd); }
-.p-pc { padding: 3.5rem; background: var(--bg); position: relative; transition: background 0.25s; display: flex; flex-direction: column; }
-.p-pc:hover { background: rgba(201,168,76,0.025); }
+.p-pc { padding: 3.5rem; background: var(--bg); position: relative; transition: background 0.25s, transform 0.25s, box-shadow 0.25s; display: flex; flex-direction: column; overflow: hidden; }
+.p-pc:hover { background: rgba(201,168,76,0.02); transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.2); z-index: 1; }
 .p-pc--hot { background: var(--wine); }
-.p-pc--hot:hover { background: var(--wine-2) !important; }
+.p-pc--hot:hover { background: var(--wine) !important; transform: translateY(-6px); box-shadow: 0 24px 70px rgba(139,10,42,0.5) !important; }
+/* shimmer on featured card */
+.p-pc--hot::after {
+  content: ''; position: absolute; top: 0; left: -80%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(242,237,232,0.05), transparent);
+  transform: skewX(-15deg);
+  animation: shine 3.5s ease-in-out infinite 0.5s;
+  pointer-events: none;
+}
 .p-pc-hot-badge { position: absolute; top: -1px; left: 3.5rem; font-size: 8px; letter-spacing: 0.32em; text-transform: uppercase; font-weight: 700; color: var(--wine); background: #F2EDE8; padding: 4px 14px; }
 .p-pc-n { font-size: 9px; letter-spacing: 0.32em; text-transform: uppercase; font-weight: 700; color: var(--tx-3); margin-bottom: 1.75rem; }
 .p-pc--hot .p-pc-n { color: rgba(242,237,232,0.5); }
@@ -771,14 +875,33 @@ const CSS = `
 .p-pc-per { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--tx-3); margin-bottom: 2rem; }
 .p-pc--hot .p-pc-per { color: rgba(242,237,232,0.45); }
 .p-pc-f { list-style: none; margin-bottom: 2.5rem; flex: 1; }
-.p-pc-f li { display: flex; align-items: center; gap: 1rem; padding: 0.8rem 0; border-top: 1px solid var(--bd); font-size: 0.85rem; color: var(--tx-2); font-weight: 300; }
+.p-pc-f li { display: flex; align-items: center; gap: 1rem; padding: 0.8rem 0; border-top: 1px solid var(--bd); font-size: 0.85rem; color: var(--tx-2); font-weight: 300; transition: color 0.2s; }
+.p-pc-f li:hover { color: var(--tx); }
 .p-pc--hot .p-pc-f li { border-top-color: rgba(242,237,232,0.12); color: rgba(242,237,232,0.7); }
+.p-pc--hot .p-pc-f li:hover { color: #F2EDE8; }
 .p-pc-f li::before { content: ''; width: 16px; height: 1px; background: var(--bd-2); flex-shrink: 0; }
 .p-pc--hot .p-pc-f li::before { background: rgba(201,168,76,0.5); }
-.p-pc-btn { display: block; width: 100%; padding: 1rem; font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 700; text-align: center; border: 1px solid var(--bd-2); color: var(--tx-2); background: transparent; transition: all 0.25s; min-height: 44px; }
-.p-pc-btn:hover { background: rgba(255,255,255,0.04); color: var(--tx); border-color: var(--tx-3); }
-.p-pc-btn--inv { border-color: rgba(242,237,232,0.3); color: #F2EDE8; }
-.p-pc-btn--inv:hover { background: #F2EDE8; color: var(--wine); border-color: #F2EDE8; }
+
+/* Purchase buttons — dramatic hover */
+.p-pc-btn {
+  display: block; width: 100%; padding: 1rem 1.5rem;
+  font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 700;
+  text-align: center; border: 1px solid var(--bd-2); color: var(--tx-2);
+  background: transparent; position: relative; overflow: hidden;
+  transition: background 0.25s, color 0.25s, border-color 0.25s, transform 0.15s, box-shadow 0.25s;
+  min-height: 52px; cursor: pointer;
+}
+.p-pc-btn::before {
+  content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  transform: skewX(-20deg); opacity: 0;
+}
+.p-pc-btn:hover { background: var(--wine); color: #F2EDE8; border-color: var(--wine); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(139,10,42,0.4); }
+.p-pc-btn:hover::before { opacity: 1; animation: shine 0.55s ease-out; }
+.p-pc-btn:active { transform: translateY(0); box-shadow: none; }
+
+.p-pc-btn--inv { border-color: rgba(242,237,232,0.4); color: #F2EDE8; background: rgba(242,237,232,0.06); }
+.p-pc-btn--inv:hover { background: #F2EDE8 !important; color: var(--wine) !important; border-color: #F2EDE8 !important; box-shadow: 0 10px 30px rgba(242,237,232,0.25) !important; }
 
 /* ══════════════════════════════════════════
    TESTIMONIALS — assimétrico
@@ -816,7 +939,13 @@ const CSS = `
    CTA FINAL
 ══════════════════════════════════════════ */
 .p-cta-sec { padding: 140px 0; border-top: 1px solid var(--bd); position: relative; overflow: hidden; }
-.p-cta-bg { position: absolute; top: 50%; left: 20%; transform: translateY(-50%); width: 800px; height: 400px; background: radial-gradient(ellipse, rgba(139,10,42,0.08) 0%, transparent 65%); pointer-events: none; }
+.p-cta-bg { position: absolute; top: 50%; left: 20%; transform: translateY(-50%); width: 800px; height: 400px; background: radial-gradient(ellipse, rgba(139,10,42,0.1) 0%, transparent 65%); pointer-events: none; }
+.p-cta-orb {
+  position: absolute; border-radius: 50%; pointer-events: none; filter: blur(100px);
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+  bottom: -50px; right: 10%; animation: orb2 12s ease-in-out infinite;
+}
 .p-cta-h { font-size: clamp(3.5rem, 8.5vw, 11rem) !important; max-width: none; line-height: 0.94 !important; margin-top: 1.2rem; }
 
 /* ══════════════════════════════════════════
@@ -826,7 +955,11 @@ const CSS = `
 .p-ft-line { height: 1px; background: linear-gradient(to right, var(--wine), var(--gold), var(--wine)); opacity: 0.5; }
 .p-ft .p-w { padding-top: 2rem; }
 .p-fi { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
-.p-flogo { font-family: var(--font-cormorant), Georgia, serif; font-size: 1.3rem; font-weight: 600; font-style: italic; }
+.p-flogo {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: 1.3rem; font-weight: 600; font-style: italic;
+  display: inline-flex; align-items: center;
+}
 .p-flogo em { color: var(--gold); font-style: normal; }
 .p-fcopy { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tx-3); }
 .p-flinks { display: flex; gap: 2rem; }
