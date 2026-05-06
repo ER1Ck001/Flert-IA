@@ -1,16 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Playfair_Display } from "next/font/google";
 
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-  display: "swap",
-});
-
-/* ── data ─────────────────────────────────── */
 const features = [
   { n: "I",   title: "Respostas Inteligentes",  desc: "Nossa IA entende contexto, tom e intenção para gerar respostas que soam completamente naturais." },
   { n: "II",  title: "Velocidade Real",          desc: "Sugestões em menos de 3 segundos. Nunca mais perca o ritmo de uma conversa." },
@@ -21,89 +13,71 @@ const features = [
 ];
 
 const steps = [
-  { title: "Faça Upload",      desc: "Envie um print da conversa que você quer responder. Qualquer app funciona." },
-  { title: "Escolha o Tom",    desc: "Flertando, engraçado, sério ou casual. Você define o clima da resposta." },
-  { title: "Use a Sugestão",   desc: "3 opções geradas pela IA. Copie, adapte ou envie direto. É isso." },
+  { title: "Faça Upload",    desc: "Envie um print da conversa que você quer responder. Qualquer app funciona." },
+  { title: "Escolha o Tom",  desc: "Flertando, engraçado, sério ou casual. Você define o clima da resposta." },
+  { title: "Use a Sugestão", desc: "3 opções geradas pela IA. Copie, adapte ou envie direto. É isso." },
 ];
 
 const testimonials = [
-  { text: "O Flert IA mudou completamente minhas conversas no Tinder. Consegui matches incríveis que nunca teriam acontecido.",  author: "Pedro H.",  role: "Usuário Premium" },
-  { text: "As respostas são tão naturais que ninguém acredita que é IA. Parece que eu mesmo escrevi, mas melhor.",               author: "Lucas M.",  role: "Usuário Vitalício" },
-  { text: "Melhor investimento que fiz esse ano. O plano vitalício se pagou em menos de uma semana de uso.",                     author: "Rafael S.", role: "Usuário Premium" },
+  { text: "O Flert IA mudou completamente minhas conversas no Tinder. Consegui matches incríveis que nunca teriam acontecido.", author: "Pedro H.",  role: "Usuário Premium" },
+  { text: "As respostas são tão naturais que ninguém acredita que é IA. Parece que eu mesmo escrevi, mas melhor.",             author: "Lucas M.",  role: "Usuário Vitalício" },
+  { text: "Melhor investimento que fiz esse ano. O plano vitalício se pagou em menos de uma semana de uso.",                   author: "Rafael S.", role: "Usuário Premium" },
 ];
 
 const faqs = [
-  { q: "Funciona com qualquer plataforma de mensagens?",  a: "Sim. Tinder, Bumble, Hinge, Instagram, WhatsApp, Telegram — se você consegue tirar um print, a IA consegue analisar e gerar sugestões." },
+  { q: "Funciona com qualquer plataforma de mensagens?",  a: "Sim. Tinder, Bumble, Hinge, Instagram, WhatsApp, Telegram — se você consegue tirar um print, a IA consegue analisar." },
   { q: "Minhas conversas ficam salvas em algum lugar?",   a: "Não. As imagens são processadas em tempo real e descartadas imediatamente. Sua privacidade é inegociável para nós." },
-  { q: "As respostas soam naturais?",                     a: "Absolutamente. A IA foi treinada com conversas reais e entende gírias, contexto e nuances. Ninguém vai perceber que é IA." },
-  { q: "Posso cancelar o plano quando quiser?",           a: "Sim, sem burocracia. O Premium pode ser cancelado a qualquer momento. O Vitalício é pagamento único — sem mensalidades para sempre." },
+  { q: "As respostas soam naturais?",                     a: "Absolutamente. A IA foi treinada com conversas reais e entende gírias, contexto e nuances." },
+  { q: "Posso cancelar o plano quando quiser?",           a: "Sim, sem burocracia. O Premium pode ser cancelado a qualquer momento. O Vitalício é pagamento único." },
   { q: "Qual a diferença entre Premium e Vitalício?",     a: "Premium é assinatura mensal. Vitalício é pagamento único que garante acesso eterno, incluindo todas as atualizações futuras." },
 ];
 
 const platforms = ["Tinder", "Bumble", "Hinge", "Instagram", "WhatsApp", "Telegram"];
+const marqueeText = "FLERT IA · RESPOSTAS INTELIGENTES · CONEXÕES REAIS · IA DE ÚLTIMA GERAÇÃO · FLERTAR COM INTELIGÊNCIA · SUAS CONVERSAS REDEFINIDAS · ";
 
-/* ── component ────────────────────────────── */
 export default function HomePage() {
-  useEffect(() => {
-    /* progress + navbar */
-    const bar = document.getElementById("fl-prog");
-    const nav = document.getElementById("fl-nav");
-    const onScroll = () => {
-      const pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
-      if (bar) bar.style.width = pct + "%";
-      nav?.classList.toggle("nav-on", window.scrollY > 60);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [scrolled, setScrolled] = useState(false);
 
-    /* emoji burst on CTA buttons */
-    const emos = ["❤️","😍","💕","💖","🥰","💘","😘","✨"];
-    const burst = (e: MouseEvent) => {
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      for (let i = 0; i < 8; i++) {
-        const el = document.createElement("span");
-        el.textContent = emos[Math.floor(Math.random() * emos.length)];
-        const angle = (i / 8) * Math.PI * 2;
-        const dist = 55 + Math.random() * 55;
-        const tx = Math.cos(angle) * dist;
-        const ty = Math.sin(angle) * dist - 20;
-        el.style.cssText = `
-          position:fixed;pointer-events:none;z-index:9999;
-          font-size:${16 + Math.random() * 10}px;
-          left:${cx}px;top:${cy}px;
-          --tx:${tx}px;--ty:${ty}px;
-          animation:emoji-fly .85s ease-out forwards;
-        `;
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 900);
-      }
-    };
-    document.querySelectorAll<HTMLElement>(".emoji-btn").forEach(btn => {
-      btn.addEventListener("mouseenter", burst as EventListener);
-      btn.addEventListener("click", burst as EventListener);
-    });
+  useEffect(() => {
+    const saved = localStorage.getItem("flert-theme");
+    const preferred = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    setTheme(preferred as "dark" | "light");
+    document.documentElement.setAttribute("data-theme", preferred);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("flert-theme", next);
+  };
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", onScroll, { passive: true });
 
     /* scroll reveal */
     const ro = new IntersectionObserver(
-      entries => entries.forEach(e => {
+      (entries) => entries.forEach((e) => {
         if (e.isIntersecting) {
           const el = e.target as HTMLElement;
           el.style.transitionDelay = el.dataset.d ?? "0ms";
-          el.classList.add("fl-in");
+          el.classList.add("fl-visible");
           ro.unobserve(el);
         }
       }),
       { threshold: 0.08, rootMargin: "0px 0px -40px 0px" }
     );
-    document.querySelectorAll(".fl-r").forEach(el => ro.observe(el));
+    document.querySelectorAll(".fl-reveal").forEach((el) => ro.observe(el));
 
     /* counters */
     const co = new IntersectionObserver(
-      entries => entries.forEach(e => {
+      (entries) => entries.forEach((e) => {
         if (!e.isIntersecting) return;
         const el = e.target as HTMLElement;
-        const target = +el.dataset.n!;
+        const target = +(el.dataset.n!);
         const suf = el.dataset.s ?? "";
         const t0 = performance.now(), dur = 1600;
         const run = (now: number) => {
@@ -116,147 +90,140 @@ export default function HomePage() {
       }),
       { threshold: 0.5 }
     );
-    document.querySelectorAll("[data-n]").forEach(el => co.observe(el));
+    document.querySelectorAll("[data-n]").forEach((el) => co.observe(el));
 
-    /* faq */
-    document.querySelectorAll(".fl-qi").forEach(item => {
-      item.querySelector(".fl-qt")?.addEventListener("click", () => {
-        const open = item.classList.contains("fl-qo");
-        document.querySelectorAll(".fl-qi").forEach(i => {
-          i.classList.remove("fl-qo");
-          (i.querySelector(".fl-qc") as HTMLElement).style.maxHeight = "0";
-        });
-        if (!open) {
-          item.classList.add("fl-qo");
-          const c = item.querySelector(".fl-qc") as HTMLElement;
-          c.style.maxHeight = c.scrollHeight + "px";
-        }
-      });
-    });
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      ro.disconnect();
-      co.disconnect();
-    };
+    return () => { window.removeEventListener("scroll", onScroll); ro.disconnect(); co.disconnect(); };
   }, []);
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <div className={`fl ${playfair.variable}`}>
-
-        {/* Grain */}
-        <div id="fl-grain" className="fl-grain" />
-
-        {/* Progress */}
-        <div id="fl-prog" className="fl-prog" />
+      <div className="pg">
 
         {/* ── NAVBAR ── */}
-        <nav id="fl-nav" className="fl-nav">
-          <div className="fl-nw">
-            <Link href="/" className="fl-logo">
-              <span className="fl-heart">❤</span>Flert<span className="fl-dot-logo">.</span>IA
+        <nav className={`pg-nav${scrolled ? " pg-nav--on" : ""}`}>
+          <div className="pg-nw">
+            <Link href="/" className="pg-logo">
+              Flert<em>.</em>IA
             </Link>
-            <div className="fl-nl">
+            <div className="pg-nl">
               <a href="#features">Funcionalidades</a>
               <a href="#como-funciona">Como Funciona</a>
               <a href="#precos">Preços</a>
               <a href="#faq">FAQ</a>
             </div>
-            <div className="fl-nc">
-              <Link href="/auth/login" className="fl-ghost">Entrar</Link>
-              <Link href="/auth/register" className="fl-cta">Começar</Link>
+            <div className="pg-nc">
+              <button className="pg-theme-btn" onClick={toggleTheme} aria-label="Alternar tema">
+                {theme === "dark" ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                  </svg>
+                )}
+              </button>
+              <Link href="/auth/login" className="pg-ghost">Entrar</Link>
+              <Link href="/auth/register" className="pg-cta">Começar</Link>
             </div>
           </div>
         </nav>
 
         <main>
           {/* ── HERO ── */}
-          <section className="fl-hero">
-            {/* watermark */}
-            <div className="fl-wm" aria-hidden>FLERT IA</div>
+          <section className="pg-hero">
+            <div className="pg-wm" aria-hidden>F</div>
 
-            <div className="fl-w fl-hero-body">
-              <p className="fl-lbl hero-lbl">— Inteligência Artificial para Conversas —</p>
+            {/* Decorative lines */}
+            <div className="pg-dline pg-dline--1" aria-hidden />
+            <div className="pg-dline pg-dline--2" aria-hidden />
 
-              <h1 className="fl-h1 hero-h1">
+            {/* Rotating badge */}
+            <div className="pg-badge-rot" aria-hidden>
+              <svg viewBox="0 0 120 120" className="pg-badge-svg">
+                <path id="circlePath" d="M 60,60 m -44,0 a 44,44 0 1,1 88,0 a 44,44 0 1,1 -88,0" fill="none"/>
+                <text fontSize="9.5" letterSpacing="4" fill="currentColor" fontFamily="'Cabinet Grotesk'" fontWeight="600" textTransform="uppercase">
+                  <textPath href="#circlePath">FLERT IA · INTELIGÊNCIA ARTIFICIAL · </textPath>
+                </text>
+              </svg>
+            </div>
+
+            <div className="pg-w pg-hero-body">
+              <p className="pg-lbl hero-lbl">— Inteligência Artificial para Conversas —</p>
+
+              <h1 className="pg-h1 hero-h1">
                 A forma mais<br />
                 <em>inteligente</em><br />
                 de se conectar.
               </h1>
 
-              <p className="fl-sub hero-sub">
+              <p className="pg-sub hero-sub">
                 O Flert IA analisa suas conversas e gera respostas que soam
                 como você — mas na melhor versão de você.
               </p>
 
-              <div className="fl-hcta hero-cta">
-                <Link href="/auth/register" className="fl-cta fl-cta--lg emoji-btn">Começar agora</Link>
-                <a href="#como-funciona" className="fl-ghost-link">
+              <div className="pg-hcta hero-cta">
+                <Link href="/auth/register" className="pg-cta pg-cta--lg">Começar agora</Link>
+                <a href="#como-funciona" className="pg-ghost-link">
                   <span className="gl-line" />
                   Ver como funciona
                 </a>
               </div>
 
-              {/* Stats */}
-              <div className="fl-stats hero-stats">
+              <div className="pg-stats hero-stats">
                 {[
                   { n: 10, s: "K+", l: "Usuários ativos" },
                   { n: 1,  s: "M+", l: "Mensagens geradas" },
                   { n: 95, s: "%",  l: "Taxa de sucesso" },
                 ].map((st, i) => (
-                  <div key={i} className="fl-stat">
-                    <span className="fl-sn" data-n={st.n} data-s={st.s}>0</span>
-                    <span className="fl-sl">{st.l}</span>
+                  <div key={i} className="pg-stat">
+                    <span className="pg-sn" data-n={st.n} data-s={st.s}>0</span>
+                    <span className="pg-sl">{st.l}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Scroll indicator */}
-            <div className="fl-scroll-ind" aria-hidden>
+            <div className="pg-scroll-ind" aria-hidden>
               <span className="si-line" />
               <span className="si-txt">scroll</span>
             </div>
           </section>
 
           {/* ── MARQUEE ── */}
-          <div className="fl-mq">
-            <div className="fl-mt">
-              {[0, 1].map(i => (
-                <span key={i} aria-hidden={i > 0}>
-                  FLERT IA &nbsp;·&nbsp; RESPOSTAS INTELIGENTES &nbsp;·&nbsp; CONEXÕES REAIS &nbsp;·&nbsp; IA DE ÚLTIMA GERAÇÃO &nbsp;·&nbsp; FLERTAR COM INTELIGÊNCIA &nbsp;·&nbsp; SUAS CONVERSAS REDEFINIDAS &nbsp;·&nbsp;
-                </span>
-              ))}
+          <div className="pg-mq">
+            <div className="pg-mt">
+              <span>{marqueeText}</span>
+              <span aria-hidden>{marqueeText}</span>
             </div>
           </div>
 
           {/* ── PLATFORMS ── */}
-          <div className="fl-plats fl-r">
-            <span className="fl-plats-lbl">Funciona com</span>
-            <div className="fl-plat-list">
-              {platforms.map((p, i) => (
-                <span key={i}>{p}</span>
-              ))}
+          <div className="pg-plats fl-reveal">
+            <span className="pg-plats-lbl">Funciona com</span>
+            <div className="pg-plat-list">
+              {platforms.map((p, i) => <span key={i}>{p}</span>)}
             </div>
           </div>
 
           {/* ── FEATURES ── */}
-          <section id="features" className="fl-sec">
-            <div className="fl-w">
-              <div className="fl-sh fl-r">
-                <p className="fl-lbl">— Funcionalidades —</p>
+          <section id="features" className="pg-sec">
+            <div className="pg-w">
+              <div className="pg-sh fl-reveal">
+                <p className="pg-lbl">— Funcionalidades —</p>
                 <h2>Por que escolher<br /><em>o Flert IA?</em></h2>
               </div>
-
-              <div className="fl-flist">
+              <div className="pg-flist">
                 {features.map((f, i) => (
-                  <div key={i} className="fl-frow fl-r" data-d={`${i * 50}ms`}>
-                    <span className="fl-fnum">{f.n}</span>
-                    <h3 className="fl-ftit">{f.title}</h3>
-                    <p className="fl-fdesc">{f.desc}</p>
-                    <span className="fl-farr">↗</span>
+                  <div key={i} className="pg-frow fl-reveal" data-d={`${i * 55}ms`}>
+                    <span className="pg-fnum">{f.n}</span>
+                    <h3 className="pg-ftit">{f.title}</h3>
+                    <p className="pg-fdesc">{f.desc}</p>
+                    <span className="pg-farr">↗</span>
                   </div>
                 ))}
               </div>
@@ -264,9 +231,9 @@ export default function HomePage() {
           </section>
 
           {/* ── PULL QUOTE ── */}
-          <section className="fl-pull fl-r">
-            <div className="fl-w">
-              <blockquote className="fl-bq fl-r">
+          <section className="pg-pull">
+            <div className="pg-w">
+              <blockquote className="pg-bq fl-reveal">
                 <span className="bq-q">&ldquo;</span>
                 <p>A IA que sabe<br /><em>o que você quer dizer.</em></p>
               </blockquote>
@@ -274,25 +241,25 @@ export default function HomePage() {
           </section>
 
           {/* ── HOW IT WORKS ── */}
-          <section id="como-funciona" className="fl-sec">
-            <div className="fl-w">
-              <div className="fl-hw">
-                <div className="fl-hw-left">
-                  <p className="fl-lbl fl-r">— Como Funciona —</p>
-                  <h2 className="fl-ht fl-r" data-d="70ms">
+          <section id="como-funciona" className="pg-sec">
+            <div className="pg-w">
+              <div className="pg-hw">
+                <div className="pg-hw-left">
+                  <p className="pg-lbl fl-reveal">— Como Funciona —</p>
+                  <h2 className="pg-ht fl-reveal" data-d="70ms">
                     Três<br />passos<br /><em>simples.</em>
                   </h2>
-                  <p className="fl-hw-sub fl-r" data-d="140ms">
+                  <p className="pg-hw-sub fl-reveal" data-d="140ms">
                     Do upload ao resultado<br />em menos de 3 segundos.
                   </p>
                 </div>
-                <div className="fl-step-list">
+                <div className="pg-step-list">
                   {steps.map((s, i) => (
-                    <div key={i} className="fl-step fl-r" data-d={`${i * 90}ms`}>
-                      <span className="fl-stepn">0{i + 1}</span>
+                    <div key={i} className="pg-step fl-reveal" data-d={`${i * 90}ms`}>
+                      <span className="pg-stepn">0{i + 1}</span>
                       <div>
-                        <h3 className="fl-stept">{s.title}</h3>
-                        <p className="fl-stepd">{s.desc}</p>
+                        <h3 className="pg-stept">{s.title}</h3>
+                        <p className="pg-stepd">{s.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -302,69 +269,63 @@ export default function HomePage() {
           </section>
 
           {/* ── PRICING ── */}
-          <section id="precos" className="fl-sec">
-            <div className="fl-w">
-              <div className="fl-sh fl-r">
-                <p className="fl-lbl">— Planos —</p>
+          <section id="precos" className="pg-sec">
+            <div className="pg-w">
+              <div className="pg-sh fl-reveal">
+                <p className="pg-lbl">— Planos —</p>
                 <h2>Preços <em>simples</em><br />e transparentes.</h2>
               </div>
-              <div className="fl-pg fl-r" data-d="80ms">
-                <div className="fl-pc">
-                  <p className="fl-pname">Mensal</p>
-                  <div className="fl-pamt">R$ 29,90</div>
-                  <p className="fl-pper">por mês</p>
-                  <p className="fl-pdesc">Para começar</p>
-                  <ul className="fl-pf">
-                    {["Análises ilimitadas","Respostas avançadas com IA","Análise de perfil","Suporte prioritário","Uploads ilimitados"].map(f => (
-                      <li key={f}>{f}</li>
-                    ))}
+              <div className="pg-pg fl-reveal" data-d="80ms">
+                <div className="pg-pc">
+                  <p className="pg-pname">Mensal</p>
+                  <div className="pg-pamt">R$ 29,90</div>
+                  <p className="pg-pper">por mês</p>
+                  <p className="pg-pdesc">Para começar</p>
+                  <ul className="pg-pf">
+                    {["Análises ilimitadas","Respostas avançadas com IA","Análise de perfil","Suporte prioritário","Uploads ilimitados"].map(f => <li key={f}>{f}</li>)}
                   </ul>
-                  <Link href="/auth/register?plan=monthly" className="fl-pbtn emoji-btn">Assinar Mensal</Link>
+                  <Link href="/auth/register?plan=monthly" className="pg-pbtn">Assinar Mensal</Link>
                 </div>
-                <div className="fl-pc fl-pc--f">
-                  <span className="fl-badge">Mais Popular</span>
-                  <p className="fl-pname">Anual</p>
-                  <div className="fl-pamt">R$ 147</div>
-                  <p className="fl-pper">por ano</p>
-                  <p className="fl-pdesc">Economia de R$ 211/ano</p>
-                  <ul className="fl-pf">
-                    {["Tudo do plano Mensal","2 meses grátis","Análise de perfil completa","Alertas de padrões","Suporte prioritário"].map(f => (
-                      <li key={f}>{f}</li>
-                    ))}
+                <div className="pg-pc pg-pc--f">
+                  <span className="pg-badge">Mais Popular</span>
+                  <p className="pg-pname">Anual</p>
+                  <div className="pg-pamt">R$ 147</div>
+                  <p className="pg-pper">por ano</p>
+                  <p className="pg-pdesc">Economia de R$ 211/ano</p>
+                  <ul className="pg-pf">
+                    {["Tudo do plano Mensal","2 meses grátis","Análise de perfil completa","Alertas de padrões","Suporte prioritário"].map(f => <li key={f}>{f}</li>)}
                   </ul>
-                  <Link href="/auth/register?plan=annual" className="fl-pbtn fl-pbtn--p emoji-btn">Assinar Anual</Link>
+                  <Link href="/auth/register?plan=annual" className="pg-pbtn pg-pbtn--p">Assinar Anual</Link>
                 </div>
-                <div className="fl-pc">
-                  <p className="fl-pname">Vitalício</p>
-                  <div className="fl-pamt">R$ 297</div>
-                  <p className="fl-pper">pagamento único</p>
-                  <p className="fl-pdesc">Acesso para sempre</p>
-                  <ul className="fl-pf">
-                    {["Tudo do plano Anual","Acesso vitalício","Updates futuros inclusos","Suporte VIP","Acesso antecipado a novidades"].map(f => (
-                      <li key={f}>{f}</li>
-                    ))}
+                <div className="pg-pc">
+                  <p className="pg-pname">Vitalício</p>
+                  <div className="pg-pamt">R$ 297</div>
+                  <p className="pg-pper">pagamento único</p>
+                  <p className="pg-pdesc">Acesso para sempre</p>
+                  <ul className="pg-pf">
+                    {["Tudo do plano Anual","Acesso vitalício","Updates futuros inclusos","Suporte VIP","Acesso antecipado a novidades"].map(f => <li key={f}>{f}</li>)}
                   </ul>
-                  <Link href="/auth/register?plan=lifetime" className="fl-pbtn emoji-btn">Comprar Vitalício</Link>
+                  <Link href="/auth/register?plan=lifetime" className="pg-pbtn">Comprar Vitalício</Link>
                 </div>
               </div>
             </div>
           </section>
 
           {/* ── TESTIMONIALS ── */}
-          <section className="fl-sec">
-            <div className="fl-w">
-              <div className="fl-sh fl-r">
-                <p className="fl-lbl">— Depoimentos —</p>
+          <section className="pg-sec">
+            <div className="pg-w">
+              <div className="pg-sh fl-reveal">
+                <p className="pg-lbl">— Depoimentos —</p>
                 <h2>O que nossos<br /><em>usuários</em> dizem.</h2>
               </div>
-              <div className="fl-tg">
+              <div className="pg-tg">
                 {testimonials.map((t, i) => (
-                  <div key={i} className="fl-tm fl-r" data-d={`${i * 80}ms`}>
-                    <div className="fl-tqmark">&ldquo;</div>
-                    <p className="fl-txt">{t.text}</p>
-                    <div className="fl-tauth">
-                      <span className="fl-ta">{t.author}</span>
-                      <span className="fl-tr">{t.role}</span>
+                  <div key={i} className="pg-tm fl-reveal" data-d={`${i * 80}ms`}>
+                    <div className="pg-tqmark">&ldquo;</div>
+                    <p className="pg-ttxt">{t.text}</p>
+                    <div className="pg-tauth">
+                      <span className="pg-ta">{t.author}</span>
+                      <span className="pg-tr">{t.role}</span>
                     </div>
                   </div>
                 ))}
@@ -373,22 +334,22 @@ export default function HomePage() {
           </section>
 
           {/* ── FAQ ── */}
-          <section id="faq" className="fl-sec">
-            <div className="fl-w">
-              <div className="fl-ql">
+          <section id="faq" className="pg-sec">
+            <div className="pg-w">
+              <div className="pg-ql">
                 <div>
-                  <p className="fl-lbl fl-r">— FAQ —</p>
-                  <h2 className="fl-r" data-d="60ms">Perguntas<br /><em>frequentes.</em></h2>
+                  <p className="pg-lbl fl-reveal">— FAQ —</p>
+                  <h2 className="fl-reveal" data-d="60ms">Perguntas<br /><em>frequentes.</em></h2>
                 </div>
                 <div>
                   {faqs.map((faq, i) => (
-                    <div key={i} className="fl-qi fl-r" data-d={`${i * 55}ms`}>
-                      <button className="fl-qt">
-                        <span className="fl-qq">{faq.q}</span>
-                        <span className="fl-qi-icon">+</span>
+                    <div key={i} className={`pg-qi fl-reveal${openFaq === i ? " pg-qo" : ""}`} data-d={`${i * 55}ms`}>
+                      <button className="pg-qt" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                        <span className="pg-qq">{faq.q}</span>
+                        <span className="pg-qi-icon">{openFaq === i ? "−" : "+"}</span>
                       </button>
-                      <div className="fl-qc">
-                        <p className="fl-qans">{faq.a}</p>
+                      <div className="pg-qc" style={{ maxHeight: openFaq === i ? "300px" : "0" }}>
+                        <p className="pg-qans">{faq.a}</p>
                       </div>
                     </div>
                   ))}
@@ -398,14 +359,14 @@ export default function HomePage() {
           </section>
 
           {/* ── CTA ── */}
-          <section className="fl-ctasec">
-            <div className="fl-w">
-              <p className="fl-lbl fl-r">— Pronto para começar? —</p>
-              <h2 className="fl-r" data-d="80ms">
+          <section className="pg-ctasec">
+            <div className="pg-w">
+              <p className="pg-lbl fl-reveal">— Pronto para começar? —</p>
+              <h2 className="fl-reveal" data-d="80ms">
                 Transforme suas<br /><em>conversas agora.</em>
               </h2>
-              <div className="fl-r" data-d="180ms">
-                <Link href="/auth/register" className="fl-cta fl-cta--lg" style={{ marginTop: "2.5rem", display: "inline-block" }}>
+              <div className="fl-reveal" data-d="180ms">
+                <Link href="/auth/register" className="pg-cta pg-cta--lg" style={{ marginTop: "2.5rem", display: "inline-block" }}>
                   Criar conta gratuita
                 </Link>
               </div>
@@ -414,12 +375,12 @@ export default function HomePage() {
         </main>
 
         {/* ── FOOTER ── */}
-        <footer className="fl-ft">
-          <div className="fl-w">
-            <div className="fl-fi">
-              <Link href="/" className="fl-flogo">Flert<span>.</span>IA</Link>
-              <p className="fl-fcopy">© 2026 Flert IA. Todos os direitos reservados.</p>
-              <div className="fl-flinks">
+        <footer className="pg-ft">
+          <div className="pg-w">
+            <div className="pg-fi">
+              <Link href="/" className="pg-flogo">Flert<em>.</em>IA</Link>
+              <p className="pg-fcopy">© 2026 Flert IA. Todos os direitos reservados.</p>
+              <div className="pg-flinks">
                 <a href="#">Termos</a>
                 <a href="#">Privacidade</a>
                 <a href="#">Contato</a>
@@ -427,318 +388,370 @@ export default function HomePage() {
             </div>
           </div>
         </footer>
+
       </div>
     </>
   );
 }
 
-/* ── CSS ──────────────────────────────────── */
 const CSS = `
-.fl *, .fl *::before, .fl *::after { box-sizing: border-box; margin: 0; padding: 0; }
-.fl { background: #080808; color: #f0ece4; min-height: 100vh; overflow-x: hidden; font-family: 'DM Sans', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
-.fl a { color: inherit; text-decoration: none; }
-
-/* grain */
-.fl-grain {
-  position: fixed; inset: 0; z-index: 9997; pointer-events: none;
-  opacity: .025; background-size: 256px 256px; background-repeat: repeat;
-}
-
-/* progress bar */
-.fl-prog {
-  position: fixed; top: 0; left: 0; height: 2px; width: 0; z-index: 9999;
-  background: #FF2D78; pointer-events: none;
-  transition: width .05s linear;
-  box-shadow: 0 0 12px rgba(255,45,120,.6);
-}
+.pg *, .pg *::before, .pg *::after { box-sizing: border-box; }
+.pg { background: var(--bg); color: var(--tx); min-height: 100vh; overflow-x: hidden; font-family: 'Cabinet Grotesk', sans-serif; }
+.pg a { color: inherit; text-decoration: none; }
 
 /* container */
-.fl-w { max-width: 1320px; margin: 0 auto; padding: 0 clamp(1.5rem, 5vw, 5rem); }
+.pg-w { max-width: 1320px; margin: 0 auto; padding: 0 clamp(1.5rem, 5vw, 5rem); }
 
-/* navbar */
-.fl-nav {
+/* ── NAVBAR ── */
+.pg-nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 200;
   padding: 0 clamp(1.5rem, 5vw, 5rem);
-  transition: background .35s, box-shadow .35s;
+  transition: background 0.35s, border-color 0.35s;
+  border-bottom: 1px solid transparent;
 }
-.nav-on { background: rgba(8,8,8,.92); backdrop-filter: blur(10px); box-shadow: 0 1px 0 rgba(255,255,255,.05); }
-.fl-nw { max-width: 1320px; margin: 0 auto; height: 72px; display: flex; align-items: center; justify-content: space-between; }
-.fl-logo { font-family: var(--font-playfair), serif; font-size: 1.55rem; font-weight: 700; letter-spacing: -.025em; display: flex; align-items: center; }
-.fl-nl { display: flex; gap: 2.5rem; }
-.fl-nl a {
-  font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 500;
-  color: rgba(240,236,228,.38); transition: color .2s; position: relative;
+.pg-nav--on {
+  background: rgba(8,6,10,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom-color: var(--bd);
 }
-.fl-nl a::after {
-  content: ''; position: absolute; bottom: -3px; left: 0; right: 0; height: 1px;
-  background: #FF2D78; transform: scaleX(0); transform-origin: left; transition: transform .3s cubic-bezier(.16,1,.3,1);
-}
-.fl-nl a:hover { color: #f0ece4; }
-.fl-nl a:hover::after { transform: scaleX(1); }
-.fl-nc { display: flex; align-items: center; gap: 1rem; }
-.fl-ghost { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 500; color: rgba(240,236,228,.38); padding: .5rem .9rem; transition: color .2s; }
-.fl-ghost:hover { color: #f0ece4; }
-.fl-cta {
-  font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; font-weight: 700;
-  color: #fff; background: #FF2D78; padding: .7rem 1.7rem;
-  transition: background .2s, transform .2s, box-shadow .2s;
-}
-.fl-cta:hover { background: #e01f66; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,45,120,.3); }
-.fl-cta--lg { padding: .85rem 2.2rem; font-size: .78rem; }
+[data-theme="light"] .pg-nav--on { background: rgba(245,240,232,0.92); }
 
-/* hero */
-.fl-hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 140px 0 100px; position: relative; overflow: hidden; }
-.fl-wm {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -54%);
-  font-family: var(--font-playfair), serif;
-  font-size: clamp(120px, 22vw, 340px); font-weight: 700; font-style: italic;
-  color: rgba(255,255,255,.018); letter-spacing: -.04em; white-space: nowrap;
-  pointer-events: none; user-select: none; z-index: 0;
-}
-.fl-hero::before {
-  content: ''; position: absolute; top: -200px; right: -300px;
-  width: 900px; height: 900px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,45,120,.055) 0%, transparent 65%);
-  pointer-events: none;
-}
-.fl-hero-body { position: relative; z-index: 1; }
+.pg-nw { max-width: 1320px; margin: 0 auto; height: 72px; display: flex; align-items: center; justify-content: space-between; }
 
-/* hero text */
-.fl-lbl {
-  font-size: 9.5px; letter-spacing: .38em; text-transform: uppercase; font-weight: 700;
-  color: rgba(255,45,120,.0); margin-bottom: 2rem;
-  display: flex; align-items: center; gap: .8rem;
-  transition: color .6s .4s, gap .6s .4s;
+.pg-logo {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: 1.5rem; font-weight: 600; font-style: italic;
+  letter-spacing: -0.02em; color: var(--tx);
 }
-.fl-lbl::before, .fl-lbl::after {
-  content: ''; height: 1px; background: rgba(255,45,120,.4); width: 0;
-  transition: width .8s cubic-bezier(.16,1,.3,1) .3s;
-  flex-shrink: 0;
+.pg-logo em { color: var(--gold); font-style: normal; }
+
+.pg-nl { display: flex; gap: 2.5rem; }
+.pg-nl a {
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600;
+  color: var(--tx-2); transition: color 0.2s; position: relative;
 }
-.fl-lbl::before { width: 0; }
-.fl-lbl::after  { width: 0; }
-.lbl-on { color: rgba(255,45,120,.65); }
-.lbl-on::before, .lbl-on::after { width: 24px; }
-
-.fl-h1 {
-  font-family: var(--font-playfair), serif;
-  font-size: clamp(60px, 8.8vw, 122px); font-weight: 700;
-  line-height: .98; letter-spacing: -.03em;
-  margin-bottom: 2rem; max-width: 860px;
+.pg-nl a::after {
+  content: ''; position: absolute; bottom: -4px; left: 0; right: 0; height: 1px;
+  background: var(--gold); transform: scaleX(0); transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
 }
-.fl-h1 em { font-style: italic; color: #FF2D78; }
-.ww { display: inline-block; overflow: hidden; vertical-align: bottom; }
-.wi { display: inline-block; transform: translateY(108%); transition: transform .85s cubic-bezier(.16,1,.3,1); }
-.wi.wv { transform: translateY(0); }
+.pg-nl a:hover { color: var(--tx); }
+.pg-nl a:hover::after { transform: scaleX(1); }
 
-.fl-sub { font-size: 1rem; line-height: 1.75; font-weight: 300; color: rgba(240,236,228,.42); max-width: 420px; margin-bottom: 2.5rem; }
+.pg-nc { display: flex; align-items: center; gap: 1rem; }
 
-.fl-hcta { display: flex; align-items: center; gap: 2.5rem; flex-wrap: wrap; margin-bottom: 5rem; }
-.fl-ghost-link {
-  font-size: .75rem; letter-spacing: .16em; text-transform: uppercase; font-weight: 500;
-  color: rgba(240,236,228,.32); display: flex; align-items: center; gap: .9rem; transition: color .25s;
+.pg-theme-btn {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--bd); background: transparent; color: var(--tx-2);
+  cursor: pointer; transition: color 0.2s, border-color 0.2s;
 }
-.fl-ghost-link:hover { color: rgba(240,236,228,.7); }
-.gl-line { width: 36px; height: 1px; background: currentColor; transition: width .3s; }
-.fl-ghost-link:hover .gl-line { width: 56px; }
+.pg-theme-btn:hover { color: var(--gold); border-color: var(--bd-2); }
 
-/* stats */
-.fl-stats { display: grid; grid-template-columns: repeat(3,1fr); border-top: 1px solid rgba(255,255,255,.07); border-left: 1px solid rgba(255,255,255,.07); }
-.fl-stat { padding: 2.5rem 2rem; border-right: 1px solid rgba(255,255,255,.07); border-bottom: 1px solid rgba(255,255,255,.07); }
-.fl-sn { display: block; font-family: var(--font-playfair), serif; font-size: clamp(2rem,3.5vw,4rem); font-weight: 700; color: #f0ece4; line-height: 1; margin-bottom: .5rem; }
-.fl-sl { font-size: .65rem; letter-spacing: .22em; text-transform: uppercase; color: rgba(240,236,228,.28); font-weight: 500; }
+.pg-ghost {
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600;
+  color: var(--tx-2); padding: 0.5rem 0.75rem; transition: color 0.2s;
+  min-height: 44px; display: flex; align-items: center;
+}
+.pg-ghost:hover { color: var(--tx); }
 
-/* scroll indicator */
-.fl-scroll-ind {
+.pg-cta {
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;
+  color: var(--tx); border: 1px solid var(--bd-2); padding: 0.65rem 1.5rem;
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+  min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
+}
+.pg-cta:hover { background: var(--wine); border-color: var(--wine); color: #fff; }
+.pg-cta--lg { padding: 0.9rem 2.4rem; font-size: 11px; }
+
+/* ── HERO ── */
+.pg-hero {
+  min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+  padding: 140px 0 100px; position: relative; overflow: hidden;
+}
+
+/* Watermark letter */
+.pg-wm {
+  position: absolute; top: 50%; left: -0.1em; transform: translateY(-52%);
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: clamp(200px, 36vw, 520px); font-weight: 700; font-style: italic;
+  color: transparent; -webkit-text-stroke: 1px rgba(201,168,76,0.06);
+  line-height: 1; pointer-events: none; user-select: none; z-index: 0;
+  letter-spacing: -0.05em;
+}
+
+/* Decorative diagonal lines */
+.pg-dline {
+  position: absolute; width: 1px; pointer-events: none; z-index: 0;
+  animation: line-grow 1.2s cubic-bezier(0.16,1,0.3,1) 0.8s both;
+  transform-origin: top;
+}
+.pg-dline--1 {
+  height: 240px; top: 15%; right: 22%;
+  background: linear-gradient(to bottom, transparent, var(--wine), transparent);
+  transform: rotate(18deg);
+}
+.pg-dline--2 {
+  height: 160px; top: 30%; right: 15%;
+  background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+  transform: rotate(-12deg);
+}
+
+/* Rotating badge */
+.pg-badge-rot {
+  position: absolute; top: 14%; right: 8%; width: 120px; height: 120px;
+  animation: spin-slow 18s linear infinite;
+  color: var(--tx-2); z-index: 1; pointer-events: none;
+}
+.pg-badge-svg { width: 100%; height: 100%; }
+
+@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes line-grow { from { transform: scaleY(0) rotate(var(--r,0deg)); opacity:0; } to { opacity:1; } }
+
+.pg-hero-body { position: relative; z-index: 1; }
+
+.pg-lbl {
+  font-size: 9.5px; letter-spacing: 0.32em; text-transform: uppercase; font-weight: 600;
+  color: var(--tx-3); margin-bottom: 2rem;
+  display: flex; align-items: center; gap: 1rem;
+}
+.pg-lbl::before, .pg-lbl::after {
+  content: ''; height: 1px; background: var(--bd-2); flex-shrink: 0;
+}
+.pg-lbl::before { width: 24px; }
+.pg-lbl::after  { width: 24px; }
+
+.pg-h1 {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: clamp(58px, 8.5vw, 118px); font-weight: 600;
+  line-height: 0.96; letter-spacing: -0.025em;
+  margin-bottom: 2.5rem; max-width: 880px; color: var(--tx);
+}
+.pg-h1 em { font-style: italic; color: var(--wine); }
+
+.pg-sub {
+  font-size: 0.95rem; line-height: 1.78; font-weight: 300;
+  color: var(--tx-2); max-width: 380px; margin-bottom: 2.5rem;
+}
+
+.pg-hcta { display: flex; align-items: center; gap: 2.5rem; flex-wrap: wrap; margin-bottom: 5rem; }
+.pg-ghost-link {
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600;
+  color: var(--tx-3); display: flex; align-items: center; gap: 1rem; transition: color 0.25s;
+  min-height: 44px;
+}
+.pg-ghost-link:hover { color: var(--tx-2); }
+.gl-line { width: 40px; height: 1px; background: currentColor; transition: width 0.3s; flex-shrink: 0; }
+.pg-ghost-link:hover .gl-line { width: 60px; }
+
+.pg-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--bd); border-left: 1px solid var(--bd);
+}
+.pg-stat {
+  padding: 2rem 2rem; border-right: 1px solid var(--bd); border-bottom: 1px solid var(--bd);
+}
+.pg-sn {
+  display: block;
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: clamp(2rem, 3.5vw, 3.8rem); font-weight: 600; color: var(--tx); line-height: 1;
+  margin-bottom: 0.4rem;
+}
+.pg-sl { font-size: 9px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--tx-3); font-weight: 600; }
+
+/* Scroll indicator */
+.pg-scroll-ind {
   position: absolute; bottom: 2.5rem; left: clamp(1.5rem, 5vw, 5rem);
-  display: flex; flex-direction: column; align-items: flex-start; gap: .6rem;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem;
   animation: bob 2.5s ease-in-out infinite;
 }
-.si-line { display: block; width: 1px; height: 56px; background: linear-gradient(to bottom, rgba(255,45,120,.5), transparent); }
-.si-txt { font-size: .6rem; letter-spacing: .3em; text-transform: uppercase; font-weight: 500; color: rgba(240,236,228,.2); writing-mode: vertical-lr; }
-@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(9px); } }
+.si-line { display: block; width: 1px; height: 56px; background: linear-gradient(to bottom, var(--wine), transparent); }
+.si-txt { font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase; font-weight: 600; color: var(--tx-3); writing-mode: vertical-lr; }
 
-/* marquee */
-.fl-mq { overflow: hidden; border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); background: rgba(255,45,120,.025); padding: 16px 0; }
-.fl-mt { display: flex; white-space: nowrap; animation: mq 28s linear infinite; width: max-content; }
-.fl-mt span { font-size: 10px; letter-spacing: .3em; font-weight: 600; color: rgba(255,45,120,.5); }
-@keyframes mq { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-
-/* platforms */
-.fl-plats { display: flex; align-items: center; gap: 2rem; padding: 2rem 0; flex-wrap: wrap; border-bottom: 1px solid rgba(255,255,255,.06); max-width: 1320px; margin: 0 auto; padding-left: clamp(1.5rem,5vw,5rem); padding-right: clamp(1.5rem,5vw,5rem); }
-.fl-plats-lbl { font-size: .68rem; letter-spacing: .22em; text-transform: uppercase; font-weight: 500; color: rgba(240,236,228,.22); flex-shrink: 0; }
-.fl-plat-list { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
-.fl-plat-list span { font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 500; color: rgba(240,236,228,.3); transition: color .2s; }
-.fl-plat-list span:hover { color: rgba(240,236,228,.7); }
-
-/* section base */
-.fl-sec { padding: 130px 0; border-top: 1px solid rgba(255,255,255,.06); }
-.fl-sh { margin-bottom: 4rem; }
-.fl-sh h2, .fl-ht, .fl-ql h2, .fl-ctasec h2 {
-  font-family: var(--font-playfair), serif;
-  font-size: clamp(2.2rem, 4vw, 4.8rem); font-weight: 700;
-  line-height: 1.08; letter-spacing: -.025em; color: #f0ece4;
+/* ── MARQUEE ── */
+.pg-mq {
+  overflow: hidden; border-top: 1px solid var(--bd); border-bottom: 1px solid var(--bd);
+  padding: 14px 0;
 }
-.fl-sh h2 em, .fl-ht em, .fl-ctasec h2 em, .fl-ql h2 em { font-style: italic; color: #FF2D78; }
+.pg-mt {
+  display: flex; white-space: nowrap;
+  animation: marquee-scroll 32s linear infinite; width: max-content;
+}
+.pg-mt span { font-size: 10px; letter-spacing: 0.3em; font-weight: 600; color: var(--wine); opacity: 0.55; }
+@keyframes marquee-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-/* features list */
-.fl-flist { display: flex; flex-direction: column; }
-.fl-frow {
+/* ── PLATFORMS ── */
+.pg-plats {
+  display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+  border-bottom: 1px solid var(--bd); max-width: 1320px; margin: 0 auto;
+  padding: 2rem clamp(1.5rem, 5vw, 5rem);
+}
+.pg-plats-lbl { font-size: 9px; letter-spacing: 0.26em; text-transform: uppercase; font-weight: 600; color: var(--tx-3); flex-shrink: 0; }
+.pg-plat-list { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+.pg-plat-list span { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600; color: var(--tx-3); transition: color 0.2s; }
+.pg-plat-list span:hover { color: var(--tx); }
+
+/* ── SECTIONS ── */
+.pg-sec { padding: 130px 0; border-top: 1px solid var(--bd); }
+.pg-sh { margin-bottom: 4.5rem; }
+.pg-sh h2, .pg-ht, .pg-ql h2, .pg-ctasec h2 {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: clamp(2.4rem, 4.5vw, 5rem); font-weight: 600;
+  line-height: 1.06; letter-spacing: -0.02em; color: var(--tx);
+}
+.pg-sh h2 em, .pg-ht em, .pg-ctasec h2 em, .pg-ql h2 em { font-style: italic; color: var(--wine); }
+
+/* ── FEATURES ── */
+.pg-flist { display: flex; flex-direction: column; }
+.pg-frow {
   display: grid; grid-template-columns: 3.5rem 1fr 2fr 2rem;
-  align-items: center; gap: 2rem;
-  padding: 1.8rem 0;
-  border-top: 1px solid rgba(255,255,255,.05);
-  transition: background .25s;
+  align-items: center; gap: 2.5rem; padding: 1.8rem 0;
+  border-top: 1px solid var(--bd); transition: background 0.2s;
+  cursor: default;
 }
-.fl-frow:last-child { border-bottom: 1px solid rgba(255,255,255,.05); }
-.fl-frow:hover { background: rgba(255,45,120,.025); }
-.fl-frow:hover .fl-fnum { color: rgba(255,45,120,.55); }
-.fl-frow:hover .fl-farr { opacity: 1; transform: translate(2px,-2px); }
-.fl-fnum { font-family: var(--font-playfair), serif; font-style: italic; font-size: 1rem; color: rgba(255,45,120,.22); transition: color .25s; }
-.fl-ftit { font-size: 1.05rem; font-weight: 600; color: #f0ece4; letter-spacing: -.01em; }
-.fl-fdesc { font-size: .875rem; line-height: 1.65; color: rgba(240,236,228,.38); font-weight: 300; }
-.fl-farr { font-size: 1.1rem; color: rgba(255,45,120,.4); opacity: 0; transition: opacity .25s, transform .25s; justify-self: end; }
+.pg-frow:last-child { border-bottom: 1px solid var(--bd); }
+.pg-frow:hover { background: rgba(139,10,42,0.03); }
+.pg-frow:hover .pg-fnum { color: rgba(139,10,42,0.5); }
+.pg-frow:hover .pg-farr { opacity: 1; transform: translate(3px,-3px); }
+.pg-fnum { font-family: var(--font-cormorant), Georgia, serif; font-style: italic; font-size: 1rem; color: var(--bd-2); transition: color 0.25s; }
+.pg-ftit { font-size: 0.95rem; font-weight: 600; color: var(--tx); letter-spacing: -0.01em; }
+.pg-fdesc { font-size: 0.85rem; line-height: 1.68; color: var(--tx-2); font-weight: 300; }
+.pg-farr { font-size: 1rem; color: var(--gold); opacity: 0; transition: opacity 0.25s, transform 0.25s; justify-self: end; }
 
-/* pull quote */
-.fl-pull { padding: 100px 0; border-top: 1px solid rgba(255,255,255,.06); overflow: hidden; }
-.fl-bq { position: relative; max-width: 900px; margin: 0 auto; text-align: center; }
-.bq-q { font-family: var(--font-playfair), serif; font-size: clamp(5rem,12vw,14rem); color: rgba(255,45,120,.07); line-height: .6; display: block; }
-.fl-bq p { font-family: var(--font-playfair), serif; font-size: clamp(2rem,4.5vw,5.5rem); font-weight: 700; line-height: 1.1; letter-spacing: -.025em; color: #f0ece4; }
-.fl-bq p em { font-style: italic; color: #FF2D78; }
+/* ── PULL QUOTE ── */
+.pg-pull { padding: 100px 0; border-top: 1px solid var(--bd); overflow: hidden; }
+.pg-bq { position: relative; max-width: 960px; margin: 0 auto; text-align: center; }
+.bq-q { font-family: var(--font-cormorant), Georgia, serif; font-size: clamp(5rem, 14vw, 16rem); color: rgba(139,10,42,0.06); line-height: 0.5; display: block; }
+.pg-bq p { font-family: var(--font-cormorant), Georgia, serif; font-size: clamp(2.2rem, 5vw, 6rem); font-weight: 500; line-height: 1.1; letter-spacing: -0.02em; color: var(--tx); }
+.pg-bq p em { font-style: italic; color: var(--wine); }
 
-/* how it works */
-.fl-hw { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8rem; align-items: start; }
-.fl-hw-left { position: sticky; top: 9rem; }
-.fl-ht { margin-top: .6rem; }
-.fl-hw-sub { font-size: .9rem; line-height: 1.7; color: rgba(240,236,228,.35); font-weight: 300; margin-top: 1.5rem; max-width: 280px; }
-.fl-step-list { display: flex; flex-direction: column; }
-.fl-step { display: grid; grid-template-columns: 4.5rem 1fr; gap: 1.5rem; padding: 2.2rem 0; border-top: 1px solid rgba(255,255,255,.05); transition: background .25s; }
-.fl-step:last-child { border-bottom: 1px solid rgba(255,255,255,.05); }
-.fl-step:hover { background: rgba(255,45,120,.02); }
-.fl-stepn { font-family: var(--font-playfair), serif; font-style: italic; font-size: 3rem; font-weight: 700; color: rgba(255,45,120,.15); line-height: 1; transition: color .25s; }
-.fl-step:hover .fl-stepn { color: rgba(255,45,120,.3); }
-.fl-stept { font-size: 1.05rem; font-weight: 600; color: #f0ece4; margin-bottom: .45rem; }
-.fl-stepd { font-size: .875rem; line-height: 1.65; color: rgba(240,236,228,.38); font-weight: 300; }
+/* ── HOW IT WORKS ── */
+.pg-hw { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8rem; align-items: start; }
+.pg-hw-left { position: sticky; top: 9rem; }
+.pg-ht { margin-top: 0.6rem; }
+.pg-hw-sub { font-size: 0.875rem; line-height: 1.75; color: var(--tx-2); font-weight: 300; margin-top: 1.5rem; max-width: 280px; }
+.pg-step-list { display: flex; flex-direction: column; }
+.pg-step { display: grid; grid-template-columns: 4.5rem 1fr; gap: 1.5rem; padding: 2.2rem 0; border-top: 1px solid var(--bd); transition: background 0.2s; cursor: default; }
+.pg-step:last-child { border-bottom: 1px solid var(--bd); }
+.pg-step:hover { background: rgba(139,10,42,0.025); }
+.pg-stepn { font-family: var(--font-cormorant), Georgia, serif; font-style: italic; font-size: 3rem; font-weight: 600; color: rgba(201,168,76,0.18); line-height: 1; transition: color 0.25s; }
+.pg-step:hover .pg-stepn { color: rgba(201,168,76,0.4); }
+.pg-stept { font-size: 1rem; font-weight: 600; color: var(--tx); margin-bottom: 0.4rem; }
+.pg-stepd { font-size: 0.85rem; line-height: 1.68; color: var(--tx-2); font-weight: 300; }
 
-/* pricing */
-.fl-pg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.06); }
-.fl-pc { padding: 3.5rem; background: #080808; position: relative; transition: background .3s; }
-.fl-pc:hover { background: rgba(255,255,255,.012); }
-.fl-pc--f { background: rgba(255,45,120,.03); }
-.fl-badge { position: absolute; top: -1px; left: 3.5rem; font-size: 8px; letter-spacing: .28em; text-transform: uppercase; font-weight: 700; color: #FF2D78; border: 1px solid rgba(255,45,120,.28); border-top: none; padding: 4px 14px; background: rgba(255,45,120,.08); }
-.fl-pname { font-size: .68rem; letter-spacing: .3em; text-transform: uppercase; font-weight: 600; color: rgba(240,236,228,.28); margin-bottom: 1.5rem; }
-.fl-pamt { font-family: var(--font-playfair), serif; font-size: clamp(2.2rem,4vw,3.8rem); font-weight: 700; color: #f0ece4; line-height: 1; margin-bottom: .4rem; }
-.fl-pper { font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: rgba(240,236,228,.22); margin-bottom: .7rem; }
-.fl-pdesc { font-size: .85rem; color: rgba(240,236,228,.35); margin-bottom: 2rem; font-weight: 300; }
-.fl-pf { list-style: none; margin-bottom: 2.5rem; }
-.fl-pf li { display: flex; align-items: center; gap: 1rem; padding: .8rem 0; border-top: 1px solid rgba(255,255,255,.04); font-size: .875rem; color: rgba(240,236,228,.48); font-weight: 300; }
-.fl-pf li::before { content: ''; width: 20px; height: 1px; background: rgba(255,45,120,.35); flex-shrink: 0; }
-.fl-pbtn { display: block; width: 100%; padding: 1rem; font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; font-weight: 600; text-align: center; border: 1px solid rgba(255,255,255,.12); color: rgba(240,236,228,.45); background: transparent; transition: all .25s; }
-.fl-pbtn:hover { background: rgba(255,255,255,.04); color: #f0ece4; border-color: rgba(255,255,255,.25); }
-.fl-pbtn--p { border-color: rgba(255,45,120,.5); color: #FF2D78; }
-.fl-pbtn--p:hover { background: #FF2D78; color: #fff; border-color: #FF2D78; }
-
-/* testimonials */
-.fl-tg { display: grid; grid-template-columns: repeat(3,1fr); border: 1px solid rgba(255,255,255,.06); }
-.fl-tm { padding: 3rem 2.5rem; border-right: 1px solid rgba(255,255,255,.06); transition: background .25s; }
-.fl-tm:last-child { border-right: none; }
-.fl-tm:hover { background: rgba(255,45,120,.02); }
-.fl-tqmark { font-family: var(--font-playfair), serif; font-size: 5rem; color: rgba(255,45,120,.13); line-height: .5; margin-bottom: 1.5rem; }
-.fl-txt { font-size: .9rem; line-height: 1.78; color: rgba(240,236,228,.45); margin-bottom: 2rem; font-weight: 300; font-style: italic; }
-.fl-tauth { display: flex; flex-direction: column; gap: .3rem; }
-.fl-ta { font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; font-weight: 600; color: #f0ece4; }
-.fl-tr { font-size: .65rem; letter-spacing: .15em; text-transform: uppercase; color: rgba(240,236,228,.22); }
-
-/* faq */
-.fl-ql { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8rem; align-items: start; }
-.fl-qi { border-top: 1px solid rgba(255,255,255,.06); }
-.fl-qi:last-child { border-bottom: 1px solid rgba(255,255,255,.06); }
-.fl-qt { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.6rem 0; background: none; border: none; color: #f0ece4; text-align: left; width: 100%; transition: color .2s; }
-.fl-qt:hover { color: rgba(240,236,228,.8); }
-.fl-qq { font-size: .95rem; font-weight: 500; letter-spacing: -.01em; }
-.fl-qi-icon { width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: rgba(240,236,228,.3); flex-shrink: 0; transition: all .3s; }
-.fl-qo .fl-qi-icon { background: rgba(255,45,120,.1); border-color: rgba(255,45,120,.3); color: #FF2D78; transform: rotate(45deg); }
-.fl-qc { max-height: 0; overflow: hidden; transition: max-height .45s cubic-bezier(.16,1,.3,1); }
-.fl-qans { font-size: .88rem; line-height: 1.78; color: rgba(240,236,228,.42); font-weight: 300; padding-bottom: 1.6rem; max-width: 640px; }
-
-/* cta */
-.fl-ctasec { padding: 130px 0; border-top: 1px solid rgba(255,255,255,.06); position: relative; overflow: hidden; }
-.fl-ctasec::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 1000px; height: 500px; background: radial-gradient(ellipse, rgba(255,45,120,.07) 0%, transparent 65%); pointer-events: none; }
-.fl-ctasec h2 { font-size: clamp(3rem, 7vw, 9rem); max-width: 1000px; margin-top: 1rem; }
-
-/* footer */
-.fl-ft { border-top: 1px solid rgba(255,255,255,.06); padding: 3rem 0; }
-.fl-fi { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
-.fl-flogo { font-family: var(--font-playfair), serif; font-size: 1.3rem; font-weight: 700; }
-.fl-flogo span { color: #FF2D78; }
-.fl-fcopy { font-size: .65rem; letter-spacing: .12em; text-transform: uppercase; color: rgba(240,236,228,.16); }
-.fl-flinks { display: flex; gap: 2rem; }
-.fl-flinks a { font-size: .65rem; letter-spacing: .18em; text-transform: uppercase; color: rgba(240,236,228,.18); transition: color .2s; }
-.fl-flinks a:hover { color: rgba(240,236,228,.55); }
-
-/* reveal */
-.fl-r { opacity: 0; transform: translateY(26px); transition: opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1); }
-.fl-in { opacity: 1; transform: translateY(0); }
-
-/* ── hero entrance (pure CSS, no JS needed) ── */
-@keyframes hero-up {
-  from { opacity: 0; transform: translateY(28px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* ── PRICING ── */
+.pg-pg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--bd); border: 1px solid var(--bd); }
+.pg-pc { padding: 3.5rem; background: var(--bg); position: relative; transition: background 0.25s; }
+.pg-pc:hover { background: rgba(201,168,76,0.03); }
+.pg-pc--f { background: rgba(139,10,42,0.04); }
+.pg-pc--f:hover { background: rgba(139,10,42,0.07); }
+.pg-badge {
+  position: absolute; top: -1px; left: 3.5rem;
+  font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; font-weight: 700;
+  color: var(--gold); border: 1px solid var(--bd-2); border-top: none;
+  padding: 4px 14px; background: rgba(201,168,76,0.08);
 }
-.hero-lbl  { animation: hero-up .7s cubic-bezier(.16,1,.3,1) .05s both; }
-.hero-h1   { animation: hero-up .9s cubic-bezier(.16,1,.3,1) .18s both; }
-.hero-sub  { animation: hero-up .7s cubic-bezier(.16,1,.3,1) .35s both; }
-.hero-cta  { animation: hero-up .7s cubic-bezier(.16,1,.3,1) .5s  both; }
-.hero-stats{ animation: hero-up .7s cubic-bezier(.16,1,.3,1) .65s both; }
-
-/* ── logo heart ── */
-.fl-heart {
-  color: #FF2D78; margin-right: .35rem;
-  display: inline-block;
-  animation: hb 1.6s ease-in-out infinite;
-  transform-origin: center;
+.pg-pname { font-size: 9px; letter-spacing: 0.32em; text-transform: uppercase; font-weight: 600; color: var(--tx-3); margin-bottom: 1.5rem; }
+.pg-pamt { font-family: var(--font-cormorant), Georgia, serif; font-size: clamp(2.2rem, 3.5vw, 3.5rem); font-weight: 600; color: var(--tx); line-height: 1; margin-bottom: 0.4rem; }
+.pg-pper { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--tx-3); margin-bottom: 0.6rem; }
+.pg-pdesc { font-size: 0.83rem; color: var(--tx-2); margin-bottom: 2rem; font-weight: 300; }
+.pg-pf { list-style: none; margin-bottom: 2.5rem; }
+.pg-pf li { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0; border-top: 1px solid var(--bd); font-size: 0.85rem; color: var(--tx-2); font-weight: 300; }
+.pg-pf li::before { content: ''; width: 18px; height: 1px; background: var(--bd-2); flex-shrink: 0; }
+.pg-pbtn {
+  display: block; width: 100%; padding: 1rem; font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 700;
+  text-align: center; border: 1px solid var(--bd); color: var(--tx-2); background: transparent;
+  transition: all 0.25s; min-height: 44px;
 }
-@keyframes hb {
-  0%,100% { transform: scale(1);    }
-  14%     { transform: scale(1.25); }
-  28%     { transform: scale(1);    }
-  42%     { transform: scale(1.15); }
-  70%     { transform: scale(1);    }
+.pg-pbtn:hover { background: rgba(255,255,255,0.04); color: var(--tx); border-color: var(--bd-2); }
+.pg-pbtn--p { border-color: rgba(139,10,42,0.5); color: var(--wine); }
+.pg-pbtn--p:hover { background: var(--wine); color: #fff; border-color: var(--wine); }
+
+/* ── TESTIMONIALS ── */
+.pg-tg { display: grid; grid-template-columns: repeat(3,1fr); border: 1px solid var(--bd); }
+.pg-tm { padding: 3rem 2.5rem; border-right: 1px solid var(--bd); transition: background 0.2s; }
+.pg-tm:last-child { border-right: none; }
+.pg-tm:hover { background: rgba(139,10,42,0.025); }
+.pg-tqmark { font-family: var(--font-cormorant), Georgia, serif; font-size: 5rem; color: rgba(139,10,42,0.12); line-height: 0.5; margin-bottom: 1.5rem; }
+.pg-ttxt { font-size: 0.9rem; line-height: 1.8; color: var(--tx-2); margin-bottom: 2rem; font-weight: 300; font-style: italic; }
+.pg-tauth { display: flex; flex-direction: column; gap: 0.3rem; }
+.pg-ta { font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; color: var(--tx); }
+.pg-tr { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--tx-3); }
+
+/* ── FAQ ── */
+.pg-ql { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8rem; align-items: start; }
+.pg-qi { border-top: 1px solid var(--bd); }
+.pg-qi:last-child { border-bottom: 1px solid var(--bd); }
+.pg-qt {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 1.6rem 0; background: none; border: none; color: var(--tx);
+  text-align: left; width: 100%; cursor: pointer; transition: color 0.2s;
+  min-height: 44px;
 }
-.fl-dot-logo { color: #FF2D78; }
-
-/* ── emoji burst ── */
-@keyframes emoji-fly {
-  0%   { opacity: 1; transform: translate(-50%,-50%) scale(0) rotate(0deg); }
-  60%  { opacity: 1; }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1) rotate(20deg); }
+.pg-qt:hover { color: var(--tx-2); }
+.pg-qq { font-size: 0.9rem; font-weight: 500; letter-spacing: -0.01em; text-align: left; }
+.pg-qi-icon {
+  width: 28px; height: 28px; border: 1px solid var(--bd); display: flex; align-items: center;
+  justify-content: center; font-size: 1.1rem; color: var(--tx-3); flex-shrink: 0;
+  transition: all 0.3s; font-weight: 300; line-height: 1;
 }
+.pg-qo .pg-qi-icon { background: rgba(139,10,42,0.1); border-color: rgba(139,10,42,0.3); color: var(--wine); }
+.pg-qc { overflow: hidden; transition: max-height 0.45s cubic-bezier(0.16,1,0.3,1); }
+.pg-qans { font-size: 0.875rem; line-height: 1.78; color: var(--tx-2); font-weight: 300; padding-bottom: 1.6rem; max-width: 640px; }
 
-/* ── word reveal (kept for scroll sections) ── */
-.ww { display: inline-block; overflow: hidden; vertical-align: bottom; }
-.wi { display: inline-block; transform: translateY(108%); transition: transform .85s cubic-bezier(.16,1,.3,1); }
-.wi.wv { transform: translateY(0); }
+/* ── CTA SECTION ── */
+.pg-ctasec { padding: 130px 0; border-top: 1px solid var(--bd); position: relative; overflow: hidden; }
+.pg-ctasec::before {
+  content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 900px; height: 450px;
+  background: radial-gradient(ellipse, rgba(139,10,42,0.07) 0%, transparent 65%);
+  pointer-events: none;
+}
+.pg-ctasec h2 { font-size: clamp(3rem, 7vw, 9rem); max-width: 1100px; margin-top: 1rem; }
 
-/* responsive */
+/* ── FOOTER ── */
+.pg-ft { border-top: 1px solid var(--bd); padding: 3rem 0; }
+.pg-fi { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
+.pg-flogo { font-family: var(--font-cormorant), Georgia, serif; font-size: 1.3rem; font-weight: 600; font-style: italic; }
+.pg-flogo em { color: var(--gold); font-style: normal; }
+.pg-fcopy { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tx-3); }
+.pg-flinks { display: flex; gap: 2rem; }
+.pg-flinks a { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--tx-3); transition: color 0.2s; }
+.pg-flinks a:hover { color: var(--tx-2); }
+
+/* ── HERO ENTRANCE ── */
+@keyframes hero-up { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+.hero-lbl   { animation: hero-up 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s  both; }
+.hero-h1    { animation: hero-up 0.9s cubic-bezier(0.16,1,0.3,1) 0.22s both; }
+.hero-sub   { animation: hero-up 0.7s cubic-bezier(0.16,1,0.3,1) 0.38s both; }
+.hero-cta   { animation: hero-up 0.7s cubic-bezier(0.16,1,0.3,1) 0.52s both; }
+.hero-stats { animation: hero-up 0.7s cubic-bezier(0.16,1,0.3,1) 0.66s both; }
+
+/* ── MOBILE ── */
 @media (max-width: 1024px) {
-  .fl-hw { grid-template-columns: 1fr; gap: 3.5rem; }
-  .fl-hw-left { position: static; }
-  .fl-ql { grid-template-columns: 1fr; gap: 3rem; }
+  .pg-hw { grid-template-columns: 1fr; gap: 4rem; }
+  .pg-hw-left { position: static; }
+  .pg-ql { grid-template-columns: 1fr; gap: 3rem; }
 }
 @media (max-width: 860px) {
-  .fl-nl { display: none; }
-  .fl-frow { grid-template-columns: 2.5rem 1fr; grid-template-rows: auto auto; }
-  .fl-fdesc { grid-column: 2; }
-  .fl-farr { display: none; }
-  .fl-pg { grid-template-columns: 1fr; max-width: 420px; }
-  .fl-tg { grid-template-columns: 1fr; }
-  .fl-tm { border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); }
-  .fl-stats { grid-template-columns: 1fr 1fr; }
+  .pg-nl { display: none; }
+  .pg-badge-rot { display: none; }
+  .pg-dline { display: none; }
+  .pg-frow { grid-template-columns: 2.5rem 1fr; grid-template-rows: auto auto; }
+  .pg-fdesc { grid-column: 2; }
+  .pg-farr { display: none; }
+  .pg-pg { grid-template-columns: 1fr; max-width: 440px; }
+  .pg-tg { grid-template-columns: 1fr; }
+  .pg-tm { border-right: none; border-bottom: 1px solid var(--bd); }
+  .pg-stats { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 600px) {
-  .fl-stats { grid-template-columns: 1fr; }
-  .fl-nc .fl-ghost { display: none; }
-  .fl-scroll-ind { display: none; }
-  .fl-plats { flex-direction: column; align-items: flex-start; }
+  .pg-stats { grid-template-columns: 1fr; }
+  .pg-nc .pg-ghost { display: none; }
+  .pg-scroll-ind { display: none; }
+  .pg-plats { flex-direction: column; align-items: flex-start; }
+  .pg-hero { padding: 120px 0 80px; }
+  .pg-wm { font-size: 52vw; }
 }
 `;
