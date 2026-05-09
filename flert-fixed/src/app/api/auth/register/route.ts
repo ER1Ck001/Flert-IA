@@ -105,13 +105,13 @@ export async function POST(request: NextRequest) {
               </ul>
 
               <div style="text-align:center;margin:0 0 12px">
-                <a href="${appUrl}/pricing"
+                <a href="${appUrl}/auth/login?callbackUrl=%2Fpricing"
                   style="display:inline-block;background:linear-gradient(135deg,#cc2277,#ff2d95);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 24px rgba(255,45,149,0.3)">
                   Escolher meu plano agora →
                 </a>
               </div>
               <p style="text-align:center;margin:0;font-size:12px;color:#5C4A52">
-                Ou acesse direto em <a href="${appUrl}/analyze" style="color:#ff2d95;text-decoration:none">flertia.com.br/analyze</a>
+                Ou acesse direto em <a href="${appUrl}/auth/login?callbackUrl=%2Fanalyze" style="color:#ff2d95;text-decoration:none">flertia.com.br/analyze</a>
               </p>
             </div>
 

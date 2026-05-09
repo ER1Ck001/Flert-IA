@@ -60,7 +60,7 @@ function freeUpsellHtml(firstName: string) {
       <li style="margin:0 0 8px;padding-left:8px">✦ Respostas que parecem suas, não de IA</li>
     </ul>
     <div style="text-align:center;margin:0 0 12px">
-      <a href="${APP_URL}/pricing"
+      <a href="${APP_URL}/auth/login?callbackUrl=%2Fpricing"
         style="display:inline-block;background:linear-gradient(135deg,#cc2277,#ff2d95);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 24px rgba(255,45,149,0.3)">
         Ver planos agora →
       </a>
@@ -83,7 +83,7 @@ function expiringHtml(firstName: string, days: number) {
       Renove agora e continue tendo as respostas certas na hora certa. Não deixa suas conversas voltarem pro modo tentativa e erro.
     </p>
     <div style="text-align:center;margin:0 0 12px">
-      <a href="${APP_URL}/pricing"
+      <a href="${APP_URL}/auth/login?callbackUrl=%2Fpricing"
         style="display:inline-block;background:linear-gradient(135deg,#cc2277,#ff2d95);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 24px rgba(255,45,149,0.3)">
         Renovar meu plano →
       </a>
@@ -107,7 +107,7 @@ function customHtml(firstName: string, body: string) {
     </p>
     ${paragraphs}
     <div style="text-align:center;margin-top:28px">
-      <a href="${APP_URL}"
+      <a href="${APP_URL}/auth/login?callbackUrl=%2Fdashboard"
         style="display:inline-block;background:linear-gradient(135deg,#cc2277,#ff2d95);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 24px rgba(255,45,149,0.3)">
         Acessar Flert IA →
       </a>
