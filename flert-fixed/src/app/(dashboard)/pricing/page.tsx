@@ -78,7 +78,7 @@ const plans: Plan[] = [
 const faqs = [
   { q: "Posso cancelar quando quiser?",        a: "Sim. Cancele a qualquer momento sem perguntas ou taxas extras." },
   { q: "Quais formas de pagamento?",           a: "PIX, cartão de crédito e boleto. PIX processado instantaneamente." },
-  { q: "Existe garantia ou reembolso?",        a: "Oferecemos reembolso para usuários que utilizaram o serviço ao menos uma vez e não ficaram satisfeitos. Basta entrar em contato pelo suporte em até 7 dias após a compra." },
+  { q: "Existe garantia ou reembolso?",        a: "O reembolso é disponível apenas para usuários que realizaram no máximo 1 análise e solicitaram dentro de 12 horas após a compra. Basta entrar em contato pelo suporte." },
   { q: "O plano vitalício é mesmo para sempre?", a: "Sim. Uma compra, acesso eterno — incluindo todas as atualizações futuras." },
 ];
 
@@ -269,7 +269,7 @@ export default function PricingPage() {
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">
           <span className="font-semibold text-foreground/70">Política de reembolso: </span>
-          O reembolso é disponibilizado exclusivamente para usuários que utilizaram o serviço ao menos uma vez e não ficaram satisfeitos. Para solicitar, entre em contato pelo{" "}
+          O reembolso é disponível exclusivamente para usuários que realizaram <strong className="text-foreground/70">no máximo 1 análise</strong> e solicitaram dentro de <strong className="text-foreground/70">12 horas</strong> após a compra. Fora dessas condições, não haverá reembolso. Para solicitar, entre em contato pelo{" "}
           <a
             href="https://mail.google.com/mail/?view=cm&to=erickdev@flertia.com.br&su=Solicita%C3%A7%C3%A3o%20de%20Reembolso"
             target="_blank"
@@ -277,8 +277,7 @@ export default function PricingPage() {
             className="text-brand-400 hover:text-brand-300 transition-colors"
           >
             suporte
-          </a>{" "}
-          em até 7 dias após a compra.
+          </a>.
         </p>
       </div>
 
