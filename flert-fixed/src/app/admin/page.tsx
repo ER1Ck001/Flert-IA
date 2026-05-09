@@ -7,7 +7,7 @@ import {
   Copy, Check, RefreshCw, Shield, Activity, BarChart3,
   ChevronDown, ChevronUp, LogOut, Mail, Download,
   TrendingUp, UserPlus, DollarSign, X, ChevronRight,
-  Calendar, Clock, Sparkles, Eye, EyeOff,
+  Calendar, Clock, Sparkles, Send, AlertCircle,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import Image from "next/image";
@@ -54,8 +54,7 @@ function fmt(dateStr: string) {
 
 function daysUntil(dateStr: string | null) {
   if (!dateStr) return null;
-  const days = Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
-  return days;
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
 }
 
 function UserAvatar({ user }: { user: AdminUser }) {
@@ -91,6 +90,14 @@ export default function AdminPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Email campaigns state
+  const [activeTab, setActiveTab]             = useState<"users" | "email">("users");
+  const [confirmTemplate, setConfirmTemplate] = useState<string | null>(null);
+  const [sendingTemplate, setSendingTemplate] = useState<string | null>(null);
+  const [customTarget, setCustomTarget]       = useState<string>("FREE");
+  const [customSubject, setCustomSubject]     = useState<string>("");
+  const [customBody, setCustomBody]           = useState<string>("");
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -115,10 +122,21 @@ export default function AdminPage() {
   }, []);
 
   // Derived stats
-  const weekAgo    = Date.now() - 7 * 86400000;
+  const weekAgo     = Date.now() - 7 * 86400000;
   const newThisWeek = users.filter(u => new Date(u.createdAt).getTime() >= weekAgo).length;
   const paidUsers   = users.filter(u => u.subscription !== "FREE").length;
   const mrr         = users.reduce((acc, u) => acc + (PLAN_PRICES[u.subscription] ?? 0), 0);
+
+  // Email campaign counts
+  const freeCount     = users.filter(u => u.subscription === "FREE").length;
+  const expiringCount = users.filter(u => {
+    if (!u.expiresAt || u.subscription === "FREE" || u.subscription === "LIFETIME") return false;
+    const d = daysUntil(u.expiresAt);
+    return d !== null && d >= 0 && d <= 7;
+  }).length;
+  const customCount = customTarget === "ALL"
+    ? users.length
+    : users.filter(u => u.subscription === customTarget).length;
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -181,6 +199,33 @@ export default function AdminPage() {
       toast.success(`Plano alterado para ${planConfig[plan].label}!`);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Erro"); }
     finally { setUpdatingId(null); }
+  };
+
+  const sendCampaign = async (templateId: string) => {
+    setSendingTemplate(templateId);
+    try {
+      const payload: Record<string, string> = { template: templateId };
+      if (templateId === "custom") {
+        if (!customSubject.trim() || !customBody.trim()) {
+          toast.error("Preencha assunto e mensagem");
+          return;
+        }
+        payload.customSubject = customSubject;
+        payload.customBody    = customBody;
+        payload.targetPlan    = customTarget;
+      }
+      const res  = await fetch("/api/admin/email", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success(`${data.sent} email${data.sent !== 1 ? "s" : ""} enviado${data.sent !== 1 ? "s" : ""}!`);
+      setConfirmTemplate(null);
+      if (templateId === "custom") { setCustomSubject(""); setCustomBody(""); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao enviar"); }
+    finally { setSendingTemplate(null); }
   };
 
   const exportCSV = () => {
@@ -279,310 +324,560 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* ── Filters ── */}
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-52">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <input type="text" placeholder="Buscar por nome ou email..."
-              value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full h-9 pl-9 pr-8 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors" />
-            {search && (
-              <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground">
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex gap-1.5 flex-wrap">
-            {(["ALL", "FREE", "PREMIUM", "ANNUAL", "LIFETIME"] as const).map(p => {
-              const cfg = p !== "ALL" ? planConfig[p as Plan] : null;
-              return (
-                <button key={p} onClick={() => setFilterPlan(p)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
-                    filterPlan === p
-                      ? cn("border-brand-500/35 bg-brand-500/15 text-brand-300")
-                      : "border-border/40 text-muted-foreground hover:border-border hover:text-foreground"
-                  )}>
-                  {p === "ALL" ? `Todos (${users.length})` : `${cfg!.label} (${stats ? (p === "FREE" ? stats.free : p === "PREMIUM" ? stats.premium : p === "ANNUAL" ? stats.annual : stats.lifetime) : 0})`}
-                </button>
-              );
-            })}
-          </div>
-
-          <span className="text-xs text-muted-foreground/60 ml-auto whitespace-nowrap">
-            {filtered.length} de {users.length} usuário{users.length !== 1 ? "s" : ""}
-          </span>
+        {/* ── Tabs ── */}
+        <div className="flex border-b border-border/40 -mb-4">
+          {([
+            { id: "users", label: "Usuários",           icon: Users },
+            { id: "email", label: "Campanhas de Email", icon: Mail  },
+          ] as const).map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-all",
+                activeTab === tab.id
+                  ? "border-brand-500 text-brand-400"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}>
+              <tab.icon className="h-3.5 w-3.5" />
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* ── Table ── */}
-        <div className="rounded-2xl border border-border/40 bg-card/10 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/40 bg-card/40">
-                  {[
-                    { key: "name",     label: "Usuário"  },
-                    { key: "email",    label: "Email"    },
-                    { key: "plan",     label: "Plano"    },
-                    { key: null,       label: "Login"    },
-                    { key: "analyses", label: "Análises" },
-                    { key: "joined",   label: "Cadastro" },
-                    { key: null,       label: "Expira"   },
-                    { key: null,       label: "Ações"    },
-                  ].map((col, i) => (
-                    <th key={i}
-                      onClick={() => col.key && toggleSort(col.key)}
+        {/* ══════════════════ USERS TAB ══════════════════ */}
+        {activeTab === "users" && (
+          <>
+            {/* ── Filters ── */}
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="relative flex-1 min-w-52">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <input type="text" placeholder="Buscar por nome ou email..."
+                  value={search} onChange={e => setSearch(e.target.value)}
+                  className="w-full h-9 pl-9 pr-8 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors" />
+                {search && (
+                  <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground">
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex gap-1.5 flex-wrap">
+                {(["ALL", "FREE", "PREMIUM", "ANNUAL", "LIFETIME"] as const).map(p => {
+                  const cfg = p !== "ALL" ? planConfig[p as Plan] : null;
+                  return (
+                    <button key={p} onClick={() => setFilterPlan(p)}
                       className={cn(
-                        "text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground select-none",
-                        col.key && "cursor-pointer hover:text-foreground transition-colors"
+                        "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
+                        filterPlan === p
+                          ? cn("border-brand-500/35 bg-brand-500/15 text-brand-300")
+                          : "border-border/40 text-muted-foreground hover:border-border hover:text-foreground"
                       )}>
-                      <span className="flex items-center gap-1">
-                        {col.label}
-                        {col.key && <SortIcon field={col.key} current={sortBy} asc={sortAsc} />}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="border-b border-border/20">
-                      {Array.from({ length: 8 }).map((_, j) => (
-                        <td key={j} className="px-4 py-3.5">
-                          <div className="h-3.5 rounded bg-muted/30 animate-pulse" style={{ width: `${50 + Math.random() * 40}%` }} />
-                        </td>
+                      {p === "ALL" ? `Todos (${users.length})` : `${cfg!.label} (${stats ? (p === "FREE" ? stats.free : p === "PREMIUM" ? stats.premium : p === "ANNUAL" ? stats.annual : stats.lifetime) : 0})`}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <span className="text-xs text-muted-foreground/60 ml-auto whitespace-nowrap">
+                {filtered.length} de {users.length} usuário{users.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            {/* ── Table ── */}
+            <div className="rounded-2xl border border-border/40 bg-card/10 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border/40 bg-card/40">
+                      {[
+                        { key: "name",     label: "Usuário"  },
+                        { key: "email",    label: "Email"    },
+                        { key: "plan",     label: "Plano"    },
+                        { key: null,       label: "Login"    },
+                        { key: "analyses", label: "Análises" },
+                        { key: "joined",   label: "Cadastro" },
+                        { key: null,       label: "Expira"   },
+                        { key: null,       label: "Ações"    },
+                      ].map((col, i) => (
+                        <th key={i}
+                          onClick={() => col.key && toggleSort(col.key)}
+                          className={cn(
+                            "text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground select-none",
+                            col.key && "cursor-pointer hover:text-foreground transition-colors"
+                          )}>
+                          <span className="flex items-center gap-1">
+                            {col.label}
+                            {col.key && <SortIcon field={col.key} current={sortBy} asc={sortAsc} />}
+                          </span>
+                        </th>
                       ))}
                     </tr>
-                  ))
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-16 text-center text-muted-foreground text-sm">
-                      Nenhum usuário encontrado
-                    </td>
-                  </tr>
-                ) : (
-                  <AnimatePresence initial={false}>
-                    {filtered.map(user => {
-                      const plan       = planConfig[user.subscription];
-                      const PlanIcon   = plan.icon;
-                      const isExpanded = expandedId === user.id;
-                      const isConfirm  = confirmDeleteId === user.id;
-                      const isDeleting = deletingId === user.id;
-                      const isUpdating = updatingId === user.id;
-                      const isPlanMenu = planMenuId === user.id;
-                      const days       = daysUntil(user.expiresAt);
-
-                      return (
-                        <>
-                          <motion.tr key={user.id}
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className={cn(
-                              "border-b border-border/20 transition-colors group",
-                              isExpanded ? "bg-card/40" : "hover:bg-card/25",
-                              isConfirm && "bg-destructive/5"
-                            )}>
-
-                            {/* Usuário */}
-                            <td className="px-4 py-3 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : user.id)}>
-                              <div className="flex items-center gap-2.5">
-                                <UserAvatar user={user} />
-                                <div className="min-w-0">
-                                  <p className="font-medium text-foreground truncate max-w-[110px] text-sm leading-tight">
-                                    {user.name ?? "—"}
-                                  </p>
-                                  {user.analysisCount > 0 && (
-                                    <p className="text-[10px] text-muted-foreground/50 leading-tight">{user.analysisCount} análises</p>
-                                  )}
-                                </div>
-                                <ChevronRight className={cn("h-3 w-3 text-muted-foreground/30 transition-transform ml-1 flex-shrink-0", isExpanded && "rotate-90")} />
-                              </div>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <tr key={i} className="border-b border-border/20">
+                          {Array.from({ length: 8 }).map((_, j) => (
+                            <td key={j} className="px-4 py-3.5">
+                              <div className="h-3.5 rounded bg-muted/30 animate-pulse" style={{ width: `${50 + Math.random() * 40}%` }} />
                             </td>
+                          ))}
+                        </tr>
+                      ))
+                    ) : filtered.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-16 text-center text-muted-foreground text-sm">
+                          Nenhum usuário encontrado
+                        </td>
+                      </tr>
+                    ) : (
+                      <AnimatePresence initial={false}>
+                        {filtered.map(user => {
+                          const plan       = planConfig[user.subscription];
+                          const PlanIcon   = plan.icon;
+                          const isExpanded = expandedId === user.id;
+                          const isConfirm  = confirmDeleteId === user.id;
+                          const isDeleting = deletingId === user.id;
+                          const isUpdating = updatingId === user.id;
+                          const isPlanMenu = planMenuId === user.id;
+                          const days       = daysUntil(user.expiresAt);
 
-                            {/* Email */}
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-muted-foreground truncate max-w-[160px] text-xs">{user.email ?? "—"}</span>
-                                {user.email && (
-                                  <button onClick={() => copyEmail(user.email!, user.id)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/40 hover:text-brand-400 flex-shrink-0">
-                                    {copiedId === user.id ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
-                                  </button>
-                                )}
-                              </div>
-                            </td>
+                          return (
+                            <>
+                              <motion.tr key={user.id}
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                className={cn(
+                                  "border-b border-border/20 transition-colors group",
+                                  isExpanded ? "bg-card/40" : "hover:bg-card/25",
+                                  isConfirm && "bg-destructive/5"
+                                )}>
 
-                            {/* Plano */}
-                            <td className="px-4 py-3">
-                              <div className="relative" ref={isPlanMenu ? menuRef : undefined}>
-                                <button
-                                  disabled={isUpdating}
-                                  onClick={() => setPlanMenuId(isPlanMenu ? null : user.id)}
-                                  className={cn(
-                                    "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all",
-                                    plan.bg, plan.border, plan.color,
-                                    isUpdating && "opacity-50 cursor-wait",
-                                    "hover:opacity-80"
-                                  )}>
-                                  <PlanIcon className="h-3 w-3" />
-                                  {plan.label}
-                                  <ChevronDown className="h-2.5 w-2.5 opacity-60" />
-                                </button>
-
-                                <AnimatePresence>
-                                  {isPlanMenu && (
-                                    <motion.div
-                                      initial={{ opacity: 0, y: -6, scale: 0.96 }}
-                                      animate={{ opacity: 1, y: 0,  scale: 1    }}
-                                      exit={{  opacity: 0, y: -6, scale: 0.96 }}
-                                      transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                                      className="absolute top-full mt-1.5 left-0 z-50 w-40 rounded-xl border border-border/50 bg-background/98 backdrop-blur-xl shadow-xl overflow-hidden">
-                                      {(["FREE", "PREMIUM", "ANNUAL", "LIFETIME"] as Plan[]).map(p => {
-                                        const pc = planConfig[p];
-                                        const PI = pc.icon;
-                                        return (
-                                          <button key={p}
-                                            onClick={() => changePlan(user.id, p)}
-                                            className={cn(
-                                              "w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold transition-colors text-left",
-                                              user.subscription === p
-                                                ? cn(pc.bg, pc.color)
-                                                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                                            )}>
-                                            <PI className={cn("h-3.5 w-3.5 flex-shrink-0", user.subscription === p ? pc.color : "")} />
-                                            <span>{pc.label}</span>
-                                            {user.subscription === p && <Check className="h-3 w-3 ml-auto" />}
-                                          </button>
-                                        );
-                                      })}
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
-                              </div>
-                            </td>
-
-                            {/* Login */}
-                            <td className="px-4 py-3">
-                              <span className={cn(
-                                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border",
-                                user.loginMethod === "google"
-                                  ? "bg-blue-500/8 border-blue-500/20 text-blue-400"
-                                  : "bg-muted/40 border-border/30 text-muted-foreground"
-                              )}>
-                                {user.loginMethod === "google" ? "Google" : "Email"}
-                              </span>
-                            </td>
-
-                            {/* Análises */}
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-1.5">
-                                <div className={cn(
-                                  "h-1.5 w-1.5 rounded-full flex-shrink-0",
-                                  user.analysisCount > 10 ? "bg-green-400" : user.analysisCount > 0 ? "bg-amber-400" : "bg-muted-foreground/30"
-                                )} />
-                                <span className="text-foreground/80 text-sm">{user.analysisCount}</span>
-                              </div>
-                            </td>
-
-                            {/* Cadastro */}
-                            <td className="px-4 py-3 text-muted-foreground text-xs">{fmt(user.createdAt)}</td>
-
-                            {/* Expira */}
-                            <td className="px-4 py-3">
-                              {user.subscription === "FREE" ? (
-                                <span className="text-muted-foreground/40 text-xs">—</span>
-                              ) : user.subscription === "LIFETIME" ? (
-                                <span className="text-amber-400/70 text-xs font-medium">Eterno</span>
-                              ) : days === null ? (
-                                <span className="text-muted-foreground/40 text-xs">—</span>
-                              ) : days < 0 ? (
-                                <span className="text-destructive text-xs font-semibold">Expirado</span>
-                              ) : days <= 7 ? (
-                                <span className="text-amber-400 text-xs font-semibold">{days}d</span>
-                              ) : (
-                                <span className="text-muted-foreground text-xs">{fmt(user.expiresAt!)}</span>
-                              )}
-                            </td>
-
-                            {/* Ações */}
-                            <td className="px-4 py-3">
-                              <AnimatePresence mode="wait" initial={false}>
-                                {isConfirm ? (
-                                  <motion.div key="confirm"
-                                    initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}
-                                    className="flex items-center gap-1">
-                                    <button onClick={() => setConfirmDeleteId(null)} disabled={isDeleting}
-                                      className="px-2 py-1 rounded-lg text-xs border border-border/40 text-muted-foreground hover:text-foreground transition-colors">
-                                      Cancelar
-                                    </button>
-                                    <button onClick={() => deleteUser(user.id)} disabled={isDeleting}
-                                      className="px-2 py-1 rounded-lg text-xs bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50">
-                                      {isDeleting ? "..." : "Excluir"}
-                                    </button>
-                                  </motion.div>
-                                ) : (
-                                  <motion.div key="actions"
-                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {user.email && (
-                                      <a href={`https://mail.google.com/mail/?view=cm&to=${user.email}`}
-                                        target="_blank" rel="noopener noreferrer"
-                                        className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
-                                        title="Enviar email">
-                                        <Mail className="h-3.5 w-3.5" />
-                                      </a>
-                                    )}
-                                    <button onClick={() => setConfirmDeleteId(user.id)}
-                                      className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                      title="Excluir usuário">
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </td>
-                          </motion.tr>
-
-                          {/* Expanded row */}
-                          <AnimatePresence>
-                            {isExpanded && (
-                              <motion.tr key={`${user.id}-expanded`}
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                <td colSpan={8} className="px-6 pb-4 pt-0 bg-card/30 border-b border-border/20">
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3">
-                                    <div className="p-3 rounded-xl bg-background/50 border border-border/30">
-                                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">ID da conta</p>
-                                      <p className="text-xs font-mono text-foreground/60 break-all">{user.id}</p>
-                                    </div>
-                                    <div className="p-3 rounded-xl bg-background/50 border border-border/30">
-                                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Email completo</p>
-                                      <p className="text-xs text-foreground break-all">{user.email ?? "—"}</p>
-                                    </div>
-                                    <div className="p-3 rounded-xl bg-background/50 border border-border/30">
-                                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Plano ativado em</p>
-                                      <p className="text-xs text-foreground">{user.activatedAt ? fmt(user.activatedAt) : "—"}</p>
-                                    </div>
-                                    <div className="p-3 rounded-xl bg-background/50 border border-border/30">
-                                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Expira em</p>
-                                      <p className="text-xs text-foreground">
-                                        {user.subscription === "LIFETIME" ? "Nunca (vitalício)" : user.expiresAt ? fmt(user.expiresAt) : "—"}
+                                <td className="px-4 py-3 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : user.id)}>
+                                  <div className="flex items-center gap-2.5">
+                                    <UserAvatar user={user} />
+                                    <div className="min-w-0">
+                                      <p className="font-medium text-foreground truncate max-w-[110px] text-sm leading-tight">
+                                        {user.name ?? "—"}
                                       </p>
+                                      {user.analysisCount > 0 && (
+                                        <p className="text-[10px] text-muted-foreground/50 leading-tight">{user.analysisCount} análises</p>
+                                      )}
                                     </div>
+                                    <ChevronRight className={cn("h-3 w-3 text-muted-foreground/30 transition-transform ml-1 flex-shrink-0", isExpanded && "rotate-90")} />
                                   </div>
                                 </td>
+
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-muted-foreground truncate max-w-[160px] text-xs">{user.email ?? "—"}</span>
+                                    {user.email && (
+                                      <button onClick={() => copyEmail(user.email!, user.id)}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/40 hover:text-brand-400 flex-shrink-0">
+                                        {copiedId === user.id ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+
+                                <td className="px-4 py-3">
+                                  <div className="relative" ref={isPlanMenu ? menuRef : undefined}>
+                                    <button
+                                      disabled={isUpdating}
+                                      onClick={() => setPlanMenuId(isPlanMenu ? null : user.id)}
+                                      className={cn(
+                                        "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all",
+                                        plan.bg, plan.border, plan.color,
+                                        isUpdating && "opacity-50 cursor-wait",
+                                        "hover:opacity-80"
+                                      )}>
+                                      <PlanIcon className="h-3 w-3" />
+                                      {plan.label}
+                                      <ChevronDown className="h-2.5 w-2.5 opacity-60" />
+                                    </button>
+
+                                    <AnimatePresence>
+                                      {isPlanMenu && (
+                                        <motion.div
+                                          initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                                          animate={{ opacity: 1, y: 0,  scale: 1    }}
+                                          exit={{  opacity: 0, y: -6, scale: 0.96 }}
+                                          transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                                          className="absolute top-full mt-1.5 left-0 z-50 w-40 rounded-xl border border-border/50 bg-background/98 backdrop-blur-xl shadow-xl overflow-hidden">
+                                          {(["FREE", "PREMIUM", "ANNUAL", "LIFETIME"] as Plan[]).map(p => {
+                                            const pc = planConfig[p];
+                                            const PI = pc.icon;
+                                            return (
+                                              <button key={p}
+                                                onClick={() => changePlan(user.id, p)}
+                                                className={cn(
+                                                  "w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold transition-colors text-left",
+                                                  user.subscription === p
+                                                    ? cn(pc.bg, pc.color)
+                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                )}>
+                                                <PI className={cn("h-3.5 w-3.5 flex-shrink-0", user.subscription === p ? pc.color : "")} />
+                                                <span>{pc.label}</span>
+                                                {user.subscription === p && <Check className="h-3 w-3 ml-auto" />}
+                                              </button>
+                                            );
+                                          })}
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                </td>
+
+                                <td className="px-4 py-3">
+                                  <span className={cn(
+                                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border",
+                                    user.loginMethod === "google"
+                                      ? "bg-blue-500/8 border-blue-500/20 text-blue-400"
+                                      : "bg-muted/40 border-border/30 text-muted-foreground"
+                                  )}>
+                                    {user.loginMethod === "google" ? "Google" : "Email"}
+                                  </span>
+                                </td>
+
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className={cn(
+                                      "h-1.5 w-1.5 rounded-full flex-shrink-0",
+                                      user.analysisCount > 10 ? "bg-green-400" : user.analysisCount > 0 ? "bg-amber-400" : "bg-muted-foreground/30"
+                                    )} />
+                                    <span className="text-foreground/80 text-sm">{user.analysisCount}</span>
+                                  </div>
+                                </td>
+
+                                <td className="px-4 py-3 text-muted-foreground text-xs">{fmt(user.createdAt)}</td>
+
+                                <td className="px-4 py-3">
+                                  {user.subscription === "FREE" ? (
+                                    <span className="text-muted-foreground/40 text-xs">—</span>
+                                  ) : user.subscription === "LIFETIME" ? (
+                                    <span className="text-amber-400/70 text-xs font-medium">Eterno</span>
+                                  ) : days === null ? (
+                                    <span className="text-muted-foreground/40 text-xs">—</span>
+                                  ) : days < 0 ? (
+                                    <span className="text-destructive text-xs font-semibold">Expirado</span>
+                                  ) : days <= 7 ? (
+                                    <span className="text-amber-400 text-xs font-semibold">{days}d</span>
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs">{fmt(user.expiresAt!)}</span>
+                                  )}
+                                </td>
+
+                                <td className="px-4 py-3">
+                                  <AnimatePresence mode="wait" initial={false}>
+                                    {isConfirm ? (
+                                      <motion.div key="confirm"
+                                        initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}
+                                        className="flex items-center gap-1">
+                                        <button onClick={() => setConfirmDeleteId(null)} disabled={isDeleting}
+                                          className="px-2 py-1 rounded-lg text-xs border border-border/40 text-muted-foreground hover:text-foreground transition-colors">
+                                          Cancelar
+                                        </button>
+                                        <button onClick={() => deleteUser(user.id)} disabled={isDeleting}
+                                          className="px-2 py-1 rounded-lg text-xs bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50">
+                                          {isDeleting ? "..." : "Excluir"}
+                                        </button>
+                                      </motion.div>
+                                    ) : (
+                                      <motion.div key="actions"
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {user.email && (
+                                          <a href={`https://mail.google.com/mail/?view=cm&to=${user.email}`}
+                                            target="_blank" rel="noopener noreferrer"
+                                            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                                            title="Enviar email">
+                                            <Mail className="h-3.5 w-3.5" />
+                                          </a>
+                                        )}
+                                        <button onClick={() => setConfirmDeleteId(user.id)}
+                                          className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                          title="Excluir usuário">
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </td>
                               </motion.tr>
-                            )}
-                          </AnimatePresence>
-                        </>
-                      );
-                    })}
-                  </AnimatePresence>
-                )}
-              </tbody>
-            </table>
+
+                              <AnimatePresence>
+                                {isExpanded && (
+                                  <motion.tr key={`${user.id}-expanded`}
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                    <td colSpan={8} className="px-6 pb-4 pt-0 bg-card/30 border-b border-border/20">
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3">
+                                        <div className="p-3 rounded-xl bg-background/50 border border-border/30">
+                                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">ID da conta</p>
+                                          <p className="text-xs font-mono text-foreground/60 break-all">{user.id}</p>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-background/50 border border-border/30">
+                                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Email completo</p>
+                                          <p className="text-xs text-foreground break-all">{user.email ?? "—"}</p>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-background/50 border border-border/30">
+                                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Plano ativado em</p>
+                                          <p className="text-xs text-foreground">{user.activatedAt ? fmt(user.activatedAt) : "—"}</p>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-background/50 border border-border/30">
+                                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Expira em</p>
+                                          <p className="text-xs text-foreground">
+                                            {user.subscription === "LIFETIME" ? "Nunca (vitalício)" : user.expiresAt ? fmt(user.expiresAt) : "—"}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </motion.tr>
+                                )}
+                              </AnimatePresence>
+                            </>
+                          );
+                        })}
+                      </AnimatePresence>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ══════════════════ EMAIL TAB ══════════════════ */}
+        {activeTab === "email" && (
+          <div className="space-y-6 pt-4">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Campanhas</p>
+              <h2 className="font-display text-lg font-bold tracking-tight text-foreground">Envio de Emails</h2>
+              <p className="text-muted-foreground text-sm mt-1">Envie emails em massa para segmentos específicos de usuários.</p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+
+              {/* ── Template: Free Upsell ── */}
+              <div className="rounded-2xl border border-border/40 bg-card/20 p-6 flex flex-col">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-brand-500/10 flex items-center justify-center flex-shrink-0">
+                      <Zap className="h-5 w-5 text-brand-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground text-sm">Ainda não escolheu um plano?</h3>
+                      <p className="text-xs text-muted-foreground">Usuários grátis</p>
+                    </div>
+                  </div>
+                  <span className={cn(
+                    "px-2.5 py-1 rounded-lg text-xs font-bold border flex-shrink-0",
+                    freeCount === 0
+                      ? "bg-muted/30 border-border/30 text-muted-foreground/50"
+                      : "bg-brand-500/10 border-brand-500/20 text-brand-400"
+                  )}>
+                    {freeCount} usuário{freeCount !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-3 leading-relaxed flex-1">
+                  Envia um email para todos os usuários no plano grátis lembrando de escolher um plano e destravar o acesso completo.
+                </p>
+
+                <p className="text-[11px] text-muted-foreground/50 font-mono mb-4 p-2.5 rounded-lg bg-muted/20 border border-border/20 leading-relaxed">
+                  Assunto: "Não acha que está na hora de destravar suas conversas? 💘"
+                </p>
+
+                <AnimatePresence mode="wait" initial={false}>
+                  {confirmTemplate === "free_upsell" ? (
+                    <motion.div key="confirm"
+                      initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                      className="flex gap-2">
+                      <button onClick={() => setConfirmTemplate(null)}
+                        className="flex-1 py-2 rounded-xl text-xs border border-border/40 text-muted-foreground hover:text-foreground transition-colors">
+                        Cancelar
+                      </button>
+                      <button onClick={() => sendCampaign("free_upsell")}
+                        disabled={sendingTemplate === "free_upsell" || freeCount === 0}
+                        className="flex-1 py-2 rounded-xl text-xs bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
+                        {sendingTemplate === "free_upsell" ? (
+                          <><span className="h-3 w-3 rounded-full border-[1.5px] border-white border-t-transparent animate-spin" /> Enviando...</>
+                        ) : (
+                          <><Check className="h-3 w-3" /> Confirmar envio</>
+                        )}
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <motion.button key="send"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      onClick={() => setConfirmTemplate("free_upsell")}
+                      disabled={freeCount === 0}
+                      className="w-full py-2.5 rounded-xl text-xs border border-brand-500/30 text-brand-400 hover:bg-brand-500/10 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
+                      <Send className="h-3.5 w-3.5" />
+                      Enviar para {freeCount} usuário{freeCount !== 1 ? "s" : ""}
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* ── Template: Expiring Soon ── */}
+              <div className="rounded-2xl border border-border/40 bg-card/20 p-6 flex flex-col">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                      <Clock className="h-5 w-5 text-amber-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground text-sm">Plano expirando em breve</h3>
+                      <p className="text-xs text-muted-foreground">Planos expirando em até 7 dias</p>
+                    </div>
+                  </div>
+                  <span className={cn(
+                    "px-2.5 py-1 rounded-lg text-xs font-bold border flex-shrink-0",
+                    expiringCount === 0
+                      ? "bg-muted/30 border-border/30 text-muted-foreground/50"
+                      : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                  )}>
+                    {expiringCount} usuário{expiringCount !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-3 leading-relaxed flex-1">
+                  Avisa quem tem plano Mensal ou Anual expirando nos próximos 7 dias para renovar antes de perder o acesso.
+                </p>
+
+                <p className="text-[11px] text-muted-foreground/50 font-mono mb-4 p-2.5 rounded-lg bg-muted/20 border border-border/20 leading-relaxed">
+                  Assunto: "Seu plano expira em X dia(s) ⚡"
+                </p>
+
+                <AnimatePresence mode="wait" initial={false}>
+                  {confirmTemplate === "expiring" ? (
+                    <motion.div key="confirm"
+                      initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                      className="flex gap-2">
+                      <button onClick={() => setConfirmTemplate(null)}
+                        className="flex-1 py-2 rounded-xl text-xs border border-border/40 text-muted-foreground hover:text-foreground transition-colors">
+                        Cancelar
+                      </button>
+                      <button onClick={() => sendCampaign("expiring")}
+                        disabled={sendingTemplate === "expiring" || expiringCount === 0}
+                        className="flex-1 py-2 rounded-xl text-xs bg-amber-500 hover:bg-amber-600 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
+                        {sendingTemplate === "expiring" ? (
+                          <><span className="h-3 w-3 rounded-full border-[1.5px] border-white border-t-transparent animate-spin" /> Enviando...</>
+                        ) : (
+                          <><Check className="h-3 w-3" /> Confirmar envio</>
+                        )}
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <motion.button key="send"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      onClick={() => setConfirmTemplate("expiring")}
+                      disabled={expiringCount === 0}
+                      className="w-full py-2.5 rounded-xl text-xs border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
+                      <Send className="h-3.5 w-3.5" />
+                      {expiringCount === 0 ? "Nenhum plano expirando" : `Enviar para ${expiringCount} usuário${expiringCount !== 1 ? "s" : ""}`}
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* ── Template: Custom ── */}
+            <div className="rounded-2xl border border-border/40 bg-card/20 p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center flex-shrink-0">
+                  <Mail className="h-5 w-5 text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground text-sm">Email personalizado</h3>
+                  <p className="text-xs text-muted-foreground">Escreva sua própria mensagem para o público que escolher</p>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-2">
+                    Destinatários
+                  </label>
+                  <select
+                    value={customTarget}
+                    onChange={e => setCustomTarget(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground focus:outline-none focus:border-brand-500/40 transition-colors">
+                    <option value="ALL">Todos os usuários ({users.length})</option>
+                    <option value="FREE">Grátis ({stats?.free ?? 0})</option>
+                    <option value="PREMIUM">Mensal ({stats?.premium ?? 0})</option>
+                    <option value="ANNUAL">Anual ({stats?.annual ?? 0})</option>
+                    <option value="LIFETIME">Vitalício ({stats?.lifetime ?? 0})</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-2">
+                    Assunto
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Novidades no Flert IA 🚀"
+                    value={customSubject}
+                    onChange={e => setCustomSubject(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors" />
+                </div>
+              </div>
+
+              <div className="mb-5">
+                <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-2">
+                  Mensagem <span className="normal-case tracking-normal font-normal opacity-50">(texto simples, uma linha por parágrafo)</span>
+                </label>
+                <textarea
+                  rows={5}
+                  placeholder={"Olá! Passando para avisar sobre..."}
+                  value={customBody}
+                  onChange={e => setCustomBody(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors resize-none leading-relaxed" />
+                <p className="text-[11px] text-muted-foreground/40 mt-1.5">
+                  O email incluirá automaticamente a saudação com o nome do usuário e um botão "Acessar Flert IA".
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-border/30">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {(!customSubject.trim() || !customBody.trim()) && (
+                    <><AlertCircle className="h-3.5 w-3.5 text-amber-400/70" /> Preencha assunto e mensagem</>
+                  )}
+                </div>
+
+                <AnimatePresence mode="wait" initial={false}>
+                  {confirmTemplate === "custom" ? (
+                    <motion.div key="confirm"
+                      initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}
+                      className="flex gap-2">
+                      <button onClick={() => setConfirmTemplate(null)}
+                        className="px-4 py-2 rounded-xl text-xs border border-border/40 text-muted-foreground hover:text-foreground transition-colors">
+                        Cancelar
+                      </button>
+                      <button onClick={() => sendCampaign("custom")}
+                        disabled={sendingTemplate === "custom"}
+                        className="px-4 py-2 rounded-xl text-xs bg-violet-500 hover:bg-violet-600 text-white font-semibold transition-colors disabled:opacity-50 flex items-center gap-1.5">
+                        {sendingTemplate === "custom" ? (
+                          <><span className="h-3 w-3 rounded-full border-[1.5px] border-white border-t-transparent animate-spin" /> Enviando...</>
+                        ) : (
+                          <><Check className="h-3 w-3" /> Confirmar — {customCount} usuário{customCount !== 1 ? "s" : ""}</>
+                        )}
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <motion.button key="send"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      onClick={() => setConfirmTemplate("custom")}
+                      disabled={!customSubject.trim() || !customBody.trim() || customCount === 0}
+                      className="px-4 py-2 rounded-xl text-xs border border-violet-500/30 text-violet-400 hover:bg-violet-500/10 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5">
+                      <Send className="h-3.5 w-3.5" />
+                      Enviar para {customCount} usuário{customCount !== 1 ? "s" : ""}
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
         <p className="text-xs text-muted-foreground/30 text-center pb-4">
           Flert IA · Painel Restrito · {new Date().getFullYear()}
