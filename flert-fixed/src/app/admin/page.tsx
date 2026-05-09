@@ -94,7 +94,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab]             = useState<"users" | "email">("users");
   const [confirmTemplate, setConfirmTemplate] = useState<string | null>(null);
   const [sendingTemplate, setSendingTemplate] = useState<string | null>(null);
-  const [customTarget, setCustomTarget]       = useState<string>("ALL");
+  const [customTarget, setCustomTarget]       = useState<string>("FREE");
   const [customSubject, setCustomSubject]     = useState<string>("");
   const [customBody, setCustomBody]           = useState<string>("");
 
@@ -843,8 +843,8 @@ export default function AdminPage() {
                     value={customTarget}
                     onChange={e => setCustomTarget(e.target.value)}
                     className="w-full h-9 px-3 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground focus:outline-none focus:border-brand-500/40 transition-colors">
-                    <option value="ALL">Todos os usuários ({users.length})</option>
                     <option value="FREE">Grátis ({stats?.free ?? 0})</option>
+                    <option value="ALL">Todos os usuários ({users.length})</option>
                     <option value="PREMIUM">Mensal ({stats?.premium ?? 0})</option>
                     <option value="ANNUAL">Anual ({stats?.annual ?? 0})</option>
                     <option value="LIFETIME">Vitalício ({stats?.lifetime ?? 0})</option>
