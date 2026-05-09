@@ -152,8 +152,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Fire-and-forget welcome email
-    sendWelcomeEmail(user.email, user.name ?? "")
-      .catch(err => console.error("Welcome email error:", err));
+    if (user.email) {
+      sendWelcomeEmail(user.email, user.name ?? "")
+        .catch(err => console.error("Welcome email error:", err));
+    }
 
     return NextResponse.json(
       {
