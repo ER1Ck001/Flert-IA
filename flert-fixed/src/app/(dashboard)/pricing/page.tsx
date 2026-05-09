@@ -97,8 +97,8 @@ export default function PricingPage() {
 
   const visiblePlans = plans.filter((p) => {
     if (userStatus === "LIFETIME") return p.id === "lifetime";
-    if (userStatus === "ANNUAL")   return p.id === "lifetime";
-    if (userStatus === "PREMIUM")  return p.id === "annual" || p.id === "lifetime";
+    if (userStatus === "ANNUAL")   return p.id === "annual"   || p.id === "lifetime";
+    if (userStatus === "PREMIUM")  return p.id === "monthly"  || p.id === "annual";
     return true;
   });
 
