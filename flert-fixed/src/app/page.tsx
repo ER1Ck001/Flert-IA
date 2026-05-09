@@ -392,7 +392,7 @@ export default function HomePage() {
                   </div>
                   <p className="p-pc-per">por mês</p>
                   <ul className="p-pc-f">
-                    {["30 análises por dia","Respostas avançadas com IA","Análise de perfil","Suporte prioritário","Uploads ilimitados"].map(f => <li key={f}>{f}</li>)}
+                    {["30 análises por dia","Respostas avançadas com IA","Análise de perfil","Suporte via email","Uploads ilimitados"].map(f => <li key={f}>{f}</li>)}
                   </ul>
                   <Link href="/auth/register?plan=monthly" className="p-pc-btn" onClick={burst}>
                     Assinar Mensal

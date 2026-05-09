@@ -31,7 +31,7 @@ const plans: Plan[] = [
       "30 análises por dia",
       "Respostas avançadas com IA",
       "Análise de perfil",
-      "Suporte prioritário",
+      "Suporte via email",
       "Modo personalizado",
       "Uploads ilimitados",
     ],
