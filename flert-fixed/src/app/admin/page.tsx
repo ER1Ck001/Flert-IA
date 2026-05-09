@@ -98,6 +98,13 @@ export default function AdminPage() {
   const [customSubject, setCustomSubject]     = useState<string>("");
   const [customBody, setCustomBody]           = useState<string>("");
 
+  // Single-user email modal
+  const [emailModal, setEmailModal]       = useState<AdminUser | null>(null);
+  const [modalTemplate, setModalTemplate] = useState<"free_upsell" | "expiring" | "custom">("free_upsell");
+  const [modalSubject, setModalSubject]   = useState("");
+  const [modalBody, setModalBody]         = useState("");
+  const [sendingModal, setSendingModal]   = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -199,6 +206,39 @@ export default function AdminPage() {
       toast.success(`Plano alterado para ${planConfig[plan].label}!`);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Erro"); }
     finally { setUpdatingId(null); }
+  };
+
+  const openEmailModal = (user: AdminUser) => {
+    setEmailModal(user);
+    setModalTemplate("free_upsell");
+    setModalSubject("");
+    setModalBody("");
+  };
+
+  const sendToUser = async () => {
+    if (!emailModal) return;
+    if (modalTemplate === "custom" && (!modalSubject.trim() || !modalBody.trim())) {
+      toast.error("Preencha assunto e mensagem");
+      return;
+    }
+    setSendingModal(true);
+    try {
+      const payload: Record<string, string> = { template: modalTemplate, userId: emailModal.id };
+      if (modalTemplate === "custom") {
+        payload.customSubject = modalSubject;
+        payload.customBody    = modalBody;
+      }
+      const res  = await fetch("/api/admin/email", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success("Email enviado!");
+      setEmailModal(null);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao enviar"); }
+    finally { setSendingModal(false); }
   };
 
   const sendCampaign = async (templateId: string) => {
@@ -585,12 +625,11 @@ export default function AdminPage() {
                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                         className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         {user.email && (
-                                          <a href={`https://mail.google.com/mail/?view=cm&to=${user.email}`}
-                                            target="_blank" rel="noopener noreferrer"
-                                            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                                          <button onClick={() => openEmailModal(user)}
+                                            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-brand-400 hover:bg-brand-500/10 transition-colors"
                                             title="Enviar email">
                                             <Mail className="h-3.5 w-3.5" />
-                                          </a>
+                                          </button>
                                         )}
                                         <button onClick={() => setConfirmDeleteId(user.id)}
                                           className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
@@ -883,6 +922,96 @@ export default function AdminPage() {
           Flert IA · Painel Restrito · {new Date().getFullYear()}
         </p>
       </div>
+
+      {/* ── Single-user email modal ── */}
+      <AnimatePresence>
+        {emailModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={e => { if (e.target === e.currentTarget) setEmailModal(null); }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1,    y: 0  }}
+              exit={{    opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              className="w-full max-w-md rounded-2xl border border-border/50 bg-background shadow-2xl overflow-hidden">
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+                <div className="flex items-center gap-3">
+                  <UserAvatar user={emailModal} />
+                  <div>
+                    <p className="font-semibold text-foreground text-sm leading-tight">{emailModal.name ?? "—"}</p>
+                    <p className="text-xs text-muted-foreground leading-tight">{emailModal.email}</p>
+                  </div>
+                </div>
+                <button onClick={() => setEmailModal(null)}
+                  className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Template selector */}
+              <div className="px-5 py-4 space-y-2">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Escolha o email</p>
+
+                {([
+                  { id: "free_upsell", label: "Convide para escolher um plano", desc: "\"Não acha que está na hora de destravar suas conversas?\"", icon: Zap,   color: "text-brand-400"  },
+                  { id: "expiring",    label: "Plano expirando em breve",        desc: "Lembra de renovar antes de perder o acesso",                icon: Clock, color: "text-amber-400"  },
+                  { id: "custom",      label: "Mensagem personalizada",           desc: "Escreva sua própria mensagem",                               icon: Mail,  color: "text-violet-400" },
+                ] as const).map(t => (
+                  <button key={t.id} onClick={() => setModalTemplate(t.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all",
+                      modalTemplate === t.id
+                        ? "border-brand-500/40 bg-brand-500/8"
+                        : "border-border/30 hover:border-border/60 hover:bg-accent/30"
+                    )}>
+                    <t.icon className={cn("h-4 w-4 flex-shrink-0", t.color)} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground leading-tight">{t.label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{t.desc}</p>
+                    </div>
+                    {modalTemplate === t.id && <Check className="h-3.5 w-3.5 text-brand-400 flex-shrink-0" />}
+                  </button>
+                ))}
+
+                <AnimatePresence>
+                  {modalTemplate === "custom" && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden pt-1">
+                      <input type="text" placeholder="Assunto do email"
+                        value={modalSubject} onChange={e => setModalSubject(e.target.value)}
+                        className="w-full h-9 px-3 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors" />
+                      <textarea rows={4} placeholder="Mensagem..."
+                        value={modalBody} onChange={e => setModalBody(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors resize-none leading-relaxed" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center gap-2 px-5 py-4 border-t border-border/40 bg-card/20">
+                <a href={`https://mail.google.com/mail/?view=cm&to=${emailModal.email}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="px-3 py-2 rounded-xl text-xs border border-border/40 text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
+                  Abrir Gmail
+                </a>
+                <button onClick={sendToUser} disabled={sendingModal}
+                  className="flex-1 py-2 rounded-xl text-xs bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
+                  {sendingModal
+                    ? <><span className="h-3 w-3 rounded-full border-[1.5px] border-white border-t-transparent animate-spin" /> Enviando...</>
+                    : <><Send className="h-3.5 w-3.5" /> Enviar email</>
+                  }
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

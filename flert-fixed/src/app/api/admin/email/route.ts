@@ -121,12 +121,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  const { template, customSubject, customBody, targetPlan } = await request.json();
+  const { template, customSubject, customBody, targetPlan, userId } = await request.json();
 
   type Target = { email: string | null; name: string | null; expiresAt?: Date | null };
   let targets: Target[] = [];
 
-  if (template === "free_upsell") {
+  // Single user override
+  if (userId) {
+    const u = await prisma.user.findUnique({
+      where:  { id: userId },
+      select: { email: true, name: true, subscriptionStatus: { select: { expiresAt: true } } },
+    });
+    if (!u?.email) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    targets = [{ email: u.email, name: u.name, expiresAt: u.subscriptionStatus?.expiresAt }];
+  } else if (template === "free_upsell") {
     const users = await prisma.user.findMany({
       where: { subscriptionStatus: { status: "FREE" } },
       select: { email: true, name: true },
@@ -148,7 +156,7 @@ export async function POST(request: NextRequest) {
       : {};
     const users = await prisma.user.findMany({ where, select: { email: true, name: true } });
     targets = users;
-  } else {
+  } else if (!userId) {
     return NextResponse.json({ error: "Template inválido" }, { status: 400 });
   }
 
