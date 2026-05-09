@@ -392,7 +392,7 @@ export default function HomePage() {
                   </div>
                   <p className="p-pc-per">por mês</p>
                   <ul className="p-pc-f">
-                    {["Análises ilimitadas","Respostas avançadas com IA","Análise de perfil","Suporte prioritário","Uploads ilimitados"].map(f => <li key={f}>{f}</li>)}
+                    {["30 análises por dia","Respostas avançadas com IA","Análise de perfil","Suporte prioritário","Uploads ilimitados"].map(f => <li key={f}>{f}</li>)}
                   </ul>
                   <Link href="/auth/register?plan=monthly" className="p-pc-btn" onClick={burst}>
                     Assinar Mensal
@@ -409,7 +409,7 @@ export default function HomePage() {
                   </div>
                   <p className="p-pc-per">por ano · economia de R$211</p>
                   <ul className="p-pc-f">
-                    {["Tudo do plano Mensal","2 meses grátis","Análise de perfil completa","Alertas de padrões","Suporte prioritário"].map(f => <li key={f}>{f}</li>)}
+                    {["50 análises por dia","2 meses grátis","Análise de perfil completa","Alertas de padrões","Suporte prioritário"].map(f => <li key={f}>{f}</li>)}
                   </ul>
                   <Link href="/auth/register?plan=annual" className="p-pc-btn p-pc-btn--inv" onClick={burst}>
                     Assinar Anual
@@ -425,7 +425,7 @@ export default function HomePage() {
                   </div>
                   <p className="p-pc-per">pagamento único · acesso eterno</p>
                   <ul className="p-pc-f">
-                    {["Tudo do plano Anual","Acesso vitalício","Updates futuros inclusos","Suporte VIP","Acesso antecipado a novidades"].map(f => <li key={f}>{f}</li>)}
+                    {["Análises ilimitadas","Acesso vitalício","Updates futuros inclusos","Suporte VIP","Acesso antecipado a novidades"].map(f => <li key={f}>{f}</li>)}
                   </ul>
                   <Link href="/auth/register?plan=lifetime" className="p-pc-btn" onClick={burst}>
                     Comprar Vitalício
