@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import nodemailer from "nodemailer";
 
+export const maxDuration = 60; // seconds — allows sending to large user lists
+
 const ADMIN_EMAIL = "erickrochas230@gmail.com";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://flertia.com.br";
 

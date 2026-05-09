@@ -94,7 +94,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab]             = useState<"users" | "email">("users");
   const [confirmTemplate, setConfirmTemplate] = useState<string | null>(null);
   const [sendingTemplate, setSendingTemplate] = useState<string | null>(null);
-  const [customTarget, setCustomTarget]       = useState<string>("FREE");
+  const [customTarget, setCustomTarget]       = useState<string>("ALL");
   const [customSubject, setCustomSubject]     = useState<string>("");
   const [customBody, setCustomBody]           = useState<string>("");
 
@@ -235,7 +235,7 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success("Email enviado!");
+      data.failed > 0 ? toast.error("Falha ao enviar") : toast.success("Email enviado!");
       setEmailModal(null);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao enviar"); }
     finally { setSendingModal(false); }
@@ -261,7 +261,10 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success(`${data.sent} email${data.sent !== 1 ? "s" : ""} enviado${data.sent !== 1 ? "s" : ""}!`);
+      const msg = data.failed > 0
+        ? `${data.sent} enviados, ${data.failed} falharam (de ${data.total})`
+        : `${data.sent} email${data.sent !== 1 ? "s" : ""} enviados!`;
+      data.failed > 0 ? toast.error(msg) : toast.success(msg);
       setConfirmTemplate(null);
       if (templateId === "custom") { setCustomSubject(""); setCustomBody(""); }
     } catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao enviar"); }
