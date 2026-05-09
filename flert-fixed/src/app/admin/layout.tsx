@@ -7,8 +7,16 @@ const ADMIN_EMAIL = "erickrochas230@gmail.com";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.email?.toLowerCase() !== ADMIN_EMAIL) {
-    redirect("/");
+
+  if (!session) {
+    redirect("/auth/login?callbackUrl=/admin");
   }
+
+  const email = session.user?.email?.toLowerCase().trim();
+
+  if (email !== ADMIN_EMAIL) {
+    redirect("/dashboard");
+  }
+
   return <>{children}</>;
 }
