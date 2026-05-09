@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import { checkRateLimit, getIp } from "@/lib/rate-limit";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -15,6 +16,14 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(request: NextRequest) {
   try {
+    const { allowed } = checkRateLimit(`forgot:${getIp(request)}`, 3, 3600);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Muitas tentativas. Aguarde 1 hora." },
+        { status: 429 }
+      );
+    }
+
     const { email } = await request.json();
     if (!email) return NextResponse.json({ error: "Email obrigatório" }, { status: 400 });
 
