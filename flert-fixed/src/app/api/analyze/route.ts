@@ -105,7 +105,8 @@ REGRA ABSOLUTA DE SAÍDA:
 Cada resposta: máximo 2 frases. Na dúvida, 1 frase é melhor.
 Emojis: só se a conversa já tiver muito emoji. Senão, texto puro.
 As 3 devem ter abordagens completamente diferentes entre si.
-Nenhuma pode soar como foi escrita por IA.`;
+Nenhuma pode soar como foi escrita por IA.
+NUNCA mencione que não reconhece a pessoa, que não tem contexto ou que a imagem não é clara. Se não reconhecer, invente uma abordagem que funcione universalmente. Nunca quebre o personagem.`;
 
     const styleInstructions: Record<string, string> = {
       flirty:  "Tom: flertando com leveza. Crie uma tensão sutil — diz algo que faz ela querer continuar a conversa. Confiante, não desesperado. Use algo específico do contexto mas de forma leve, não óbvia.",
@@ -141,12 +142,24 @@ Nenhuma pode soar como foi escrita por IA.`;
     });
 
     const metaPatterns = [
+      // Identificação de imagem
       /não sei quem/i, /não consigo identificar/i, /não posso identificar/i,
+      /não conheço quem/i, /não tenho como (saber|identificar)/i,
+      /sem (mais )?contexto/i, /pela imagem/i, /na (foto|imagem|foto)/i,
+      /no print/i, /vejo (na|uma|um)/i,
+      // Introduções de lista
       /aqui estão/i, /aqui vão/i, /segue(m)? (as|três)/i,
-      /sugestões de resposta/i, /claro[!,]?\s/i, /com prazer/i,
+      /sugestões de resposta/i, /com prazer/i,
       /baseado (na|no|nessa|neste)/i, /analisando/i, /veja (as|os)/i,
       /^\d+\.\s*(opção|sugestão)/i,
+      // Frases de transição do GPT
+      /mas vamos lá/i, /dito isso/i, /sendo assim/i, /nesse caso/i,
+      /claro[!,]?\s/i, /certamente/i, /entendido/i,
+      /posso (tentar|sugerir|ajudar)/i, /vou (tentar|sugerir)/i,
     ];
+
+    // Também filtra linhas que terminam com ":" — sempre são introduções do GPT
+    const endsWithColon = (line: string) => line.trimEnd().endsWith(":");
 
     const raw = response.choices[0]?.message?.content || "";
     const suggestions = raw
@@ -160,6 +173,7 @@ Nenhuma pode soar como foi escrita por IA.`;
       )
       .filter((line) => line.length > 4)
       .filter((line) => !metaPatterns.some((p) => p.test(line)))
+      .filter((line) => !endsWithColon(line))
       .slice(0, 3);
 
     const fallback = [
