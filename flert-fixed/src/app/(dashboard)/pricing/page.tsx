@@ -28,7 +28,7 @@ const plans: Plan[] = [
     period: "/mês",
     description: "Para começar",
     features: [
-      "Análises ilimitadas",
+      "30 análises por dia",
       "Respostas avançadas com IA",
       "Análise de perfil",
       "Suporte prioritário",
@@ -45,7 +45,7 @@ const plans: Plan[] = [
     period: "/ano",
     description: "Economia de R$ 211/ano",
     features: [
-      "Tudo do plano Mensal",
+      "50 análises por dia",
       "2 meses grátis",
       "Análise de perfil completa",
       "Alertas de padrões",
@@ -63,7 +63,7 @@ const plans: Plan[] = [
     period: "pagamento único",
     description: "Acesso para sempre",
     features: [
-      "Tudo do plano Anual",
+      "Análises ilimitadas",
       "Acesso vitalício",
       "Updates futuros inclusos",
       "Suporte VIP",
@@ -97,12 +97,14 @@ export default function PricingPage() {
 
   const visiblePlans = plans.filter((p) => {
     if (userStatus === "LIFETIME") return p.id === "lifetime";
+    if (userStatus === "ANNUAL")   return p.id === "lifetime";
     if (userStatus === "PREMIUM")  return p.id === "annual" || p.id === "lifetime";
     return true;
   });
 
   const isActivePlan = (planId: string) => {
     if (userStatus === "LIFETIME" && planId === "lifetime") return true;
+    if (userStatus === "ANNUAL"   && planId === "annual")   return true;
     if (userStatus === "PREMIUM"  && planId === "monthly")  return true;
     return false;
   };

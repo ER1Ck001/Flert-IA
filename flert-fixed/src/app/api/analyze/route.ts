@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
       where: { userId: session.user.id },
     });
 
-    const isPaid =
-      subscription?.status === "PREMIUM" || subscription?.status === "LIFETIME";
+    const status = subscription?.status;
+    const isPaid = status === "PREMIUM" || status === "ANNUAL" || status === "LIFETIME";
 
     if (!isPaid) {
       return NextResponse.json(
@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isLifetime = subscription?.status === "LIFETIME";
+    const isLifetime = status === "LIFETIME";
+    const dailyLimit = status === "ANNUAL" ? 50 : 30;
 
     if (!isLifetime) {
       const todayStart = new Date();
@@ -44,10 +45,10 @@ export async function POST(request: NextRequest) {
         where: { userId: session.user.id, createdAt: { gte: todayStart } },
       });
 
-      if (todayCount >= 30) {
+      if (todayCount >= dailyLimit) {
         return NextResponse.json(
           {
-            error: "Limite diário atingido. Você já fez 30 análises hoje.",
+            error: `Limite diário atingido. Você já fez ${dailyLimit} análises hoje.`,
             limitReached: true,
             todayCount,
           },

@@ -22,13 +22,15 @@ export async function GET() {
       prisma.subscriptionStatus.findUnique({ where: { userId } }),
     ]);
 
-    const isLifetime = subscription?.status === "LIFETIME";
+    const status     = subscription?.status;
+    const isLifetime = status === "LIFETIME";
+    const dailyLimit = isLifetime ? null : status === "ANNUAL" ? 50 : 30;
 
     return NextResponse.json({
       total,
       thisWeek,
       today,
-      dailyLimit: isLifetime ? null : 30,
+      dailyLimit,
       isLifetime,
     });
   } catch (error) {

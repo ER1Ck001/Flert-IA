@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     const productMap: Record<string, { id: string; methods: string[]; status: string }> = {
       monthly:  { id: process.env.ABACATEPAY_PRODUCT_ID_MONTHLY  || "", methods: ["CARD"],       status: "PREMIUM"  },
-      annual:   { id: process.env.ABACATEPAY_PRODUCT_ID_ANNUAL   || "", methods: ["CARD"],       status: "PREMIUM"  },
+      annual:   { id: process.env.ABACATEPAY_PRODUCT_ID_ANNUAL   || "", methods: ["CARD"],       status: "ANNUAL"   },
       lifetime: { id: process.env.ABACATEPAY_PRODUCT_ID_LIFETIME || "", methods: ["PIX", "CARD"], status: "LIFETIME" },
     };
 

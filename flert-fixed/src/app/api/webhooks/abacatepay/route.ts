@@ -30,9 +30,12 @@ export async function POST(request: NextRequest) {
       }
 
       const isLifetime = plan === "LIFETIME";
+      const isAnnual   = plan === "ANNUAL";
       const expiresAt = isLifetime
         ? null
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // +30 dias
+        : isAnnual
+        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // +365 dias
+        : new Date(Date.now() + 30  * 24 * 60 * 60 * 1000); // +30 dias
 
       await prisma.subscriptionStatus.upsert({
         where: { userId },

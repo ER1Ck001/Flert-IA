@@ -40,16 +40,17 @@ export default function AnalyzePage() {
   const [tone, setTone]               = useState("flirty");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [isPaid, setIsPaid]           = useState<boolean | null>(null);
-  const [isLifetime, setIsLifetime]   = useState(false);
-  const [todayCount, setTodayCount]   = useState(0);
+  const [isPaid, setIsPaid]             = useState<boolean | null>(null);
+  const [isLifetime, setIsLifetime]     = useState(false);
+  const [todayCount, setTodayCount]     = useState(0);
+  const [dailyLimit, setDailyLimit]     = useState(30);
   const [limitReached, setLimitReached] = useState(false);
 
   useEffect(() => {
     fetch("/api/payment")
       .then((r) => r.json())
       .then((d) => {
-        setIsPaid(d.status === "PREMIUM" || d.status === "LIFETIME");
+        setIsPaid(d.status === "PREMIUM" || d.status === "ANNUAL" || d.status === "LIFETIME");
         setIsLifetime(d.status === "LIFETIME");
       })
       .catch(() => setIsPaid(false));
@@ -57,8 +58,10 @@ export default function AnalyzePage() {
     fetch("/api/stats")
       .then((r) => r.json())
       .then((d) => {
+        const limit = d.dailyLimit ?? 30;
         setTodayCount(d.today ?? 0);
-        if (!d.isLifetime && (d.today ?? 0) >= 30) setLimitReached(true);
+        setDailyLimit(limit);
+        if (!d.isLifetime && (d.today ?? 0) >= limit) setLimitReached(true);
       })
       .catch(() => {});
   }, []);
@@ -134,7 +137,7 @@ export default function AnalyzePage() {
             Limite diário atingido
           </h2>
           <p className="text-sm text-muted-foreground">
-            Você já fez <strong className="text-foreground">30 análises hoje</strong>. O limite reinicia à meia-noite.
+            Você já fez <strong className="text-foreground">{dailyLimit} análises hoje</strong>. O limite reinicia à meia-noite.
           </p>
           <p className="text-xs text-muted-foreground mt-2">
             Quer análises ilimitadas? Faça upgrade para o plano <strong className="text-brand-400">Vitalício</strong>.
@@ -210,11 +213,11 @@ export default function AnalyzePage() {
         {!isLifetime && (
           <div className={cn(
             "flex-shrink-0 px-3 py-1.5 rounded-xl border text-xs font-semibold tabular-nums",
-            todayCount >= 28
+            todayCount >= dailyLimit - 2
               ? "border-amber-500/30 bg-amber-500/8 text-amber-400"
               : "border-border/40 bg-card/30 text-muted-foreground"
           )}>
-            {todayCount}/30 hoje
+            {todayCount}/{dailyLimit} hoje
           </div>
         )}
       </motion.div>

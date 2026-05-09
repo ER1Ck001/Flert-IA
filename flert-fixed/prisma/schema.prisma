@@ -94,6 +94,7 @@ model Profile {
 enum SubscriptionPlan {
   FREE
   PREMIUM
+  ANNUAL
   LIFETIME
 }
 
