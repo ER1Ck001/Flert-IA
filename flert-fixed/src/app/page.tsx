@@ -14,7 +14,7 @@ const features = [
 
 const steps = [
   { n: "01", title: "Faça Upload",    desc: "Envie um print da conversa que você quer responder. Qualquer app funciona." },
-  { n: "02", title: "Escolha o Tom",  desc: "Flertando, engraçado, sério ou casual. Você define o clima da resposta." },
+  { n: "02", title: "Escolha o Tom",  desc: "Flertando, engraçado, casual, afiado, cantada, stories e mais. Você define o clima." },
   { n: "03", title: "Use a Sugestão", desc: "3 opções geradas pela IA. Copie, adapte ou envie direto. É isso." },
 ];
 
