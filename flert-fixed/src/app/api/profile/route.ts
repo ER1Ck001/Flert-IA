@@ -106,7 +106,7 @@ export async function DELETE() {
             </p>
           </div>
         `,
-      });
+      }).catch((err) => console.error("Delete account email error:", err));
     }
 
     return NextResponse.json({ success: true });
