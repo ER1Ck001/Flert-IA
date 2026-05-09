@@ -151,10 +151,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Fire-and-forget welcome email
+    // Send welcome email (awaited — serverless functions terminate after response)
     if (user.email) {
-      sendWelcomeEmail(user.email, user.name ?? "")
-        .catch(err => console.error("Welcome email error:", err));
+      try {
+        await sendWelcomeEmail(user.email, user.name ?? "");
+      } catch (emailErr) {
+        console.error("Welcome email error:", emailErr);
+      }
     }
 
     return NextResponse.json(

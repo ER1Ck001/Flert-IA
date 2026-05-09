@@ -168,8 +168,11 @@ export async function POST(request: NextRequest) {
       });
 
       if (user?.email) {
-        sendWelcomeEmail(user.email, user.name ?? "você", plan)
-          .catch(err => console.error("Welcome email error:", err));
+        try {
+          await sendWelcomeEmail(user.email, user.name ?? "você", plan);
+        } catch (emailErr) {
+          console.error("Welcome email error:", emailErr);
+        }
       }
     }
 
