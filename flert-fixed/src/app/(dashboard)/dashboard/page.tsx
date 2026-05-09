@@ -32,7 +32,7 @@ const quickLinks = [
 
 const steps = [
   { n: "01", t: "Upload do print",  d: "Envie a screenshot da conversa" },
-  { n: "02", t: "Escolha o tom",    d: "Flertando, engraçado, casual..." },
+  { n: "02", t: "Escolha o tom",    d: "Flertando, engraçado, casual, afiado, cantada, stories e mais." },
   { n: "03", t: "Use a sugestão",   d: "3 opções prontas para copiar" },
 ];
 
