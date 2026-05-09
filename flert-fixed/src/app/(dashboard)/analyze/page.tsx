@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X, Sparkles, Copy, Check, Lock } from "lucide-react";
+import { Upload, X, Sparkles, Copy, Check, Lock, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,12 +41,26 @@ export default function AnalyzePage() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isPaid, setIsPaid]           = useState<boolean | null>(null);
+  const [isLifetime, setIsLifetime]   = useState(false);
+  const [todayCount, setTodayCount]   = useState(0);
+  const [limitReached, setLimitReached] = useState(false);
 
   useEffect(() => {
     fetch("/api/payment")
       .then((r) => r.json())
-      .then((d) => setIsPaid(d.status === "PREMIUM" || d.status === "LIFETIME"))
+      .then((d) => {
+        setIsPaid(d.status === "PREMIUM" || d.status === "LIFETIME");
+        setIsLifetime(d.status === "LIFETIME");
+      })
       .catch(() => setIsPaid(false));
+
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then((d) => {
+        setTodayCount(d.today ?? 0);
+        if (!d.isLifetime && (d.today ?? 0) >= 30) setLimitReached(true);
+      })
+      .catch(() => {});
   }, []);
 
   const loadImage = (file: File) => {
@@ -68,8 +82,14 @@ export default function AnalyzePage() {
         body: JSON.stringify({ imageUrl: image, style: tone, context: context.trim() || undefined }),
       });
       const data = await res.json();
+      if (res.status === 429) {
+        setLimitReached(true);
+        setTodayCount(data.todayCount ?? 30);
+        throw new Error(data.error);
+      }
       if (!res.ok) throw new Error(data.error || "Erro ao analisar");
       setSuggestions(data.suggestions);
+      setTodayCount((prev) => prev + 1);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao analisar. Tente novamente.");
     } finally {
@@ -90,6 +110,44 @@ export default function AnalyzePage() {
       <div className="flex items-center justify-center h-64">
         <span className="h-5 w-5 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
       </div>
+    );
+  }
+
+  if (isPaid && limitReached) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 260, damping: 22 }}
+        className="max-w-md mx-auto mt-16 text-center space-y-5"
+      >
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 280, damping: 22 }}
+          className="h-14 w-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto"
+        >
+          <AlertCircle className="h-6 w-6 text-amber-400" />
+        </motion.div>
+        <div>
+          <h2 className="font-display text-xl font-bold text-foreground mb-2">
+            Limite diário atingido
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Você já fez <strong className="text-foreground">30 análises hoje</strong>. O limite reinicia à meia-noite.
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Quer análises ilimitadas? Faça upgrade para o plano <strong className="text-brand-400">Vitalício</strong>.
+          </p>
+        </div>
+        <Button
+          variant="brand"
+          className="w-full h-10 text-sm font-semibold"
+          onClick={() => router.push("/pricing")}
+        >
+          Ver plano Vitalício
+        </Button>
+      </motion.div>
     );
   }
 
@@ -137,16 +195,28 @@ export default function AnalyzePage() {
     >
 
       {/* ── Page header ── */}
-      <motion.div variants={pageItem}>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-          Análise com IA
-        </p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-          Analisar conversa
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Envie o print e a IA gera 3 sugestões personalizadas para você
-        </p>
+      <motion.div variants={pageItem} className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+            Análise com IA
+          </p>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+            Analisar conversa
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Envie o print e a IA gera 3 sugestões personalizadas para você
+          </p>
+        </div>
+        {!isLifetime && (
+          <div className={cn(
+            "flex-shrink-0 px-3 py-1.5 rounded-xl border text-xs font-semibold tabular-nums",
+            todayCount >= 28
+              ? "border-amber-500/30 bg-amber-500/8 text-amber-400"
+              : "border-border/40 bg-card/30 text-muted-foreground"
+          )}>
+            {todayCount}/30 hoje
+          </div>
+        )}
       </motion.div>
 
       <motion.div variants={pageItem} className="grid lg:grid-cols-[1fr_340px] gap-6 items-start">
@@ -233,7 +303,7 @@ export default function AnalyzePage() {
           <motion.div whileTap={{ scale: 0.99 }}>
             <Button
               onClick={handleAnalyze}
-              disabled={!image || loading}
+              disabled={!image || loading || limitReached}
               className="w-full h-10 text-sm font-semibold"
               variant="brand"
             >
@@ -255,21 +325,21 @@ export default function AnalyzePage() {
         {/* ── Options panel ── */}
         <div className="space-y-6">
 
-          {/* Tone pills */}
+          {/* Tone grid */}
           <div>
             <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 block">
               Tom da resposta
             </Label>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 gap-1.5">
               {tones.map((t) => (
                 <motion.button
                   key={t.value}
                   onClick={() => setTone(t.value)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                   transition={{ type: "spring", stiffness: 400, damping: 28 }}
                   className={cn(
-                    "relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                    "relative flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-colors w-full",
                     tone === t.value
                       ? "text-brand-300 border-brand-500/35"
                       : "bg-transparent border-border/40 text-muted-foreground hover:border-border hover:text-foreground"
@@ -278,7 +348,7 @@ export default function AnalyzePage() {
                   {tone === t.value && (
                     <motion.span
                       layoutId="tone-active"
-                      className="absolute inset-0 rounded-full bg-brand-500/15 border border-brand-500/35"
+                      className="absolute inset-0 rounded-xl bg-brand-500/15 border border-brand-500/35"
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}

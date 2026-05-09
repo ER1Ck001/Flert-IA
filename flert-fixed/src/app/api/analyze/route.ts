@@ -34,6 +34,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const isLifetime = subscription?.status === "LIFETIME";
+
+    if (!isLifetime) {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const todayCount = await prisma.conversation.count({
+        where: { userId: session.user.id, createdAt: { gte: todayStart } },
+      });
+
+      if (todayCount >= 30) {
+        return NextResponse.json(
+          {
+            error: "Limite diário atingido. Você já fez 30 análises hoje.",
+            limitReached: true,
+            todayCount,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     if (!imageUrl) {
       return NextResponse.json(
         { error: "Imagem é obrigatória" },

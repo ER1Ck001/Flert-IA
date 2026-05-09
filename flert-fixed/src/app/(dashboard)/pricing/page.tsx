@@ -78,7 +78,7 @@ const plans: Plan[] = [
 const faqs = [
   { q: "Posso cancelar quando quiser?",        a: "Sim. Cancele a qualquer momento sem perguntas ou taxas extras." },
   { q: "Quais formas de pagamento?",           a: "PIX, cartão de crédito e boleto. PIX processado instantaneamente." },
-  { q: "Existe garantia?",                     a: "7 dias de garantia incondicional. Não gostou, devolvemos." },
+  { q: "Existe garantia ou reembolso?",        a: "Oferecemos reembolso para usuários que utilizaram o serviço ao menos uma vez e não ficaram satisfeitos. Basta entrar em contato pelo suporte em até 7 dias após a compra." },
   { q: "O plano vitalício é mesmo para sempre?", a: "Sim. Uma compra, acesso eterno — incluindo todas as atualizações futuras." },
 ];
 
@@ -260,6 +260,26 @@ export default function PricingPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ── Refund policy notice ── */}
+      <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl border border-border/30 bg-card/10">
+        <div className="h-5 w-5 rounded-full bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <span className="text-[10px]">ℹ</span>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          <span className="font-semibold text-foreground/70">Política de reembolso: </span>
+          O reembolso é disponibilizado exclusivamente para usuários que utilizaram o serviço ao menos uma vez e não ficaram satisfeitos. Para solicitar, entre em contato pelo{" "}
+          <a
+            href="https://mail.google.com/mail/?view=cm&to=erickdev@flertia.com.br&su=Solicita%C3%A7%C3%A3o%20de%20Reembolso"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-400 hover:text-brand-300 transition-colors"
+          >
+            suporte
+          </a>{" "}
+          em até 7 dias após a compra.
+        </p>
       </div>
 
     </div>

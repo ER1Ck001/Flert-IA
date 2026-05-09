@@ -51,6 +51,23 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE() {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    await prisma.user.delete({ where: { id: session.user.id } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Profile DELETE error:", error);
+    return NextResponse.json({ error: "Erro ao excluir conta" }, { status: 500 });
+  }
+}
+
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

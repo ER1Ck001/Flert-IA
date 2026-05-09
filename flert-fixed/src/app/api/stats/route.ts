@@ -12,13 +12,25 @@ export async function GET() {
 
     const userId = session.user.id;
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
-    const [total, thisWeek] = await Promise.all([
+    const [total, thisWeek, today, subscription] = await Promise.all([
       prisma.conversation.count({ where: { userId } }),
       prisma.conversation.count({ where: { userId, createdAt: { gte: weekAgo } } }),
+      prisma.conversation.count({ where: { userId, createdAt: { gte: todayStart } } }),
+      prisma.subscriptionStatus.findUnique({ where: { userId } }),
     ]);
 
-    return NextResponse.json({ total, thisWeek });
+    const isLifetime = subscription?.status === "LIFETIME";
+
+    return NextResponse.json({
+      total,
+      thisWeek,
+      today,
+      dailyLimit: isLifetime ? null : 30,
+      isLifetime,
+    });
   } catch (error) {
     console.error("Stats error:", error);
     return NextResponse.json({ total: 0, thisWeek: 0 });
