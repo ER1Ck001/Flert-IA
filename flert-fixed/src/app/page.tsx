@@ -406,6 +406,7 @@ export default function HomePage() {
                   <div className="p-pc-price">
                     <span className="p-pc-currency">R$</span>
                     <span className="p-pc-amt">147</span>
+                    <span className="p-pc-dec">,00</span>
                   </div>
                   <p className="p-pc-per">por ano · economia de R$211</p>
                   <ul className="p-pc-f">
@@ -422,6 +423,7 @@ export default function HomePage() {
                   <div className="p-pc-price">
                     <span className="p-pc-currency">R$</span>
                     <span className="p-pc-amt">297</span>
+                    <span className="p-pc-dec">,00</span>
                   </div>
                   <p className="p-pc-per">pagamento único · acesso eterno</p>
                   <ul className="p-pc-f">

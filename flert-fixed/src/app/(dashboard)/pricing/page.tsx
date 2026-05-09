@@ -41,7 +41,7 @@ const plans: Plan[] = [
   {
     id: "annual",
     name: "Anual",
-    price: "R$ 147",
+    price: "R$ 147,00",
     period: "/ano",
     description: "Economia de R$ 211/ano",
     features: [
@@ -59,7 +59,7 @@ const plans: Plan[] = [
   {
     id: "lifetime",
     name: "Vitalício",
-    price: "R$ 297",
+    price: "R$ 297,00",
     period: "pagamento único",
     description: "Acesso para sempre",
     features: [
