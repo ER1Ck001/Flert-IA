@@ -1369,19 +1369,45 @@ const CSS = `
 @keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:.35} }
 @media (max-width:1024px) { .feat-bento { grid-template-columns:repeat(2,1fr); } .feat-card--big { grid-column:span 1; } .price-grid--4 { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:768px) {
-  /* ── Esconde fotos de casal — telefone é o foco no mobile ── */
-  .cp-scene { display:none; }
+  /* ── Fotos de casal: enquadramento centralizado no mobile ── */
+  .cp-photo-img { object-position:center 40%; }
 
-  /* ── Hero mobile: telefone em destaque ── */
+  /* ── Vinheta muito mais forte no mobile para legibilidade ── */
+  .cp-vignette {
+    background:
+      linear-gradient(to bottom,
+        rgba(11,11,15,.72) 0%,
+        rgba(11,11,15,.38) 18%,
+        rgba(11,11,15,.18) 38%,
+        rgba(11,11,15,.28) 60%,
+        rgba(11,11,15,.88) 80%,
+        #0B0B0F 100%
+      ),
+      radial-gradient(ellipse 110% 60% at 50% 50%, transparent 20%, rgba(11,11,15,.55) 100%);
+  }
+
+  /* ── Hero mobile ── */
   .hero { padding:5.5rem 1.5rem 4rem; min-height:auto; }
-  .hero-inner { grid-template-columns:1fr; gap:2.5rem; }
+  .hero-inner { grid-template-columns:1fr; gap:2rem; }
   .hero-visual { order:-1; justify-content:center; }
   .hero-content { align-items:center; text-align:center; gap:1.25rem; }
-  .hero-title { font-size:clamp(2.4rem,9vw,3.4rem); }
-  .hero-title-sub { font-size:clamp(1.1rem,4vw,1.5rem); }
-  .hero-sub { text-align:center; max-width:100%; font-size:.9rem; }
-  .hero-badge { align-self:center; }
+
+  /* Sombra de texto para legibilidade sobre a foto ── */
+  .hero-title {
+    font-size:clamp(2.4rem,9vw,3.4rem);
+    text-shadow:0 2px 24px rgba(11,11,15,.9), 0 0 60px rgba(11,11,15,.7);
+  }
+  .hero-title-sub {
+    font-size:clamp(1.1rem,4vw,1.5rem);
+    text-shadow:0 1px 12px rgba(11,11,15,.8);
+  }
+  .hero-sub {
+    text-align:center; max-width:100%; font-size:.9rem;
+    text-shadow:0 1px 8px rgba(11,11,15,.8);
+  }
+  .hero-badge { align-self:center; background:rgba(11,11,15,.6); backdrop-filter:blur(8px); }
   .hero-social { justify-content:center; }
+  .hero-social-text { text-shadow:0 1px 8px rgba(11,11,15,.8); }
   .hero-ctas { flex-direction:column; align-items:center; width:100%; }
   .hero-cta-primary { width:100%; text-align:center; }
 
@@ -1406,9 +1432,10 @@ const CSS = `
 }
 @media (max-width:480px) {
   .hero { padding:5rem 1.25rem 3.5rem; }
-  .phone { width:220px; height:440px; }
+  .phone { width:226px; height:452px; }
   .lp-nav-links { gap:1rem; }
   .chatrev-stats { gap:1.5rem; }
   .hero-title { font-size:clamp(2.2rem,9.5vw,3rem); }
+  .cp-photo-img { object-position:center 45%; }
 }
 `;
