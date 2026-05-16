@@ -309,33 +309,33 @@ export default function AdminPage() {
 
       {/* ── Header ── */}
       <header className="h-14 border-b border-border/40 bg-background/98 backdrop-blur-xl sticky top-0 z-40 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2">
-            <Heart className="h-4 w-4 text-brand-500 fill-brand-500" />
-            <span className="font-display text-base font-bold tracking-tight">
-              Flert<span className="text-brand-500">.</span>IA
+        <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-1.5">
+            <span className="text-brand-500 text-base leading-none">♥</span>
+            <span className="font-display text-lg font-semibold italic tracking-tight text-foreground">
+              Flert<em className="text-brand-500 not-italic">.</em>IA
             </span>
           </Link>
-          <span className="text-border/60">·</span>
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-brand-500/10 border border-brand-500/20">
+          <div className="h-3 w-px bg-border/40" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 border border-brand-500/25 bg-brand-500/8">
             <Shield className="h-3 w-3 text-brand-400" />
-            <span className="text-[11px] font-bold uppercase tracking-widest text-brand-400">Admin</span>
+            <span className="text-[9.5px] font-bold uppercase tracking-[.2em] text-brand-400">Admin</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={exportCSV} disabled={loading || filtered.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/40 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border transition-colors disabled:opacity-30">
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-border/40 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border/70 transition-colors disabled:opacity-30">
             <Download className="h-3 w-3" /> Exportar CSV
           </button>
           <button onClick={load} disabled={loading}
-            className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground" title="Recarregar">
+            className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground" title="Recarregar">
             <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
           </button>
-          <Link href="/dashboard" className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground" title="Dashboard">
+          <Link href="/dashboard" className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground" title="Dashboard">
             <Sparkles className="h-3.5 w-3.5" />
           </Link>
           <button onClick={() => signOut({ callbackUrl: "/" })}
-            className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-destructive" title="Sair">
+            className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-destructive" title="Sair">
             <LogOut className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -345,9 +345,9 @@ export default function AdminPage() {
 
         {/* ── Title ── */}
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Painel Administrativo</p>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">Controle Total</h1>
-          <p className="text-muted-foreground text-sm mt-1">Gerencie usuários, planos e monitore o crescimento do Flert IA</p>
+          <p className="text-[9.5px] font-bold uppercase tracking-[.28em] text-brand-500/70 mb-2">— Painel Administrativo —</p>
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground italic">Controle <em className="text-brand-400 not-italic">Total</em></h1>
+          <p className="text-muted-foreground text-sm mt-1.5 font-light">Gerencie usuários, planos e monitore o crescimento do Flert IA</p>
         </div>
 
         {/* ── Stats grid ── */}
@@ -356,29 +356,29 @@ export default function AdminPage() {
             <motion.div key={s.label}
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
-              className="rounded-xl border border-border/40 bg-card/20 px-4 py-4 hover:border-border/70 transition-colors group">
-              <s.icon className={cn("h-3.5 w-3.5 mb-2 transition-transform group-hover:scale-110", s.color)} />
-              <div className={cn("font-display text-xl font-bold tracking-tight leading-none", s.color)}>
+              className="border border-border/30 bg-card/10 px-4 py-4 hover:border-brand-500/20 hover:bg-brand-500/[0.02] transition-colors group">
+              <s.icon className={cn("h-3.5 w-3.5 mb-2.5 transition-transform group-hover:scale-110", s.color)} />
+              <div className={cn("font-display text-xl font-semibold tracking-tight leading-none italic", s.color)}>
                 {(s as { raw?: boolean }).raw ? s.value : Number(s.value).toLocaleString("pt-BR")}
               </div>
-              <div className="text-[10px] font-semibold text-muted-foreground mt-1 leading-tight">{s.label}</div>
-              <div className="text-[10px] text-muted-foreground/50 mt-0.5 leading-tight">{s.sub}</div>
+              <div className="text-[9.5px] font-bold uppercase tracking-[.14em] text-muted-foreground/70 mt-1.5 leading-tight">{s.label}</div>
+              <div className="text-[10px] text-muted-foreground/40 mt-0.5 leading-tight font-light">{s.sub}</div>
             </motion.div>
           ))}
         </div>
 
         {/* ── Tabs ── */}
-        <div className="flex border-b border-border/40 -mb-4">
+        <div className="flex border-b border-border/30 -mb-4">
           {([
             { id: "users", label: "Usuários",           icon: Users },
             { id: "email", label: "Campanhas de Email", icon: Mail  },
           ] as const).map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-all",
+                "flex items-center gap-2 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[.18em] border-b-2 -mb-px transition-all",
                 activeTab === tab.id
                   ? "border-brand-500 text-brand-400"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  : "border-transparent text-muted-foreground/50 hover:text-foreground"
               )}>
               <tab.icon className="h-3.5 w-3.5" />
               {tab.label}
