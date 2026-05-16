@@ -1,0 +1,17 @@
+# Claude Code memory
+.claude/
+
+# Design assets (não commitar)
+FLERT IA/
+
+# Node (root wrapper)
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
