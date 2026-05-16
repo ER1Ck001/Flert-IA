@@ -1103,7 +1103,7 @@ export default function LandingPage() {
 
 const CSS = `
 .lp {
-  --bg:#0B0B0F; --tx:#F2EDE8; --tx2:rgba(242,237,232,.55); --tx3:rgba(242,237,232,.3);
+  --bg:#0B0B0F; --tx:#F2EDE8; --tx2:rgba(242,237,232,.6); --tx3:rgba(242,237,232,.35);
   --bd:rgba(255,255,255,.07); --bd2:rgba(255,255,255,.12);
   --acc:#D946EF; --acc2:#FF4D6D; --acc3:#6F1DFF;
   --grad:linear-gradient(135deg,#D946EF,#FF4D6D);
@@ -1356,7 +1356,7 @@ const CSS = `
 .footer-copy { font-size:11px; color:var(--tx3); font-weight:300; }
 .cp-scene { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
 .cp-photo { position:absolute; inset:0; overflow:hidden; }
-.cp-photo-img { position:absolute; inset:-4%; width:108%; height:108%; object-fit:cover; object-position:center 22%; will-change:transform; transform-origin:center center; }
+.cp-photo-img { position:absolute; inset:-4%; width:108%; height:108%; object-fit:cover; object-position:center 30%; will-change:transform; transform-origin:center center; }
 .cp-grade { position:absolute; inset:0; background:linear-gradient(135deg,rgba(217,70,239,.22) 0%,rgba(111,29,255,.14) 48%,rgba(255,77,109,.18) 100%); mix-blend-mode:color; pointer-events:none; }
 .cp-vignette { position:absolute; inset:0; pointer-events:none;
   background:
@@ -1369,9 +1369,26 @@ const CSS = `
 @keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:.35} }
 @media (max-width:1024px) { .feat-bento { grid-template-columns:repeat(2,1fr); } .feat-card--big { grid-column:span 1; } .price-grid--4 { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:768px) {
-  .hero-inner { grid-template-columns:1fr; }
-  .hero-visual { order:-1; }
-  .phone { width:220px; height:440px; }
+  /* ── Esconde fotos de casal — telefone é o foco no mobile ── */
+  .cp-scene { display:none; }
+
+  /* ── Hero mobile: telefone em destaque ── */
+  .hero { padding:5.5rem 1.5rem 4rem; min-height:auto; }
+  .hero-inner { grid-template-columns:1fr; gap:2.5rem; }
+  .hero-visual { order:-1; justify-content:center; }
+  .hero-content { align-items:center; text-align:center; gap:1.25rem; }
+  .hero-title { font-size:clamp(2.4rem,9vw,3.4rem); }
+  .hero-title-sub { font-size:clamp(1.1rem,4vw,1.5rem); }
+  .hero-sub { text-align:center; max-width:100%; font-size:.9rem; }
+  .hero-badge { align-self:center; }
+  .hero-social { justify-content:center; }
+  .hero-ctas { flex-direction:column; align-items:center; width:100%; }
+  .hero-cta-primary { width:100%; text-align:center; }
+
+  /* ── Telefone maior no mobile ── */
+  .phone { width:248px; height:492px; }
+
+  /* ── Restante ── */
   .chatrev-inner { grid-template-columns:1fr; gap:3rem; }
   .chatrev-left { order:1; }
   .chatrev-right { order:0; }
@@ -1383,14 +1400,15 @@ const CSS = `
   .how-step { grid-template-columns:60px 1fr; gap:1.5rem; }
   .how-num { font-size:3.5rem; }
   .notif-s { max-width:100%; }
-  .hero-ctas { flex-direction:column; align-items:flex-start; }
   .notif-card { max-width:100%; }
   .notif-card--right { align-self:flex-start; }
+  .match-card { padding:2rem 1.5rem; }
 }
 @media (max-width:480px) {
-  .phone { width:200px; height:400px; }
+  .hero { padding:5rem 1.25rem 3.5rem; }
+  .phone { width:220px; height:440px; }
   .lp-nav-links { gap:1rem; }
-  .match-card { padding:2rem 1.5rem; }
   .chatrev-stats { gap:1.5rem; }
+  .hero-title { font-size:clamp(2.2rem,9.5vw,3rem); }
 }
 `;
