@@ -223,3 +223,17 @@ input, select, textarea {
 
 /* ── Perspective helper ── */
 .perspective { perspective: 1200px; }
+
+/* ══════════════════════════════════════
+   CONVERSATIONAL UI — radius overrides
+   (global rounded-* are flattened to 4px;
+    these classes restore organic chat shapes)
+══════════════════════════════════════ */
+.chat-bubble-ai   { border-radius: 18px 18px 18px 5px  !important; }
+.chat-bubble-user { border-radius: 18px 18px 5px  18px !important; }
+.chat-phone       { border-radius: 38px !important; }
+.chat-notch       { border-radius: 999px !important; }
+.chat-avatar      { border-radius: 999px !important; }
+.chat-pill        { border-radius: 999px !important; }
+.chat-card        { border-radius: 20px !important; }
+.chat-tag         { border-radius: 10px !important; }
