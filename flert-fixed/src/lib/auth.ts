@@ -18,7 +18,8 @@ function normalizedEmailAdapter(): Adapter {
   const base = PrismaAdapter(prisma) as Adapter;
   return {
     ...base,
-    createUser: (data) => base.createUser!({ ...data, email: normalizeEmail(data.email) }),
+    createUser: (data: Parameters<NonNullable<Adapter["createUser"]>>[0]) =>
+      base.createUser!({ ...data, email: normalizeEmail(data.email) }),
     // Mesmo lookup do login por senha (inclui contas antigas em caixa mista).
     getUserByEmail: async (email) => (await findUserByEmail(email)) as AdapterUser | null,
   };
