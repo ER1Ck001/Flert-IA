@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import nodemailer from "nodemailer";
 import crypto from "node:crypto";
-import { checkRateLimit, getIp } from "@/lib/rate-limit";
-import { errorMessage, parseJsonBody } from "@/lib/http";
+import { getIp, rateLimit } from "@/lib/rate-limit";
+import { errorMessage, parseJsonBody, tooMany } from "@/lib/http";
 import { forgotPasswordSchema } from "@/lib/validation/auth";
 import { findUserByEmail } from "@/lib/users";
 import { escapeHtml } from "@/lib/email/escape";
@@ -28,13 +28,16 @@ const hashResetToken = (token: string) => crypto.createHash("sha256").update(tok
 
 export async function POST(request: NextRequest) {
   try {
-    const { allowed } = checkRateLimit(`forgot:${getIp(request)}`, 3, 3600);
-    if (!allowed) {
-      return NextResponse.json({ error: "Muitas tentativas. Aguarde 1 hora." }, { status: 429 });
-    }
+    // Envia e-mail: na dúvida (banco fora), bloqueia.
+    const byIp = await rateLimit("forgot:ip", getIp(request), 5, 3600, { onError: "deny" });
+    if (!byIp.allowed) return tooMany(byIp.retryAfterSec, "Muitas tentativas. Aguarde 1 hora.");
 
     const parsed = await parseJsonBody(request, forgotPasswordSchema);
     if (!parsed.ok) return parsed.response;
+
+    // Por destinatário: impede "bombardear" a caixa de uma vítima trocando de IP. Resposta igual.
+    const byEmail = await rateLimit("forgot:email", parsed.data.email, 3, 3600, { onError: "deny" });
+    if (!byEmail.allowed) return OK();
 
     const user = await findUserByEmail(parsed.data.email);
     if (!user?.email || !user.password) return OK();

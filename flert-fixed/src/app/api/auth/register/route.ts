@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
-import { checkRateLimit, getIp } from "@/lib/rate-limit";
-import { errorMessage, isPrismaError, parseJsonBody } from "@/lib/http";
+import { getIp, rateLimit } from "@/lib/rate-limit";
+import { errorMessage, isPrismaError, parseJsonBody, tooMany } from "@/lib/http";
 import { registerSchema } from "@/lib/validation/auth";
 import { findUserByEmail } from "@/lib/users";
 import { emailFirstName, escapeHtml, subjectFirstName } from "@/lib/email/escape";
@@ -23,10 +23,8 @@ const DUPLICATE = "Email já cadastrado";
 
 export async function POST(request: NextRequest) {
   try {
-    const { allowed } = checkRateLimit(`register:${getIp(request)}`, 5, 900);
-    if (!allowed) {
-      return NextResponse.json({ error: "Muitas tentativas. Aguarde 15 minutos." }, { status: 429 });
-    }
+    const limit = await rateLimit("register:ip", getIp(request), 5, 900, { onError: "allow" });
+    if (!limit.allowed) return tooMany(limit.retryAfterSec, "Muitas tentativas. Aguarde 15 minutos.");
 
     const parsed = await parseJsonBody(request, registerSchema);
     if (!parsed.ok) return parsed.response;

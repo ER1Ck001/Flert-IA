@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import toast from "react-hot-toast";
+import { safeCallbackUrl } from "@/lib/safe-redirect";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  // Só caminhos internos (evita open redirect via ?callbackUrl=https://site-malicioso).
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
   const { status } = useSession();
   const [loading, setLoading] = useState(false);
 
@@ -50,7 +52,11 @@ function LoginForm() {
         redirect: false,
       });
       if (result?.error) {
-        toast.error("Email ou senha inválidos");
+        toast.error(
+          result.error === "RATE_LIMITED"
+            ? "Muitas tentativas. Aguarde alguns minutos e tente de novo."
+            : "Email ou senha inválidos"
+        );
       } else {
         toast.success("Bem-vindo de volta.");
         router.push(callbackUrl);

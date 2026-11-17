@@ -13,6 +13,7 @@ const m = vi.hoisted(() => {
     sendMail: vi.fn(),
     compare: vi.fn(),
     hash: vi.fn(),
+    rateLimit: vi.fn(),
   };
 });
 
@@ -22,9 +23,18 @@ vi.mock("@/lib/prisma", () => ({ prisma: m.prisma }));
 vi.mock("@/lib/users", () => ({ findUserByEmail: m.findUserByEmail }));
 vi.mock("nodemailer", () => ({ default: { createTransport: () => ({ sendMail: m.sendMail }) } }));
 vi.mock("bcryptjs", () => ({ default: { compare: m.compare, hash: m.hash } }));
+vi.mock("@/lib/rate-limit", () => ({ rateLimit: m.rateLimit }));
 
 import { DELETE as deleteAccount, GET as getProfile, PUT as putProfile } from "@/app/api/profile/route";
 import { DELETE as deleteHistory } from "@/app/api/history/route";
+import { POST as revokeSessions } from "@/app/api/account/sessions/revoke/route";
+
+const del = (body: unknown) =>
+  new NextRequest("http://localhost/api/profile", {
+    method: "DELETE",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
 
 const put = (body: unknown) =>
   new NextRequest("http://localhost/api/profile", {
@@ -45,6 +55,7 @@ beforeEach(() => {
   m.hash.mockImplementation(async (p: string) => `hash:${p}`);
   m.sendMail.mockResolvedValue({});
   m.prisma.conversation.deleteMany.mockResolvedValue({ count: 1 });
+  m.rateLimit.mockResolvedValue({ allowed: true, remaining: 1, retryAfterSec: 0 });
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -85,7 +96,12 @@ describe("PUT /api/profile", () => {
   it("troca de e-mail válida: normaliza e zera a verificação", async () => {
     const res = await putProfile(put({ name: "Ana", email: " NOVA@X.com ", currentPassword: "certa123" }));
     expect(res.status).toBe(200);
-    expect(m.prisma.user.update.mock.calls[0][0].data).toEqual({ name: "Ana", email: "nova@x.com", emailVerified: null });
+    expect(m.prisma.user.update.mock.calls[0][0].data).toEqual({
+      name: "Ana",
+      email: "nova@x.com",
+      emailVerified: null,
+      sessionVersion: { increment: 1 }, // derruba sessões em outros dispositivos
+    });
   });
 
   it("e-mail de outra conta (em qualquer caixa) → 400", async () => {
@@ -115,6 +131,7 @@ describe("PUT /api/profile", () => {
     const res = await putProfile(put({ name: "Ana", email: "ana@x.com", currentPassword: "certa123", newPassword: "novaSenha1" }));
     expect(res.status).toBe(200);
     expect(m.prisma.user.update.mock.calls[0][0].data.password).toBe("hash:novaSenha1");
+    expect(m.prisma.user.update.mock.calls[0][0].data.sessionVersion).toEqual({ increment: 1 });
     expect(JSON.stringify(await res.json())).not.toContain("hash:");
   });
 
@@ -136,9 +153,36 @@ describe("PUT /api/profile", () => {
 });
 
 describe("DELETE /api/profile", () => {
+  it.each([{}, { confirm: "excluir" }, { confirm: "SIM" }])("400 sem a confirmação EXCLUIR (%o)", async (b) => {
+    expect((await deleteAccount(del(b))).status).toBe(400);
+    expect(m.prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it("conta com senha exige a senha correta", async () => {
+    expect((await deleteAccount(del({ confirm: "EXCLUIR" }))).status).toBe(400);
+    m.compare.mockResolvedValueOnce(false);
+    expect((await deleteAccount(del({ confirm: "EXCLUIR", password: "errada1" }))).status).toBe(400);
+    expect(m.prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it("conta Google exclui só com EXCLUIR", async () => {
+    m.prisma.user.findUnique.mockResolvedValue({ ...ME, password: null });
+    expect((await deleteAccount(del({ confirm: "EXCLUIR" }))).status).toBe(200);
+    expect(m.prisma.user.delete).toHaveBeenCalledWith({ where: { id: "u1" } });
+  });
+
+  it("403 com Origin de outro site (CSRF)", async () => {
+    const r = new NextRequest("http://localhost/api/profile", {
+      method: "DELETE",
+      headers: { "content-type": "application/json", origin: "https://evil.com" },
+      body: JSON.stringify({ confirm: "EXCLUIR", password: "certa123" }),
+    });
+    expect((await deleteAccount(r)).status).toBe(403);
+  });
+
   it("nome legado com HTML é escapado no e-mail de exclusão", async () => {
-    m.prisma.user.findUnique.mockResolvedValue({ name: "<img src=x onerror=1> Ana", email: "ana@x.com" });
-    expect((await deleteAccount()).status).toBe(200);
+    m.prisma.user.findUnique.mockResolvedValue({ ...ME, name: "<img src=x onerror=1> Ana" });
+    expect((await deleteAccount(del({ confirm: "EXCLUIR", password: "certa123" }))).status).toBe(200);
     const { html } = m.sendMail.mock.calls[0][0];
     expect(html).toContain("&lt;img");
     expect(html).not.toContain("<img src=x");
@@ -170,5 +214,36 @@ describe("DELETE /api/history", () => {
   it("inexistente ou de outro usuário → 404 (antes era 500)", async () => {
     m.prisma.conversation.deleteMany.mockResolvedValue({ count: 0 });
     expect((await del("?id=clh1x2y3z0000abcd1234efgh")).status).toBe(404);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+describe("POST /api/account/sessions/revoke (sair de todos os dispositivos)", () => {
+  const post = (headers: Record<string, string> = {}) =>
+    new NextRequest("http://localhost/api/account/sessions/revoke", { method: "POST", headers });
+
+  it("401 sem sessão", async () => {
+    m.getServerSession.mockResolvedValue(null);
+    expect((await revokeSessions(post())).status).toBe(401);
+  });
+
+  it("incrementa sessionVersion do usuário da sessão", async () => {
+    const res = await revokeSessions(post());
+    expect(res.status).toBe(200);
+    expect(m.prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: { sessionVersion: { increment: 1 } },
+      select: { id: true },
+    });
+  });
+
+  it("403 com Origin de outro site", async () => {
+    expect((await revokeSessions(post({ origin: "https://evil.com" }))).status).toBe(403);
+    expect(m.prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("429 quando o limite estoura", async () => {
+    m.rateLimit.mockResolvedValue({ allowed: false, remaining: 0, retryAfterSec: 60 });
+    expect((await revokeSessions(post())).status).toBe(429);
   });
 });

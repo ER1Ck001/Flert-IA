@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import nodemailer from "nodemailer";
 import { isAdminUser } from "@/lib/admin";
-import { errorMessage, parseJsonBody } from "@/lib/http";
+import { assertSameOrigin, errorMessage, parseJsonBody } from "@/lib/http";
 import { adminEmailSchema } from "@/lib/validation/admin";
 import { emailFirstName, escapeHtml, sanitizeHeader } from "@/lib/email/escape";
 
@@ -119,6 +119,8 @@ function customHtml(firstName: string, body: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    const crossSite = assertSameOrigin(request);
+    if (crossSite) return crossSite;
     const session = await getServerSession(authOptions);
     if (!(await isAdminUser(session?.user?.id))) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { User, Mail, Camera, Save, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,12 @@ export default function ProfilePage() {
         throw new Error(data.error || "Erro ao atualizar perfil");
       }
 
+      // Trocar senha ou e-mail encerra todas as sessões (inclusive esta): volta ao login.
+      if (emailChanged || parsed.data.newPassword) {
+        toast.success("Dados de acesso alterados. Entre novamente.");
+        await signOut({ callbackUrl: "/auth/login" });
+        return;
+      }
       setSavedEmail(data.user.email || parsed.data.email);
       await update();
       toast.success("Perfil atualizado com sucesso!");

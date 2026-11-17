@@ -252,9 +252,11 @@ Exibe sugestões com botão "Copiar" ✅
 - **Session** - Sessões JWT
 - **VerificationToken** - Tokens de verificação
 - **PasswordResetToken** - Tokens de recuperação de senha
-- **Payment** - Registro de pagamentos Abacate Pay
-- **SubscriptionStatus** - Status do acesso (FREE | LIFETIME)
-- **AnalysisHistory** - Histórico de análises com sugestões
+- **SubscriptionStatus** - Plano (FREE | PREMIUM | ANNUAL | LIFETIME) e expiração
+- **ProcessedPayment** - Checkouts da AbacatePay já aplicados (idempotência do webhook)
+- **Conversation / Message** - Histórico de análises com as sugestões geradas
+- **DailyUsage** - Cota diária de análises (fuso America/Sao_Paulo)
+- **RateLimit** - Limites de tentativas (chave HMAC, sem e-mail/IP em claro)
 
 ---
 
@@ -264,13 +266,18 @@ Exibe sugestões com botão "Copiar" ✅
 |----------|-----------|
 | `DATABASE_URL` | URL de conexão PostgreSQL |
 | `NEXTAUTH_URL` | URL base da aplicação |
-| `NEXTAUTH_SECRET` | Secret para JWT |
+| `NEXTAUTH_SECRET` | Secret do JWT (também usado no HMAC das chaves de rate limit) |
 | `OPENAI_API_KEY` | Chave da API OpenAI |
-| `UPLOADTHING_SECRET` | Secret UploadThing |
-| `UPLOADTHING_APP_ID` | App ID UploadThing |
 | `ABACATEPAY_API_KEY` | Chave API Abacate Pay |
-| `ABACATEPAY_WEBHOOK_SECRET` | Secret para verificar webhooks |
-| `NEXT_PUBLIC_APP_URL` | URL pública da aplicação |
+| `ABACATEPAY_PRODUCT_ID_MONTHLY` / `_ANNUAL` / `_LIFETIME` | IDs dos produtos — o webhook deduz o plano pelo produto pago |
+| `ABACATEPAY_WEBHOOK_SECRET` | Secret do webhook (sem ele o webhook recusa tudo) |
+| `ABACATEPAY_PUBLIC_KEY` | Chave pública HMAC da AbacatePay — obrigatória em produção |
+| `ADMIN_EMAIL` | E-mail exato da conta admin — sem ele ninguém acessa o painel |
+| `NEXT_PUBLIC_APP_URL` | URL pública (links nos e-mails e checagem de origem/CSRF) |
+
+> Depois de atualizar o código, rode `npm run db:migrate` antes de subir a nova versão.
+> Leia os comentários no topo de `prisma/migrations/20261118000000_normalize_emails/migration.sql`:
+> há duas consultas para rodar antes (a migration aborta sozinha se encontrar problemas).
 
 ### Variáveis opcionais:
 | Variável | Descrição |

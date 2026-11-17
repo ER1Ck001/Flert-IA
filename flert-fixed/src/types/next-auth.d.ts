@@ -15,5 +15,9 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
+    /** Versão de sessão do usuário no momento do login (ver src/lib/session-version.ts). */
+    sv?: number;
+    /** Última conferência da versão no banco (ms). */
+    svCheckedAt?: number;
   }
 }

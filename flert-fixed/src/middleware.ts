@@ -1,12 +1,16 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
+// Páginas de /auth acessíveis mesmo logado (o link de redefinição chega por e-mail).
+const AUTH_PAGES_FOR_EVERYONE = ["/auth/reset-password"];
+
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
-    const isAuthPage = req.nextUrl.pathname.startsWith("/auth");
+    const { pathname } = req.nextUrl;
+    const isAuthPage = pathname.startsWith("/auth");
 
-    if (token && isAuthPage) {
+    if (token && isAuthPage && !AUTH_PAGES_FOR_EVERYONE.includes(pathname)) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
@@ -36,5 +40,7 @@ export const config = {
     "/settings/:path*",
     "/pricing/:path*",
     "/auth/:path*",
+    // Defesa em profundidade: admin/layout.tsx e as APIs também checam isAdminUser.
+    "/admin/:path*",
   ],
 };

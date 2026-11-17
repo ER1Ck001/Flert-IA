@@ -5,8 +5,10 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
 import { getEffectivePlan, isPlanExpired } from "@/lib/plans";
-import { errorMessage, isPrismaError, parseJsonBody } from "@/lib/http";
-import { normalizeEmail, profileUpdateSchema } from "@/lib/validation/auth";
+import { assertSameOrigin, errorMessage, isPrismaError, parseJsonBody, tooMany } from "@/lib/http";
+import { rateLimit } from "@/lib/rate-limit";
+import { SESSION_VERSION_BUMP } from "@/lib/session-version";
+import { deleteAccountSchema, normalizeEmail, profileUpdateSchema } from "@/lib/validation/auth";
 import { findUserByEmail } from "@/lib/users";
 import { emailFirstName, escapeHtml } from "@/lib/email/escape";
 import { isReservedAdminEmail } from "@/lib/admin";
@@ -58,17 +60,31 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
+    const crossSite = assertSameOrigin(request);
+    if (crossSite) return crossSite;
+
+    const limit = await rateLimit("account:delete", session.user.id, 5, 3600, { onError: "allow" });
+    if (!limit.allowed) return tooMany(limit.retryAfterSec);
+
+    // Confirmação explícita: digitar EXCLUIR e, se a conta tem senha, informá-la.
+    const parsed = await parseJsonBody(request, deleteAccountSchema);
+    if (!parsed.ok) return parsed.response;
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { name: true, email: true },
+      select: { name: true, email: true, password: true },
     });
+    if (!user) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    if (user.password) {
+      if (!parsed.data.password) return bad("Informe sua senha para excluir a conta.");
+      if (!(await bcrypt.compare(parsed.data.password, user.password))) return bad("Senha incorreta");
+    }
 
     try {
       await prisma.user.delete({ where: { id: session.user.id } });
@@ -91,7 +107,7 @@ export async function DELETE() {
 
             <p style="margin:0 0 16px">Olá, <strong>${firstName}</strong>.</p>
             <p style="margin:0 0 16px;color:#ccc;line-height:1.6">
-              Sua conta no <strong style="color:#fff">Flert IA</strong> foi excluída com sucesso. Todos os seus dados — histórico de análises, perfil e informações de pagamento — foram removidos permanentemente dos nossos servidores.
+              Sua conta no <strong style="color:#fff">Flert IA</strong> foi excluída com sucesso. Seus dados — histórico de análises, perfil e registros de assinatura — foram removidos da nossa base de dados. Registros mantidos pelos nossos processadores (como a AbacatePay, para pagamentos) seguem as políticas deles e as obrigações legais aplicáveis.
             </p>
             <p style="margin:0 0 28px;color:#ccc;line-height:1.6">
               Se isso foi um engano ou se mudar de ideia, você pode criar uma nova conta a qualquer momento.
@@ -124,6 +140,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
     const userId = session.user.id;
+    const crossSite = assertSameOrigin(request);
+    if (crossSite) return crossSite;
+
+    // A senha atual pode ser testada aqui: limita para não virar força bruta com sessão roubada.
+    const limit = await rateLimit("profile:update", userId, 20, 900, { onError: "allow" });
+    if (!limit.allowed) return tooMany(limit.retryAfterSec);
 
     const parsed = await parseJsonBody(request, profileUpdateSchema);
     if (!parsed.ok) return parsed.response;
@@ -164,6 +186,8 @@ export async function PUT(request: NextRequest) {
           // Novo e-mail precisa ser verificado de novo.
           ...(emailChanged ? { email, emailVerified: null } : {}),
           ...(newPassword ? { password: await bcrypt.hash(newPassword, 12) } : {}),
+          // Troca de senha ou de e-mail derruba as sessões abertas em outros dispositivos.
+          ...(emailChanged || newPassword ? SESSION_VERSION_BUMP : {}),
         },
         include: { subscriptionStatus: true },
       });

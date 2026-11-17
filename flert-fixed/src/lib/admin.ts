@@ -2,14 +2,20 @@
 import { prisma } from "@/lib/prisma";
 import { normalizeEmail } from "@/lib/validation/auth";
 
-// TODO(Tarefa 3): remover o fallback e exigir ADMIN_EMAIL (ou papel no banco).
-const adminEmail = () => normalizeEmail(process.env.ADMIN_EMAIL || "erickrochas230@gmail.com");
+/** Sem ADMIN_EMAIL configurado não existe admin (falha fechada) — nenhum e-mail fixo no código. */
+const adminEmail = (): string | null => {
+  const configured = process.env.ADMIN_EMAIL?.trim();
+  return configured ? normalizeEmail(configured) : null;
+};
 
 /**
  * O e-mail do admin é reservado: não pode ser cadastrado nem assumido por troca de e-mail
  * com senha. Só o login Google (que comprova a posse do e-mail) pode criar essa conta.
  */
-export const isReservedAdminEmail = (email: string) => normalizeEmail(email) === adminEmail();
+export const isReservedAdminEmail = (email: string) => {
+  const admin = adminEmail();
+  return admin !== null && normalizeEmail(email) === admin;
+};
 
 /**
  * Admin é decidido pelo e-mail EXATO gravado no banco, lido pelo id da sessão.
@@ -17,7 +23,8 @@ export const isReservedAdminEmail = (email: string) => normalizeEmail(email) ===
  * caixa do e-mail do admin (ex.: "ADMIN@...") passariam no teste.
  */
 export async function isAdminUser(userId: string | null | undefined): Promise<boolean> {
-  if (!userId) return false;
+  const admin = adminEmail();
+  if (!userId || !admin) return false;
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
-  return !!user?.email && user.email === adminEmail();
+  return !!user?.email && user.email === admin;
 }

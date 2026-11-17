@@ -12,14 +12,14 @@ const m = vi.hoisted(() => {
     prisma,
     sendMail: vi.fn(),
     findUserByEmail: vi.fn(),
-    checkRateLimit: vi.fn(),
+    rateLimit: vi.fn(),
     hash: vi.fn(),
   };
 });
 
 vi.mock("@/lib/prisma", () => ({ prisma: m.prisma }));
 vi.mock("@/lib/users", () => ({ findUserByEmail: m.findUserByEmail }));
-vi.mock("@/lib/rate-limit", () => ({ checkRateLimit: m.checkRateLimit, getIp: () => "1.1.1.1" }));
+vi.mock("@/lib/rate-limit", () => ({ rateLimit: m.rateLimit, getIp: () => "1.1.1.1" }));
 vi.mock("nodemailer", () => ({ default: { createTransport: () => ({ sendMail: m.sendMail }) } }));
 vi.mock("bcryptjs", () => ({ default: { hash: m.hash, compare: vi.fn() } }));
 
@@ -37,7 +37,7 @@ const req = (path: string, body: unknown) =>
 const sha256 = (s: string) => crypto.createHash("sha256").update(s).digest("hex");
 
 beforeEach(() => {
-  m.checkRateLimit.mockReturnValue({ allowed: true, remaining: 1 });
+  m.rateLimit.mockResolvedValue({ allowed: true, remaining: 1, retryAfterSec: 0 });
   m.findUserByEmail.mockResolvedValue(null);
   m.hash.mockImplementation(async (p: string) => `hash:${p}`);
   m.sendMail.mockResolvedValue({});
@@ -125,8 +125,10 @@ describe("POST /api/auth/register", () => {
   });
 
   it("429 sem tocar no banco", async () => {
-    m.checkRateLimit.mockReturnValue({ allowed: false, remaining: 0 });
-    expect((await register(req("/api/auth/register", body))).status).toBe(429);
+    m.rateLimit.mockResolvedValue({ allowed: false, remaining: 0, retryAfterSec: 60 });
+    const res = await register(req("/api/auth/register", body));
+    expect(res.status).toBe(429);
+    expect(res.headers.get("Retry-After")).toBe("60");
     expect(m.findUserByEmail).not.toHaveBeenCalled();
   });
 });
@@ -166,6 +168,17 @@ describe("POST /api/auth/forgot-password", () => {
     expect(stored.token).toBe(sha256(raw!));
     expect(stored.token).not.toBe(raw);
     expect(mail.html).toContain("https://app.test/auth/reset-password?token=");
+  });
+
+  it("limita por e-mail (anti e-mail-bombing), mesmo com IPs diferentes", async () => {
+    m.findUserByEmail.mockResolvedValue(USER);
+    m.rateLimit.mockImplementation(async (scope: string) =>
+      scope === "forgot:email" ? { allowed: false, remaining: 0, retryAfterSec: 60 } : { allowed: true, remaining: 1, retryAfterSec: 0 }
+    );
+    const res = await forgot(req("/api/auth/forgot-password", { email: "ana@x.com" }));
+    expect(res.status).toBe(200); // não revela o bloqueio
+    expect(m.sendMail).not.toHaveBeenCalled();
+    expect(m.rateLimit).toHaveBeenCalledWith("forgot:email", "ana@x.com", 3, 3600, { onError: "deny" });
   });
 
   it("não reenvia dentro de 60 s (anti-spam), mas responde 200", async () => {
@@ -212,7 +225,11 @@ describe("POST /api/auth/reset-password", () => {
     expect(where.token).toBe(sha256(TOKEN));
     expect(where.used).toBe(false);
     expect(where.expires.gt).toBeInstanceOf(Date);
-    expect(m.prisma.user.update).toHaveBeenCalledWith({ where: { id: "u1" }, data: { password: "hash:novaSenha1" } });
+    // sessionVersion++ derruba as sessões abertas em outros dispositivos
+    expect(m.prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: { password: "hash:novaSenha1", sessionVersion: { increment: 1 } },
+    });
     expect(m.prisma.passwordResetToken.deleteMany).toHaveBeenCalledWith({ where: { userId: "u1" } });
   });
 

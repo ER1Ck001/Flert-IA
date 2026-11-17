@@ -85,3 +85,10 @@ export const profileUpdateSchema = z
   });
 
 export type ProfileUpdate = z.infer<typeof profileUpdateSchema>;
+
+/** Excluir a conta exige digitar EXCLUIR (e a senha, quando a conta tem senha — checado na rota). */
+export const DELETE_CONFIRMATION = "EXCLUIR";
+export const deleteAccountSchema = z.object({
+  confirm: z.literal(DELETE_CONFIRMATION, { errorMap: () => ({ message: `Digite ${DELETE_CONFIRMATION} para confirmar` }) }),
+  password: z.preprocess(emptyToUndefined, loginPasswordSchema.optional()),
+});

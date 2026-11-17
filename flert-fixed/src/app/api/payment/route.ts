@@ -4,7 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import crypto from "node:crypto";
 import { EXTERNAL_ID_PREFIX } from "@/lib/payments/abacatepay-webhook";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
+import { assertSameOrigin, tooMany } from "@/lib/http";
 import {
   PLAN_CONFIG,
   getEffectivePlan,
@@ -50,13 +51,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const { allowed } = checkRateLimit(`payment:${session.user.id}`, 10, 3600);
-    if (!allowed) {
-      return NextResponse.json(
-        { error: "Muitas tentativas de pagamento. Aguarde alguns minutos." },
-        { status: 429 }
-      );
-    }
+    const crossSite = assertSameOrigin(request);
+    if (crossSite) return crossSite;
+
+    const limit = await rateLimit("payment", session.user.id, 10, 3600, { onError: "allow" });
+    if (!limit.allowed) return tooMany(limit.retryAfterSec, "Muitas tentativas de pagamento. Aguarde alguns minutos.");
 
     const body = await request.json().catch(() => null);
     const plan: unknown = body?.plan;

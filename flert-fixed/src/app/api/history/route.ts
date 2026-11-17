@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { idSchema } from "@/lib/validation/common";
+import { assertSameOrigin } from "@/lib/http";
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,6 +40,9 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
+
+    const crossSite = assertSameOrigin(request);
+    if (crossSite) return crossSite;
 
     const parsedId = idSchema.safeParse(new URL(request.url).searchParams.get("id"));
     if (!parsedId.success) {

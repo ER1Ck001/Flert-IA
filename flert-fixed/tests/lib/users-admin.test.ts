@@ -57,6 +57,13 @@ describe("isAdminUser", () => {
     expect(isReservedAdminEmail("outra@flertia.com.br")).toBe(false);
   });
 
+  it("sem ADMIN_EMAIL configurado ninguém é admin e nada é reservado (sem e-mail fixo no código)", async () => {
+    vi.stubEnv("ADMIN_EMAIL", "");
+    prismaMock.user.findUnique.mockResolvedValue({ email: "erickrochas230@gmail.com" });
+    expect(await isAdminUser("u-qualquer")).toBe(false);
+    expect(isReservedAdminEmail("erickrochas230@gmail.com")).toBe(false);
+  });
+
   it("sem sessão ou usuário inexistente → false", async () => {
     expect(await isAdminUser(undefined)).toBe(false);
     expect(prismaMock.user.findUnique).not.toHaveBeenCalled();

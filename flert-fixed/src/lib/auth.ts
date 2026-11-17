@@ -9,6 +9,7 @@ import { authorizeCredentials } from "@/lib/auth-credentials";
 import { normalizeEmail } from "@/lib/validation/auth";
 import { emailFirstName, escapeHtml, subjectFirstName } from "@/lib/email/escape";
 import { findUserByEmail } from "@/lib/users";
+import { checkSessionVersion } from "@/lib/session-version";
 
 /**
  * Adapter do Prisma com e-mail normalizado: sem isso o login Google com "Foo@x.com" criaria
@@ -56,6 +57,8 @@ export const authOptions: NextAuthOptions = {
   adapter: normalizedEmailAdapter() as NextAuthOptions["adapter"],
   session: {
     strategy: "jwt",
+    maxAge: 14 * 24 * 60 * 60, // 14 dias (padrão do NextAuth: 30)
+    updateAge: 24 * 60 * 60,
   },
   pages: {
     signIn: "/auth/login",
@@ -127,6 +130,13 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.name  = user.name;
         token.image = user.image;
+        // Versão de sessão no login: incrementá-la no banco invalida este token.
+        token.sv = (user as { sessionVersion?: number }).sessionVersion ?? 0;
+        token.svCheckedAt = Date.now();
+      } else if ((await checkSessionVersion(token)) === "revoked") {
+        // Senha trocada/redefinida, "sair de todos os dispositivos" ou conta excluída.
+        // Erro no callback jwt faz o NextAuth descartar a sessão (getServerSession → null).
+        throw new Error("SESSION_REVOKED");
       }
       // update() no cliente (ex.: após editar o perfil): relê do banco — nunca confia no payload.
       if (trigger === "update" && token.id) {

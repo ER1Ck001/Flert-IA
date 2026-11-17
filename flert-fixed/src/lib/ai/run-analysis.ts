@@ -2,7 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 import { getEntitlement } from "@/lib/subscription";
 import { refundDailyUsage, releaseDailyUsage, reserveDailyUsage } from "@/lib/usage";
 import { generateSuggestions, type GenerateInput } from "@/lib/ai/generate";
@@ -44,7 +44,8 @@ const CHARGED =
 
 export async function runAnalysis(userId: string, input: GenerateInput, title: string): Promise<NextResponse> {
   // Rate limit de rajada (por instância; o limite diário persistente é a cota abaixo).
-  if (!checkRateLimit(`analyze:${userId}`, 10, 60).allowed) {
+  // Rajada; o limite diário persistente é a cota abaixo.
+  if (!(await rateLimit("analyze", userId, 10, 60, { onError: "allow" })).allowed) {
     return NextResponse.json(
       { error: "Muitas análises em sequência. Aguarde um minuto e tente de novo." },
       { status: 429 }

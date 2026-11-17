@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { assertSameOrigin } from "@/lib/http";
 import { runAnalysis, validateContext } from "@/lib/ai/run-analysis";
 import { TEXT_MODES, type TextMode } from "@/lib/ai/prompts";
 
@@ -13,6 +14,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
+
+    const crossSite = assertSameOrigin(request);
+    if (crossSite) return crossSite;
 
     const body = await request.json().catch(() => null);
     const context = typeof body?.context === "string" ? body.context.trim() : "";

@@ -7,7 +7,7 @@ const m = vi.hoisted(() => ({
   reserveDailyUsage: vi.fn(),
   releaseDailyUsage: vi.fn(),
   refundDailyUsage: vi.fn(),
-  checkRateLimit: vi.fn(),
+  rateLimit: vi.fn(),
   generateSuggestions: vi.fn(),
   conversationCreate: vi.fn(),
 }));
@@ -20,7 +20,7 @@ vi.mock("@/lib/usage", () => ({
   releaseDailyUsage: m.releaseDailyUsage,
   refundDailyUsage: m.refundDailyUsage,
 }));
-vi.mock("@/lib/rate-limit", () => ({ checkRateLimit: m.checkRateLimit }));
+vi.mock("@/lib/rate-limit", () => ({ rateLimit: m.rateLimit }));
 vi.mock("@/lib/ai/generate", () => ({ generateSuggestions: m.generateSuggestions }));
 vi.mock("@/lib/prisma", () => ({ prisma: { conversation: { create: m.conversationCreate } } }));
 
@@ -48,7 +48,7 @@ beforeEach(() => {
   m.reserveDailyUsage.mockResolvedValue({ ok: true, dayKey: "2026-01-09", used: 1 });
   m.releaseDailyUsage.mockResolvedValue(undefined);
   m.refundDailyUsage.mockResolvedValue(true);
-  m.checkRateLimit.mockReturnValue({ allowed: true, remaining: 9 });
+  m.rateLimit.mockResolvedValue({ allowed: true, remaining: 9, retryAfterSec: 0 });
   m.generateSuggestions.mockResolvedValue({ ok: true, suggestions: SUGS });
   m.conversationCreate.mockResolvedValue({ id: "c1" });
 });
@@ -96,11 +96,11 @@ describe.each(routes)("$name", ({ post, url, body }) => {
   });
 
   it("429 quando excede o rate limit por minuto (antes de consumir cota)", async () => {
-    m.checkRateLimit.mockReturnValue({ allowed: false, remaining: 0 });
+    m.rateLimit.mockResolvedValue({ allowed: false, remaining: 0, retryAfterSec: 30 });
     const res = await post(req(url, body));
     expect(res.status).toBe(429);
     expect(m.reserveDailyUsage).not.toHaveBeenCalled();
-    expect(m.checkRateLimit).toHaveBeenCalledWith("analyze:u1", 10, 60);
+    expect(m.rateLimit).toHaveBeenCalledWith("analyze", "u1", 10, 60, { onError: "allow" });
   });
 
   it("502 por erro da OpenAI: sempre devolve a cota e não grava histórico", async () => {

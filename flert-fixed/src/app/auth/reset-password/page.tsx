@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -9,7 +9,13 @@ import { PASSWORD_RULES_HINT, resetPasswordFormSchema, resetTokenSchema } from "
 function ResetForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") || "";
+  // Lê o token uma vez e o remove da URL (histórico, barra de endereço e Referer).
+  const [token] = useState(() => searchParams.get("token") || "");
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("token=")) {
+      window.history.replaceState(null, "", "/auth/reset-password");
+    }
+  }, []);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPass, setShowPass] = useState(false);

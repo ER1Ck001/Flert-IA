@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { assertSameOrigin } from "@/lib/http";
 import { runAnalysis, validateContext, validateImageDataUrl } from "@/lib/ai/run-analysis";
 
 // Tempo para a chamada à OpenAI (timeout 30s + 1 retry) sem a plataforma matar a função.
@@ -12,6 +13,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
+
+    const crossSite = assertSameOrigin(request);
+    if (crossSite) return crossSite;
 
     const body = await request.json().catch(() => null);
     const imageUrl = body?.imageUrl;

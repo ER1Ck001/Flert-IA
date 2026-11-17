@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { computeExpiresAt, isPaidPlan } from "@/lib/plans";
 import { isAdminUser } from "@/lib/admin";
-import { errorMessage, isPrismaError, parseJsonBody } from "@/lib/http";
+import { assertSameOrigin, errorMessage, isPrismaError, parseJsonBody } from "@/lib/http";
 import { idSchema } from "@/lib/validation/common";
 import { adminPatchUserSchema } from "@/lib/validation/admin";
 
@@ -13,8 +13,10 @@ type Ctx = { params: { id: string } };
 const forbidden = () => NextResponse.json({ error: "Acesso negado" }, { status: 403 });
 const notFound = () => NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
 
-export async function DELETE(_req: NextRequest, { params }: Ctx) {
+export async function DELETE(req: NextRequest, { params }: Ctx) {
   try {
+    const crossSite = assertSameOrigin(req);
+    if (crossSite) return crossSite;
     const session = await getServerSession(authOptions);
     if (!(await isAdminUser(session?.user?.id))) return forbidden();
 
@@ -40,6 +42,8 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   try {
+    const crossSite = assertSameOrigin(req);
+    if (crossSite) return crossSite;
     const session = await getServerSession(authOptions);
     if (!(await isAdminUser(session?.user?.id))) return forbidden();
 

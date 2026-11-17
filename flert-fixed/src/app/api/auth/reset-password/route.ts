@@ -2,18 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
-import { checkRateLimit, getIp } from "@/lib/rate-limit";
-import { errorMessage, parseJsonBody } from "@/lib/http";
+import { getIp, rateLimit } from "@/lib/rate-limit";
+import { SESSION_VERSION_BUMP } from "@/lib/session-version";
+import { errorMessage, parseJsonBody, tooMany } from "@/lib/http";
 import { resetPasswordSchema } from "@/lib/validation/auth";
 
 const INVALID_LINK = "Link expirado ou inválido. Solicite um novo.";
 
 export async function POST(request: NextRequest) {
   try {
-    const { allowed } = checkRateLimit(`reset:${getIp(request)}`, 10, 900);
-    if (!allowed) {
-      return NextResponse.json({ error: "Muitas tentativas. Aguarde alguns minutos." }, { status: 429 });
-    }
+    const limit = await rateLimit("reset:ip", getIp(request), 10, 900, { onError: "allow" });
+    if (!limit.allowed) return tooMany(limit.retryAfterSec);
 
     const parsed = await parseJsonBody(request, resetPasswordSchema);
     if (!parsed.ok) return parsed.response;
@@ -33,7 +32,8 @@ export async function POST(request: NextRequest) {
       const record = await tx.passwordResetToken.findUnique({ where: { token: tokenHash } });
       if (!record) return false;
 
-      await tx.user.update({ where: { id: record.userId }, data: { password: hashed } });
+      // Nova senha + derruba todas as sessões abertas (inclusive a de quem roubou a senha antiga).
+      await tx.user.update({ where: { id: record.userId }, data: { password: hashed, ...SESSION_VERSION_BUMP } });
       await tx.passwordResetToken.deleteMany({ where: { userId: record.userId } });
       return true;
     });
