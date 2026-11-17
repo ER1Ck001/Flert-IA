@@ -2,9 +2,27 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import type { Adapter, AdapterUser } from "next-auth/adapters";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
+import { authorizeCredentials } from "@/lib/auth-credentials";
+import { normalizeEmail } from "@/lib/validation/auth";
+import { emailFirstName, escapeHtml, subjectFirstName } from "@/lib/email/escape";
+import { findUserByEmail } from "@/lib/users";
+
+/**
+ * Adapter do Prisma com e-mail normalizado: sem isso o login Google com "Foo@x.com" criaria
+ * uma segunda conta ao lado de "foo@x.com" (cadastro por senha).
+ */
+function normalizedEmailAdapter(): Adapter {
+  const base = PrismaAdapter(prisma) as Adapter;
+  return {
+    ...base,
+    createUser: (data) => base.createUser!({ ...data, email: normalizeEmail(data.email) }),
+    // Mesmo lookup do login por senha (inclui contas antigas em caixa mista).
+    getUserByEmail: async (email) => (await findUserByEmail(email)) as AdapterUser | null,
+  };
+}
 
 const transporter = nodemailer.createTransport({
   host:   process.env.SMTP_HOST,
@@ -20,35 +38,7 @@ const providers: NextAuthOptions["providers"] = [
       email: { label: "Email", type: "email" },
       password: { label: "Password", type: "password" },
     },
-    async authorize(credentials) {
-      if (!credentials?.email || !credentials?.password) {
-        throw new Error("Email e senha são obrigatórios");
-      }
-
-      const user = await prisma.user.findUnique({
-        where: { email: credentials.email },
-      });
-
-      if (!user || !user.password) {
-        throw new Error("Email ou senha inválidos");
-      }
-
-      const isPasswordValid = await bcrypt.compare(
-        credentials.password,
-        user.password
-      );
-
-      if (!isPasswordValid) {
-        throw new Error("Email ou senha inválidos");
-      }
-
-      return {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        image: user.image,
-      };
-    },
+    authorize: authorizeCredentials,
   }),
 ];
 
@@ -62,7 +52,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as NextAuthOptions["adapter"],
+  adapter: normalizedEmailAdapter() as NextAuthOptions["adapter"],
   session: {
     strategy: "jwt",
   },
@@ -84,12 +74,12 @@ export const authOptions: NextAuthOptions = {
       }).catch(() => {});
 
       // Send welcome email
-      const firstName = (user.name ?? "").split(" ")[0] || "você";
-      const appUrl    = process.env.NEXT_PUBLIC_APP_URL || "https://flertia.com.br";
+      const firstName = emailFirstName(user.name);
+      const appUrl    = escapeHtml(process.env.NEXT_PUBLIC_APP_URL || "https://flertia.com.br");
       await transporter.sendMail({
         from:    process.env.SMTP_FROM,
         to:      user.email,
-        subject: `Bem-vindo ao Flert IA, ${firstName}! Sua vida amorosa nunca mais será a mesma 💘`,
+        subject: `Bem-vindo ao Flert IA, ${subjectFirstName(user.name)}! Sua vida amorosa nunca mais será a mesma 💘`,
         html: `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/></head>
 <body style="margin:0;padding:0;background:#080608;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
@@ -126,16 +116,28 @@ export const authOptions: NextAuthOptions = {
   </div>
 </div>
 </body></html>`,
-      }).catch(err => console.error("OAuth welcome email error:", err));
+      }).catch(err => console.error("OAuth welcome email error:", err instanceof Error ? err.message : "unknown"));
     },
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id    = user.id;
         token.email = user.email;
         token.name  = user.name;
         token.image = user.image;
+      }
+      // update() no cliente (ex.: após editar o perfil): relê do banco — nunca confia no payload.
+      if (trigger === "update" && token.id) {
+        const fresh = await prisma.user.findUnique({
+          where: { id: token.id },
+          select: { name: true, email: true, image: true },
+        });
+        if (fresh) {
+          token.name  = fresh.name;
+          token.email = fresh.email;
+          token.image = fresh.image;
+        }
       }
       return token;
     },

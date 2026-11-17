@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdminUser } from "@/lib/admin";
 
-const ADMIN_EMAIL = "erickrochas230@gmail.com";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (session?.user?.email?.toLowerCase() !== ADMIN_EMAIL) {
+    if (!(await isAdminUser(session?.user?.id))) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
@@ -47,7 +48,7 @@ export async function GET() {
 
     return NextResponse.json({ users: formatted, stats });
   } catch (error) {
-    console.error("Admin users GET error:", error);
+    console.error("Admin users GET error:", error instanceof Error ? error.message : "unknown");
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }

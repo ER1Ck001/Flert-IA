@@ -11,8 +11,7 @@ import {
 } from "@/lib/payments/abacatepay-webhook";
 import { PLAN_LABELS, getPlanBenefits, type PaidPlan } from "@/lib/plans";
 
-const escapeHtml = (s: string) =>
-  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+import { escapeHtml } from "@/lib/email/escape";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import toast from "react-hot-toast";
+import { PASSWORD_RULES_HINT, registerSchema } from "@/lib/validation/auth";
 
 function RegisterForm() {
   const router = useRouter();
@@ -33,17 +34,20 @@ function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Mesmas regras do servidor (src/lib/validation/auth.ts).
+    const parsed = registerSchema.safeParse(formData);
+    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(parsed.data),
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || "Erro ao criar conta"); return; }
       toast.success("Conta criada!");
-      await signIn("credentials", { email: formData.email, password: formData.password, redirect: false });
+      await signIn("credentials", { email: parsed.data.email, password: parsed.data.password, redirect: false });
       router.push("/dashboard");
     } catch {
       toast.error("Erro ao criar conta. Tente novamente.");
@@ -109,7 +113,7 @@ function RegisterForm() {
                   placeholder="Seu nome"
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  required autoComplete="name"
+                  required maxLength={60} autoComplete="name"
                 />
               </div>
               <div className="au-field">
@@ -119,17 +123,17 @@ function RegisterForm() {
                   placeholder="seu@email.com"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  required autoComplete="email"
+                  required maxLength={254} autoComplete="email"
                 />
               </div>
               <div className="au-field">
                 <label htmlFor="password" className="au-label">Senha</label>
                 <input
                   id="password" type="password" className="au-input"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder={PASSWORD_RULES_HINT}
                   value={formData.password}
                   onChange={e => setFormData({ ...formData, password: e.target.value })}
-                  required minLength={6} autoComplete="new-password"
+                  required minLength={8} maxLength={72} autoComplete="new-password"
                 />
               </div>
 

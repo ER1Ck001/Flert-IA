@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import toast from "react-hot-toast";
 import { PLAN_LABELS } from "@/lib/plans";
+import { PASSWORD_RULES_HINT, normalizeEmail, profileUpdateSchema } from "@/lib/validation/auth";
 
 function getInitials(name: string | null | undefined) {
   if (!name) return "U";
@@ -28,6 +29,8 @@ export default function ProfilePage() {
   });
   const [subscriptionStatus, setSubscriptionStatus] = useState("FREE");
   const [isExpired, setIsExpired] = useState(false);
+  const [hasPassword, setHasPassword] = useState(true);
+  const [savedEmail, setSavedEmail] = useState("");
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -41,6 +44,8 @@ export default function ProfilePage() {
         });
         setSubscriptionStatus(data.user.subscriptionStatus || "FREE");
         setIsExpired(Boolean(data.user.isExpired));
+        setHasPassword(data.user.hasPassword !== false);
+        setSavedEmail(data.user.email || "");
       } catch {
         // silently fail — session data is still usable
       }
@@ -51,29 +56,30 @@ export default function ProfilePage() {
         name: session.user.name || "",
         email: session.user.email || "",
       });
+      // Base para detectar troca de e-mail mesmo se o GET /api/profile falhar.
+      setSavedEmail((prev) => prev || session.user?.email || "");
       loadProfile();
     }
   }, [session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Mesmas regras do servidor (src/lib/validation/auth.ts).
+    const parsed = profileUpdateSchema.safeParse({ ...formData, ...passwordData });
+    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    const emailChanged = parsed.data.email !== normalizeEmail(savedEmail);
+    if (emailChanged && !parsed.data.currentPassword) {
+      toast.error("Informe a senha atual para alterar o e-mail.");
+      return;
+    }
+
     setLoading(true);
-
     try {
-      const payload: Record<string, string> = {
-        name: formData.name,
-        email: formData.email,
-      };
-
-      if (passwordData.newPassword && passwordData.currentPassword) {
-        payload.currentPassword = passwordData.currentPassword;
-        payload.newPassword = passwordData.newPassword;
-      }
-
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(parsed.data),
       });
 
       const data = await res.json();
@@ -82,6 +88,7 @@ export default function ProfilePage() {
         throw new Error(data.error || "Erro ao atualizar perfil");
       }
 
+      setSavedEmail(data.user.email || parsed.data.email);
       await update();
       toast.success("Perfil atualizado com sucesso!");
       setPasswordData({ currentPassword: "", newPassword: "" });
@@ -153,13 +160,22 @@ export default function ProfilePage() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="pl-10"
                   required
+                  maxLength={254}
+                  disabled={!hasPassword}
+                  aria-describedby="email-hint"
                 />
               </div>
+              <p id="email-hint" className="text-xs text-muted-foreground">
+                {hasPassword
+                  ? "Para trocar o e-mail, informe também a senha atual abaixo."
+                  : "Contas criadas com Google não podem alterar o e-mail."}
+              </p>
             </div>
 
+            {hasPassword && (
             <div className="border-t border-border/50 pt-4 space-y-4">
               <p className="text-sm font-medium text-muted-foreground">
-                Alterar senha (opcional)
+                Senha atual (obrigatória para trocar e-mail ou senha)
               </p>
               <div className="space-y-2">
                 <Label htmlFor="currentPassword">Senha atual</Label>
@@ -185,12 +201,14 @@ export default function ProfilePage() {
                     value={passwordData.newPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                     className="pl-10"
-                    placeholder="••••••••"
-                    minLength={6}
+                    placeholder={PASSWORD_RULES_HINT}
+                    minLength={8}
+                    maxLength={72}
                   />
                 </div>
               </div>
             </div>
+            )}
 
             <Button type="submit" className="w-full" variant="brand" disabled={loading}>
               {loading ? (
@@ -232,7 +250,7 @@ export default function ProfilePage() {
               <p className="text-sm text-muted-foreground">Método de autenticação</p>
             </div>
             <span className="text-sm text-muted-foreground">
-              {session?.user?.image?.includes("googleusercontent") ? "Google" : "Email"}
+              {hasPassword ? "Email e senha" : "Google"}
             </span>
           </div>
           <div className="flex justify-between items-center py-3">

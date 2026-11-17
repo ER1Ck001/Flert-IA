@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { PASSWORD_RULES_HINT, resetPasswordFormSchema, resetTokenSchema } from "@/lib/validation/auth";
 
 function ResetForm() {
   const router = useRouter();
@@ -44,7 +45,7 @@ function ResetForm() {
     </svg>
   );
 
-  if (!token) {
+  if (!resetTokenSchema.safeParse(token).success) {
     return (
       <div className="au-err">
         <p>Link inválido ou expirado.</p>
@@ -55,8 +56,9 @@ function ResetForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirm) { toast.error("As senhas não coincidem"); return; }
-    if (password.length < 6) { toast.error("A senha deve ter pelo menos 6 caracteres"); return; }
+    // Mesmas regras do servidor (src/lib/validation/auth.ts).
+    const parsed = resetPasswordFormSchema.safeParse({ token, password, confirm });
+    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/reset-password", {
@@ -131,7 +133,7 @@ function ResetForm() {
                   <div className="au-input-wrap">
                     <input
                       id="password" type={showPass ? "text" : "password"} className="au-input"
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder={PASSWORD_RULES_HINT} maxLength={72}
                       value={password} onChange={e => setPassword(e.target.value)} required
                     />
                     <button type="button" className="au-eye" onClick={() => setShowPass(v => !v)} tabIndex={-1}>
