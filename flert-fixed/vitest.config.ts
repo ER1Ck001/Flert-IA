@@ -10,6 +10,8 @@ export default defineConfig({
     include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
     setupFiles: ["./tests/setup.ts"],
     clearMocks: true,
+    unstubEnvs: true,
+    unstubGlobals: true,
     coverage: {
       provider: "v8",
       include: ["src/lib/**", "src/app/api/**/route.ts"],

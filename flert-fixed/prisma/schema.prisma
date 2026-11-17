@@ -71,6 +71,7 @@ model User {
   subscriptionStatus SubscriptionStatus?
   conversations      Conversation[]
   passwordResetTokens PasswordResetToken[]
+  processedPayments  ProcessedPayment[]
 }
 
 model Profile {
@@ -111,6 +112,19 @@ model SubscriptionStatus {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("subscription_statuses")
+}
+
+// Checkouts da AbacatePay já aplicados — garante idempotência mesmo com reenvio fora de ordem.
+model ProcessedPayment {
+  checkoutId String           @id
+  userId     String
+  plan       SubscriptionPlan
+  createdAt  DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("processed_payments")
 }
 
 // =============================================

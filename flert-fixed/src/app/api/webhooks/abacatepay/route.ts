@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { SubscriptionPlan } from "@prisma/client";
-import crypto from "crypto";
+import { Prisma, SubscriptionPlan } from "@prisma/client";
 import nodemailer from "nodemailer";
+import {
+  authenticateWebhook,
+  decideActivation,
+  decideRevocation,
+  parseWebhookEvent,
+  productPlanMapFromEnv,
+} from "@/lib/payments/abacatepay-webhook";
+import type { PaidPlan } from "@/lib/plans";
+
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -29,7 +39,7 @@ const planPerks: Record<SubscriptionPlan, string[]> = {
 };
 
 async function sendWelcomeEmail(email: string, name: string, plan: SubscriptionPlan) {
-  const firstName = name.split(" ")[0];
+  const firstName = escapeHtml(name.split(" ")[0] || "você");
   const label     = planLabels[plan];
   const perks     = planPerks[plan];
   const appUrl    = process.env.NEXT_PUBLIC_APP_URL || "https://flertia.com.br";
@@ -121,64 +131,132 @@ async function sendWelcomeEmail(email: string, name: string, plan: SubscriptionP
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.text();
+    // Rejeita corpos grandes antes de ler (requisição ainda não autenticada).
+    const declared = Number(request.headers.get("content-length") ?? 0);
+    if (declared > MAX_BODY_BYTES) return tooLarge();
 
-    const secret    = process.env.ABACATEPAY_WEBHOOK_SECRET;
-    const signature = request.headers.get("x-abacatepay-signature") || "";
+    // Corpo cru: a assinatura HMAC é calculada sobre os bytes exatos recebidos.
+    const rawBody = await request.text();
+    if (Buffer.byteLength(rawBody, "utf8") > MAX_BODY_BYTES) return tooLarge();
 
-    if (secret && signature) {
-      const expected = crypto.createHmac("sha256", secret).update(body).digest("hex");
-      if (signature !== expected) {
-        return NextResponse.json({ error: "Assinatura inválida" }, { status: 401 });
-      }
-    }
-
-    const payload = JSON.parse(body);
-    const { event, data } = payload;
-
-    if (event === "billing.paid" || event === "payment.completed" || event === "charge.paid") {
-      const userId = data?.metadata?.userId || data?.customerId;
-      const plan   = (data?.metadata?.plan || "PREMIUM") as SubscriptionPlan;
-
-      if (!userId) {
-        console.warn("Webhook recebido sem userId:", payload);
-        return NextResponse.json({ received: true });
-      }
-
-      const isLifetime = plan === "LIFETIME";
-      const isAnnual   = plan === "ANNUAL";
-      const expiresAt  = isLifetime
-        ? null
-        : isAnnual
-        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-        : new Date(Date.now() + 30  * 24 * 60 * 60 * 1000);
-
-      await prisma.subscriptionStatus.upsert({
-        where:  { userId },
-        create: { userId, status: plan, activatedAt: new Date(), expiresAt, paymentId: data?.id || null },
-        update: { status: plan, activatedAt: new Date(), expiresAt, paymentId: data?.id || null },
-      });
-
-      console.log(`Subscription ${plan} ativada para usuário: ${userId}`);
-
-      // Enviar email de boas-vindas
-      const user = await prisma.user.findUnique({
-        where:  { id: userId },
-        select: { email: true, name: true },
-      });
-
-      if (user?.email) {
-        try {
-          await sendWelcomeEmail(user.email, user.name ?? "você", plan);
-        } catch (emailErr) {
-          console.error("Welcome email error:", emailErr);
-        }
-      }
-    }
-
-    return NextResponse.json({ received: true });
+    return await handle(request, rawBody);
   } catch (error) {
-    console.error("Webhook error:", error);
+    console.error("Webhook error:", error instanceof Error ? error.message : "unknown");
     return NextResponse.json({ error: "Erro ao processar webhook" }, { status: 500 });
   }
+}
+
+const MAX_BODY_BYTES = 64 * 1024;
+const tooLarge = () => NextResponse.json({ error: "Payload muito grande" }, { status: 413 });
+
+type Tx = Prisma.TransactionClient;
+
+/** Serializa eventos do mesmo usuário (retries e upsells chegam em paralelo). */
+const lockUser = (tx: Tx, userId: string) =>
+  tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}))`;
+
+const subscriptionSelect = { status: true, paymentId: true, expiresAt: true } as const;
+
+async function handle(request: NextRequest, rawBody: string): Promise<NextResponse> {
+  // 1. Autenticação — falha fechado.
+  const auth = authenticateWebhook({
+    rawBody,
+    headerSecret: request.headers.get("x-webhook-secret"),
+    querySecret: request.nextUrl.searchParams.get("webhookSecret"),
+    signature: request.headers.get("x-webhook-signature"),
+    secret: process.env.ABACATEPAY_WEBHOOK_SECRET,
+    publicKey: process.env.ABACATEPAY_PUBLIC_KEY || undefined,
+    requireSignature: process.env.NODE_ENV === "production",
+  });
+  if (!auth.ok) {
+    if (auth.reason === "not_configured") {
+      console.error("AbacatePay webhook: configure ABACATEPAY_WEBHOOK_SECRET e ABACATEPAY_PUBLIC_KEY");
+    } else {
+      console.warn(`AbacatePay webhook rejeitado: ${auth.reason}`);
+    }
+    return NextResponse.json({ error: "Não autorizado" }, { status: auth.status });
+  }
+
+  // 2. Interpretação do evento.
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+  }
+
+  const parsed = parseWebhookEvent(payload, productPlanMapFromEnv());
+  if (parsed.kind === "ignored") return NextResponse.json({ received: true, ignored: true });
+  if (parsed.kind === "invalid") {
+    if (parsed.reason === "unknown_product") {
+      // Pagamento confirmado de um produto que não está mapeado no .env: 500 faz a AbacatePay
+      // reenviar (~18h), dando tempo de corrigir ABACATEPAY_PRODUCT_ID_* sem perder a venda.
+      console.error("AbacatePay webhook: pagamento de produto não mapeado — confira ABACATEPAY_PRODUCT_ID_*");
+      return NextResponse.json({ error: "Produto não configurado" }, { status: 500 });
+    }
+    console.error(`AbacatePay webhook inválido: ${parsed.reason}`);
+    return NextResponse.json({ error: "Evento inválido" }, { status: 400 });
+  }
+
+  const { userId, checkoutId } = parsed;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, name: true },
+  });
+  if (!user) {
+    // 200 para a AbacatePay não reenviar indefinidamente; fica registrado para conferência manual.
+    console.warn(`AbacatePay webhook: usuário inexistente para checkout ${checkoutId}`);
+    return NextResponse.json({ received: true });
+  }
+
+  // 3a. Reembolso / disputa → revoga somente se for o pagamento vigente.
+  if (parsed.kind === "revoke") {
+    const revoked = await prisma.$transaction(async (tx: Tx) => {
+      await lockUser(tx, userId);
+      const current = await tx.subscriptionStatus.findUnique({ where: { userId }, select: subscriptionSelect });
+      if (decideRevocation(current, checkoutId).action !== "revoke") {
+        // Reembolso de um checkout que não é o vigente (ex.: renovação já sobreposta):
+        // o prazo dele foi somado ao atual — requer ajuste manual.
+        console.error(`AbacatePay webhook: reembolso/disputa de checkout não vigente ${checkoutId} — revisar manualmente`);
+        return false;
+      }
+      await tx.subscriptionStatus.update({ where: { userId }, data: { status: "FREE", expiresAt: null } });
+      return true;
+    });
+    return NextResponse.json({ received: true, revoked });
+  }
+
+  // 3b. Pagamento confirmado → ativa (idempotente, sem rebaixar LIFETIME).
+  const appliedPlan = await prisma.$transaction(async (tx: Tx): Promise<PaidPlan | null> => {
+    await lockUser(tx, userId);
+    const current = await tx.subscriptionStatus.findUnique({ where: { userId }, select: subscriptionSelect });
+
+    // Checkout já aplicado alguma vez (inclusive reenvio fora de ordem) → nada a fazer.
+    const alreadyProcessed = await tx.processedPayment.findUnique({ where: { checkoutId } });
+    if (alreadyProcessed) return null;
+
+    const decision = decideActivation(current, { plan: parsed.plan, checkoutId }, new Date());
+    await tx.processedPayment.create({ data: { checkoutId, userId, plan: parsed.plan } });
+    if (decision.action === "skip") return null;
+
+    const data = {
+      status: decision.status,
+      activatedAt: decision.activatedAt,
+      expiresAt: decision.expiresAt,
+      paymentId: checkoutId,
+    };
+    await tx.subscriptionStatus.upsert({ where: { userId }, create: { userId, ...data }, update: data });
+    return decision.status;
+  });
+
+  if (appliedPlan && user.email) {
+    try {
+      await sendWelcomeEmail(user.email, user.name ?? "você", appliedPlan);
+    } catch (emailErr) {
+      console.error("Welcome email error:", emailErr instanceof Error ? emailErr.message : "unknown");
+    }
+  }
+
+  return NextResponse.json({ received: true, applied: appliedPlan !== null });
 }
