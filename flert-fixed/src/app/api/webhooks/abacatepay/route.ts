@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma, SubscriptionPlan } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import nodemailer from "nodemailer";
 import {
   authenticateWebhook,
@@ -9,7 +9,7 @@ import {
   parseWebhookEvent,
   productPlanMapFromEnv,
 } from "@/lib/payments/abacatepay-webhook";
-import type { PaidPlan } from "@/lib/plans";
+import { PLAN_LABELS, getPlanBenefits, type PaidPlan } from "@/lib/plans";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -24,24 +24,10 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const planLabels: Record<SubscriptionPlan, string> = {
-  FREE:     "Grátis",
-  PREMIUM:  "Mensal",
-  ANNUAL:   "Anual",
-  LIFETIME: "Vitalício",
-};
-
-const planPerks: Record<SubscriptionPlan, string[]> = {
-  FREE:     [],
-  PREMIUM:  ["30 análises por dia", "Respostas personalizadas com IA", "7 tons de resposta diferentes", "Suporte via email"],
-  ANNUAL:   ["50 análises por dia", "Respostas personalizadas com IA", "7 tons de resposta diferentes", "Suporte prioritário", "2 meses grátis inclusos"],
-  LIFETIME: ["Análises ilimitadas para sempre", "Respostas personalizadas com IA", "7 tons de resposta diferentes", "Suporte VIP", "Todos os updates futuros inclusos"],
-};
-
-async function sendWelcomeEmail(email: string, name: string, plan: SubscriptionPlan) {
+async function sendWelcomeEmail(email: string, name: string, plan: PaidPlan) {
   const firstName = escapeHtml(name.split(" ")[0] || "você");
-  const label     = planLabels[plan];
-  const perks     = planPerks[plan];
+  const label     = PLAN_LABELS[plan];
+  const perks     = getPlanBenefits(plan);
   const appUrl    = process.env.NEXT_PUBLIC_APP_URL || "https://flertia.com.br";
 
   const isLifetime = plan === "LIFETIME";

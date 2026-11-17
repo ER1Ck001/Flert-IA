@@ -72,6 +72,7 @@ model User {
   conversations      Conversation[]
   passwordResetTokens PasswordResetToken[]
   processedPayments  ProcessedPayment[]
+  dailyUsage         DailyUsage[]
 }
 
 model Profile {
@@ -125,6 +126,21 @@ model ProcessedPayment {
 
   @@index([userId])
   @@map("processed_payments")
+}
+
+// Cota diária de análises. `day` é a data no fuso America/Sao_Paulo (YYYY-MM-DD).
+// Independente do histórico: apagar análises não libera cota.
+model DailyUsage {
+  userId    String
+  day       String
+  count     Int      @default(0)
+  refunds   Int      @default(0)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day])
+  @@map("daily_usage")
 }
 
 // =============================================

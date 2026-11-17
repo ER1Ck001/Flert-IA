@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { getEffectivePlan, isPlanExpired } from "@/lib/plans";
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
@@ -49,7 +50,9 @@ export async function GET(request: NextRequest) {
         name: user.name,
         email: user.email,
         image: user.image,
-        subscriptionStatus: user.subscriptionStatus?.status || "FREE",
+        subscriptionStatus: getEffectivePlan(user.subscriptionStatus),
+        isExpired: isPlanExpired(user.subscriptionStatus),
+        expiresAt: user.subscriptionStatus?.expiresAt ?? null,
         profile: user.profile,
       },
     });
@@ -182,7 +185,8 @@ export async function PUT(request: NextRequest) {
         name: updatedUser.name,
         email: updatedUser.email,
         image: updatedUser.image,
-        subscriptionStatus: updatedUser.subscriptionStatus?.status || "FREE",
+        subscriptionStatus: getEffectivePlan(updatedUser.subscriptionStatus),
+        isExpired: isPlanExpired(updatedUser.subscriptionStatus),
       },
     });
   } catch (error) {

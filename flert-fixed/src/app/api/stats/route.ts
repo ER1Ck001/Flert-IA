@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getEntitlement } from "@/lib/subscription";
+import { getUsageCount } from "@/lib/usage";
+import { nextResetAt } from "@/lib/time";
+
+// Depende da sessão: nunca pode ser pré-renderizada no build.
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
@@ -11,30 +17,30 @@ export async function GET() {
     }
 
     const userId = session.user.id;
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const [total, thisWeek, today, subscription] = await Promise.all([
+    const [total, thisWeek, today, entitlement] = await Promise.all([
       prisma.conversation.count({ where: { userId } }),
       prisma.conversation.count({ where: { userId, createdAt: { gte: weekAgo } } }),
-      prisma.conversation.count({ where: { userId, createdAt: { gte: todayStart } } }),
-      prisma.subscriptionStatus.findUnique({ where: { userId } }),
+      getUsageCount(userId, now),
+      getEntitlement(userId, now),
     ]);
-
-    const status     = subscription?.status;
-    const isLifetime = status === "LIFETIME";
-    const dailyLimit = isLifetime ? null : status === "ANNUAL" ? 50 : 30;
 
     return NextResponse.json({
       total,
       thisWeek,
       today,
-      dailyLimit,
-      isLifetime,
+      plan: entitlement.plan,
+      isPaid: entitlement.isPaid,
+      isExpired: entitlement.isExpired,
+      isLifetime: entitlement.plan === "LIFETIME",
+      dailyLimit: entitlement.dailyLimit,
+      expiresAt: entitlement.expiresAt,
+      resetsAt: nextResetAt(now).toISOString(),
     });
   } catch (error) {
-    console.error("Stats error:", error);
-    return NextResponse.json({ total: 0, thisWeek: 0 });
+    console.error("Stats error:", error instanceof Error ? error.message : "unknown");
+    return NextResponse.json({ error: "Erro ao carregar estatísticas" }, { status: 500 });
   }
 }

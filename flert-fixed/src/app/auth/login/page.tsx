@@ -163,7 +163,7 @@ function LoginForm() {
 
             <p className="au-foot">
               Não tem conta?{" "}
-              <Link href="/auth/register" className="au-link">Criar conta grátis</Link>
+              <Link href="/auth/register" className="au-link">Criar conta</Link>
             </p>
           </div>
         </div>

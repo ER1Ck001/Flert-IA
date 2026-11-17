@@ -5,6 +5,13 @@ import { prisma } from "@/lib/prisma";
 import crypto from "node:crypto";
 import { EXTERNAL_ID_PREFIX } from "@/lib/payments/abacatepay-webhook";
 import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  PLAN_CONFIG,
+  getEffectivePlan,
+  isPlanExpired,
+  planFromCheckoutKey,
+  type PaidPlan,
+} from "@/lib/plans";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +26,10 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      status: subscription?.status || "FREE",
+      // Plano que vale agora (expirado → FREE); o registro original segue em storedStatus.
+      status: getEffectivePlan(subscription),
+      storedStatus: subscription?.status ?? "FREE",
+      isExpired: isPlanExpired(subscription),
       activatedAt: subscription?.activatedAt,
       expiresAt: subscription?.expiresAt,
     });
@@ -51,17 +61,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const plan: unknown = body?.plan;
 
-    const productMap = {
-      monthly:  { id: process.env.ABACATEPAY_PRODUCT_ID_MONTHLY,  methods: ["CARD"],        status: "PREMIUM"  },
-      annual:   { id: process.env.ABACATEPAY_PRODUCT_ID_ANNUAL,   methods: ["CARD"],        status: "ANNUAL"   },
-      lifetime: { id: process.env.ABACATEPAY_PRODUCT_ID_LIFETIME, methods: ["PIX", "CARD"], status: "LIFETIME" },
-    } as const;
-
-    if (typeof plan !== "string" || !Object.hasOwn(productMap, plan)) {
+    const paidPlan = planFromCheckoutKey(plan);
+    if (!paidPlan) {
       return NextResponse.json({ error: "Plano inválido" }, { status: 400 });
     }
 
-    const selected = productMap[plan as keyof typeof productMap];
+    const productIds: Record<PaidPlan, string | undefined> = {
+      PREMIUM: process.env.ABACATEPAY_PRODUCT_ID_MONTHLY,
+      ANNUAL: process.env.ABACATEPAY_PRODUCT_ID_ANNUAL,
+      LIFETIME: process.env.ABACATEPAY_PRODUCT_ID_LIFETIME,
+    };
+    const selected = { id: productIds[paidPlan], methods: [...PLAN_CONFIG[paidPlan].methods], status: paidPlan };
     const apiKey = process.env.ABACATEPAY_API_KEY;
     const baseUrl = process.env.ABACATEPAY_BASE_URL;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";

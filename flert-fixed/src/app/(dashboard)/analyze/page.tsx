@@ -5,6 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { PLAN_LABELS, PLANS_IN_ORDER } from "@/lib/plans";
+
+const MAX_CONTEXT_CHARS = 2000; // mesmo limite validado no servidor
+
+const PAID_PLAN_NAMES = PLANS_IN_ORDER.map(p => p.label).join(", ").replace(/, ([^,]*)$/, " e $1");
 
 const TONES_ALL = [
   { value: "flirty",  label: "Flertando", emoji: "😏" },
@@ -29,10 +34,12 @@ export default function AnalyzePage() {
 
   // ── Subscription / gate
   const [isPaid, setIsPaid]           = useState<boolean | null>(null);
+  const [isExpired, setIsExpired]     = useState(false);
   const [isLifetime, setIsLifetime]   = useState(false);
   const [todayCount, setTodayCount]   = useState(0);
-  const [dailyLimit, setDailyLimit]   = useState(30);
+  const [dailyLimit, setDailyLimit]   = useState<number | null>(null);
   const [limitReached, setLimitReached] = useState(false);
+  const [loadError, setLoadError]     = useState(false);
 
   // ── Image upload
   const [image, setImage]     = useState<string | null>(null);
@@ -47,25 +54,33 @@ export default function AnalyzePage() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetch("/api/payment")
-      .then(r => r.json())
-      .then(d => {
-        setIsPaid(d.status === "PREMIUM" || d.status === "ANNUAL" || d.status === "LIFETIME");
-        setIsLifetime(d.status === "LIFETIME");
-      })
-      .catch(() => setIsPaid(false));
-
+  const loadStatus = () => {
+    setLoadError(false);
+    setIsPaid(null);
+    // Fonte única do status: plano efetivo (já considera expiração), limite e uso de hoje.
     fetch("/api/stats")
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(d => {
-        const limit = d.dailyLimit ?? 30;
-        setTodayCount(d.today ?? 0);
+        const today: number = d.today ?? 0;
+        const limit: number | null = d.dailyLimit ?? null;
+        setIsPaid(Boolean(d.isPaid));
+        setIsExpired(Boolean(d.isExpired));
+        setIsLifetime(Boolean(d.isLifetime));
+        setTodayCount(today);
         setDailyLimit(limit);
-        if (!d.isLifetime && (d.today ?? 0) >= limit) setLimitReached(true);
+        if (d.isPaid && limit !== null && today >= limit) setLimitReached(true);
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => setLoadError(true));
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadStatus(); }, []);
+
+  // Plano venceu/foi revogado durante a sessão → mostra a tela de renovação.
+  const handleForbidden = (data: { expired?: boolean }) => {
+    setIsPaid(false);
+    setIsExpired(Boolean(data.expired));
+  };
 
   const loadImage = (file: File) => {
     if (!file.type.startsWith("image/")) { toast.error("Envie uma imagem válida"); return; }
@@ -112,7 +127,8 @@ export default function AnalyzePage() {
         body: JSON.stringify({ imageUrl: image, style: tone, context: context.trim() || undefined }),
       });
       const data = await res.json();
-      if (res.status === 429) { setLimitReached(true); setTodayCount(data.todayCount ?? dailyLimit); throw new Error(data.error); }
+      if (res.status === 403) { handleForbidden(data); return; }
+      if (res.status === 429 && data.limitReached) { setLimitReached(true); setTodayCount(data.todayCount ?? dailyLimit ?? 0); throw new Error(data.error); }
       if (!res.ok) throw new Error(data.error || "Erro ao analisar");
       setSuggestions(data.suggestions);
       setTodayCount(p => p + 1);
@@ -134,7 +150,8 @@ export default function AnalyzePage() {
         body: JSON.stringify({ context: context.trim(), style: tone, mode }),
       });
       const data = await res.json();
-      if (res.status === 429) { setLimitReached(true); setTodayCount(data.todayCount ?? dailyLimit); throw new Error(data.error); }
+      if (res.status === 403) { handleForbidden(data); return; }
+      if (res.status === 429 && data.limitReached) { setLimitReached(true); setTodayCount(data.todayCount ?? dailyLimit ?? 0); throw new Error(data.error); }
       if (!res.ok) throw new Error(data.error || "Erro ao gerar");
       setSuggestions(data.suggestions);
       setTodayCount(p => p + 1);
@@ -152,6 +169,19 @@ export default function AnalyzePage() {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
+  // ── Erro ao carregar o plano (não confundir com "sem plano")
+  if (loadError) return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: AZ_CSS }} />
+      <div className="az-gate" role="alert">
+        <div className="az-gate-icon">⚠️</div>
+        <h2 className="az-gate-title">Não foi possível carregar seu plano</h2>
+        <p className="az-gate-sub">Verifique sua conexão e tente novamente.</p>
+        <button className="az-gate-btn" onClick={loadStatus}>Tentar novamente</button>
+      </div>
+    </>
+  );
+
   // ── Loading state
   if (isPaid === null) return (
     <div className="az-loading"><span className="az-spin az-spin--lg" /></div>
@@ -164,16 +194,20 @@ export default function AnalyzePage() {
       <motion.div className="az-gate"
         initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}>
-        <div className="az-gate-icon">{!isPaid ? "🔒" : "⏳"}</div>
-        <h2 className="az-gate-title">{!isPaid ? "Recurso Premium" : "Limite diário atingido"}</h2>
+        <div className="az-gate-icon">{!isPaid ? (isExpired ? "⌛" : "🔒") : "⏳"}</div>
+        <h2 className="az-gate-title">
+          {!isPaid ? (isExpired ? "Seu plano expirou" : "Recurso exclusivo para assinantes") : "Limite diário atingido"}
+        </h2>
         <p className="az-gate-sub">
           {!isPaid
-            ? "As análises com IA estão disponíveis apenas nos planos Premium e Vitalício."
-            : `Você já fez ${dailyLimit} análises hoje. O limite reinicia à meia-noite. Quer ilimitado? Faça upgrade para o plano Vitalício.`
+            ? isExpired
+              ? "Renove seu plano para voltar a usar as análises. Seu histórico continua salvo."
+              : `As análises com IA estão disponíveis nos planos ${PAID_PLAN_NAMES}.`
+            : `Você já fez ${dailyLimit} análises hoje. O limite reinicia à meia-noite (horário de Brasília). No plano ${PLAN_LABELS.LIFETIME} as análises são ilimitadas.`
           }
         </p>
         <button className="az-gate-btn" onClick={() => router.push("/pricing")}>
-          {!isPaid ? "Ver planos" : "Ver plano Vitalício"}
+          {!isPaid ? (isExpired ? "Renovar plano" : "Ver planos") : `Ver plano ${PLAN_LABELS.LIFETIME}`}
         </button>
       </motion.div>
     </>
@@ -288,7 +322,7 @@ export default function AnalyzePage() {
     </motion.button>
   );
 
-  const renderCounter = () => !isLifetime ? (
+  const renderCounter = () => !isLifetime && dailyLimit !== null ? (
     <div className={`az-counter${todayCount >= dailyLimit - 2 ? " az-counter--warn" : ""}`}>
       <span className="az-counter-n">{todayCount}</span>
       <span className="az-counter-sep">/</span>
@@ -374,6 +408,7 @@ export default function AnalyzePage() {
                     className="az-context"
                     placeholder="Fale sobre a pessoa, o que você quer alcançar, o clima da conversa..."
                     value={context}
+                    maxLength={MAX_CONTEXT_CHARS}
                     onChange={e => setContext(e.target.value)}
                     rows={5}
                   />
@@ -436,7 +471,8 @@ export default function AnalyzePage() {
                       className="az-context az-context--big"
                       placeholder="Ex: menina que estudou comigo, gosta de viajar e tem bom humor. Quero começar uma conversa leve..."
                       value={context}
-                      onChange={e => setContext(e.target.value)}
+                      maxLength={MAX_CONTEXT_CHARS}
+                    onChange={e => setContext(e.target.value)}
                       rows={6}
                       autoFocus
                     />
@@ -465,7 +501,8 @@ export default function AnalyzePage() {
                           className="az-context"
                           placeholder="Ex: vi o story dela e quero comentar algo..."
                           value={context}
-                          onChange={e => setContext(e.target.value)}
+                          maxLength={MAX_CONTEXT_CHARS}
+                    onChange={e => setContext(e.target.value)}
                           rows={4}
                         />
                       </div>
@@ -498,7 +535,8 @@ export default function AnalyzePage() {
                   className="az-context az-context--big"
                   placeholder="Ex: ela parou de responder depois de 3 dias, a última mensagem foi sobre filmes. Quero retomar sem parecer desesperado..."
                   value={context}
-                  onChange={e => setContext(e.target.value)}
+                  maxLength={MAX_CONTEXT_CHARS}
+                    onChange={e => setContext(e.target.value)}
                   rows={7}
                   autoFocus
                 />

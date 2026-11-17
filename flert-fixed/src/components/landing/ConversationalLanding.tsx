@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { PLANS_IN_ORDER, annualSavingsCents, formatBRL, getPlanBenefits } from "@/lib/plans";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -372,46 +373,25 @@ function VideoCard() {
 // PRICING CARDS — preços reais + Vitalício em destaque máximo
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PLANS = [
-  {
-    id: "monthly",
-    name: "Mensal",
-    price: "R$ 29,90",
-    period: "/mês",
-    description: "Para começar",
-    features: ["30 análises por dia", "Respostas avançadas com IA", "Análise de perfil", "Uploads ilimitados"],
-    cta: "Assinar Mensal",
-    highlight: false,
-  },
-  {
-    id: "annual",
-    name: "Anual",
-    price: "R$ 147,00",
-    period: "/ano",
-    description: "2 meses grátis — economia de R$211",
-    features: ["50 análises por dia", "Análise de perfil completa", "Alertas de padrões", "Suporte prioritário"],
-    cta: "Assinar Anual",
-    highlight: false,
-  },
-  {
-    id: "lifetime",
-    name: "Vitalício",
-    price: "R$ 297,00",
-    period: "único",
-    description: "Pague uma vez. Use para sempre.",
-    features: [
-      "Análises ilimitadas",
-      "Acesso vitalício garantido",
-      "Todos os updates futuros",
-      "Suporte VIP",
-      "Acesso antecipado a novidades",
-      "Badge exclusivo",
-    ],
-    cta: "Garantir Acesso Vitalício",
-    highlight: true,
-  },
-];
+// Derivado da fonte única de planos: preços, limites e benefícios reais.
+const PLAN_DESCRIPTIONS: Record<string, string> = {
+  PREMIUM: "Para começar",
+  ANNUAL: `Economize ${formatBRL(annualSavingsCents())} em relação ao Mensal`,
+  LIFETIME: "Pague uma vez. Sem mensalidade.",
+};
 
+const PLANS = PLANS_IN_ORDER.map((p) => ({
+  id: p.checkoutKey,
+  name: p.label,
+  price: formatBRL(p.priceCents),
+  period: p.periodLabel,
+  description: PLAN_DESCRIPTIONS[p.id],
+  // Cards compactos mostram só o essencial; o destacado lista os benefícios.
+  features: getPlanBenefits(p.id).slice(0, p.badge ? 6 : 4),
+  cta: p.cta,
+  highlight: Boolean(p.badge),
+  badge: p.badge,
+}));
 function PricingCards() {
   return (
     <div className="w-full space-y-3">
@@ -464,7 +444,7 @@ function PricingCards() {
             <div className="chat-pill bg-gradient-to-r from-[#8B0A2A] to-[#6d0820] text-[#F2EDE8] text-[10px] font-black px-3 py-1 shadow-md shadow-[#8B0A2A]/30 tracking-wider">
               ♥ MELHOR ESCOLHA
             </div>
-            <span className="text-[11px] text-[#C9A84C]/70 font-semibold">Mais popular</span>
+            <span className="text-[11px] text-[#C9A84C]/70 font-semibold">{plan.badge}</span>
           </div>
 
           {/* Price */}
@@ -510,7 +490,7 @@ function PricingCards() {
           Entrar na Flertia ♥
         </Link>
         <p className="text-[11px] text-[#9E8E7E]/28 mt-1">
-          PIX · Cartão · Sem assinatura obrigatória
+          PIX ou cartão · Vitalício sem mensalidade
         </p>
       </motion.div>
     </div>

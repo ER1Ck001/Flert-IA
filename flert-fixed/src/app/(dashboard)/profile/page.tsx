@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import toast from "react-hot-toast";
+import { PLAN_LABELS } from "@/lib/plans";
 
 function getInitials(name: string | null | undefined) {
   if (!name) return "U";
@@ -26,6 +27,7 @@ export default function ProfilePage() {
     newPassword: "",
   });
   const [subscriptionStatus, setSubscriptionStatus] = useState("FREE");
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -38,6 +40,7 @@ export default function ProfilePage() {
           email: data.user.email || "",
         });
         setSubscriptionStatus(data.user.subscriptionStatus || "FREE");
+        setIsExpired(Boolean(data.user.isExpired));
       } catch {
         // silently fail — session data is still usable
       }
@@ -90,15 +93,12 @@ export default function ProfilePage() {
     }
   };
 
-  const planLabel: Record<string, string> = {
-    FREE: "Grátis",
-    PREMIUM: "Premium",
-    LIFETIME: "Vitalício",
-  };
+  const planLabel: Record<string, string> = PLAN_LABELS;
 
   const planColor: Record<string, string> = {
     FREE: "bg-muted text-muted-foreground",
     PREMIUM: "bg-brand-500/10 text-brand-500",
+    ANNUAL: "bg-brand-500/15 text-brand-400",
     LIFETIME: "bg-yellow-500/10 text-yellow-500",
   };
 
@@ -223,7 +223,7 @@ export default function ProfilePage() {
             <span
               className={`px-3 py-1 rounded-full text-sm font-medium ${planColor[subscriptionStatus] || planColor.FREE}`}
             >
-              {planLabel[subscriptionStatus] || "Grátis"}
+              {isExpired ? "Expirado" : planLabel[subscriptionStatus] || PLAN_LABELS.FREE}
             </span>
           </div>
           <div className="flex justify-between items-center py-3 border-b border-border/50">

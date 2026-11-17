@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SubscriptionPlan } from "@prisma/client";
+import { computeExpiresAt, isPaidPlan } from "@/lib/plans";
 
 const ADMIN_EMAIL = "erickrochas230@gmail.com";
 
@@ -50,12 +51,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Plano inválido" }, { status: 400 });
     }
 
-    const expiresAt =
-      subscription === "LIFETIME" || subscription === "FREE"
-        ? null
-        : subscription === "ANNUAL"
-        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const expiresAt = isPaidPlan(subscription) ? computeExpiresAt(subscription, new Date()) : null;
 
     await prisma.subscriptionStatus.upsert({
       where: { userId: params.id },

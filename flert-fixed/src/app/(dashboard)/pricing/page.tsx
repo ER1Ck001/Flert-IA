@@ -6,9 +6,19 @@ import { useRouter } from "next/navigation";
 import { Check, Zap, Crown, Star } from "lucide-react";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
+import {
+  PLANS_IN_ORDER,
+  annualSavingsCents,
+  formatBRL,
+  getPlanBenefits,
+  methodsLabel,
+  type CheckoutKey,
+  type PaidPlan,
+} from "@/lib/plans";
 
 type Plan = {
-  id: string;
+  id: CheckoutKey;
+  planId: PaidPlan;
   name: string;
   price: string;
   period: string;
@@ -16,71 +26,42 @@ type Plan = {
   features: string[];
   cta: string;
   icon: React.ElementType;
-  featured?: boolean;
-  disabled?: boolean;
+  featured: boolean;
+  badge?: string;
 };
 
-const plans: Plan[] = [
-  {
-    id: "monthly",
-    name: "Mensal",
-    price: "R$ 29,90",
-    period: "/mês",
-    description: "Para começar",
-    features: [
-      "30 análises por dia",
-      "Respostas avançadas com IA",
-      "Análise de perfil",
-      "Suporte via email",
-      "Modo personalizado",
-      "Uploads ilimitados",
-    ],
-    cta: "Assinar Mensal",
-    icon: Zap,
-  },
-  {
-    id: "annual",
-    name: "Anual",
-    price: "R$ 147,00",
-    period: "/ano",
-    description: "Economia de R$ 211/ano",
-    features: [
-      "50 análises por dia",
-      "2 meses grátis",
-      "Análise de perfil completa",
-      "Alertas de padrões",
-      "Suporte prioritário",
-      "Uploads ilimitados",
-    ],
-    cta: "Assinar Anual",
-    featured: true,
-    icon: Star,
-  },
-  {
-    id: "lifetime",
-    name: "Vitalício",
-    price: "R$ 297,00",
-    period: "pagamento único",
-    description: "Acesso para sempre",
-    features: [
-      "Análises ilimitadas",
-      "Acesso vitalício",
-      "Updates futuros inclusos",
-      "Suporte VIP",
-      "Acesso antecipado a novidades",
-      "Badge exclusivo",
-    ],
-    cta: "Comprar Vitalício",
-    icon: Crown,
-  },
-];
+const ICONS: Record<PaidPlan, React.ElementType> = { PREMIUM: Zap, ANNUAL: Star, LIFETIME: Crown };
+const DESCRIPTIONS: Record<PaidPlan, string> = {
+  PREMIUM: "Para começar",
+  ANNUAL: `Economize ${formatBRL(annualSavingsCents())} em relação a 12 meses do Mensal`,
+  LIFETIME: "Pague uma vez, use sem mensalidade",
+};
+
+// Tudo derivado da fonte única de planos — preços, limites e benefícios reais.
+const plans: Plan[] = PLANS_IN_ORDER.map((p) => ({
+  id: p.checkoutKey,
+  planId: p.id,
+  name: p.label,
+  price: formatBRL(p.priceCents),
+  period: p.periodLabel,
+  description: DESCRIPTIONS[p.id],
+  features: getPlanBenefits(p.id),
+  cta: p.cta,
+  icon: ICONS[p.id],
+  featured: Boolean(p.badge),
+  badge: p.badge,
+}));
+
+const methodsFaq = PLANS_IN_ORDER.map((p) => `${p.label}: ${methodsLabel(p.methods)}`).join(". ");
 
 const faqs = [
-  { q: "Posso cancelar quando quiser?",        a: "Sim. Cancele a qualquer momento sem perguntas ou taxas extras." },
-  { q: "Quais formas de pagamento?",           a: "PIX, cartão de crédito e boleto. PIX processado instantaneamente." },
-  { q: "Existe garantia ou reembolso?",        a: "O reembolso é disponível apenas para usuários que realizaram no máximo 1 análise e solicitaram dentro de 12 horas após a compra. Basta entrar em contato pelo suporte." },
-  { q: "O plano vitalício é mesmo para sempre?", a: "Sim. Uma compra, acesso eterno — incluindo todas as atualizações futuras." },
+  { q: "Os planos renovam automaticamente?", a: "O acesso vale pelo período pago (30 dias no Mensal, 1 ano no Anual). Você pode renovar antes do fim — o novo período é somado ao que ainda resta, sem perder dias." },
+  { q: "Quais formas de pagamento?",         a: `${methodsFaq}.` },
+  { q: "Existe garantia ou reembolso?",      a: "O reembolso é disponível apenas para usuários que realizaram no máximo 1 análise e solicitaram dentro de 12 horas após a compra. Basta entrar em contato pelo suporte." },
+  { q: "O plano vitalício é mesmo para sempre?", a: "Sim. É um pagamento único, sem mensalidade e sem data de expiração." },
 ];
+
+const RANK: Record<string, number> = { FREE: 0, PREMIUM: 1, ANNUAL: 2, LIFETIME: 3 };
 
 export default function PricingPage() {
   const { data: session } = useSession();
@@ -95,19 +76,12 @@ export default function PricingPage() {
       .catch(() => {});
   }, []);
 
-  const visiblePlans = plans.filter((p) => {
-    if (userStatus === "LIFETIME") return p.id === "lifetime";
-    if (userStatus === "ANNUAL")   return p.id === "annual"   || p.id === "lifetime";
-    if (userStatus === "PREMIUM")  return p.id === "monthly"  || p.id === "annual" || p.id === "lifetime";
-    return true;
-  });
+  // Esconde planos inferiores ao vigente (ninguém é rebaixado).
+  const visiblePlans = plans.filter((p) => RANK[p.planId] >= (RANK[userStatus] ?? 0));
 
-  const isActivePlan = (planId: string) => {
-    if (userStatus === "LIFETIME" && planId === "lifetime") return true;
-    if (userStatus === "ANNUAL"   && planId === "annual")   return true;
-    if (userStatus === "PREMIUM"  && planId === "monthly")  return true;
-    return false;
-  };
+  const isActivePlan = (planId: PaidPlan) => userStatus === planId;
+  // Renovar o plano vigente é permitido (o período é somado); só o Vitalício não tem o que renovar.
+  const isBlocked = (p: Plan) => isActivePlan(p.planId) && p.planId === "LIFETIME";
 
   const handleSubscribe = async (plan: string) => {
     if (!session) { router.push("/auth/login"); return; }
@@ -142,7 +116,7 @@ export default function PricingPage() {
           Escolha seu plano
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Escolha o plano ideal e tenha acesso a recursos ilimitados de IA.
+          Todos os planos incluem os mesmos recursos — muda só o limite diário de análises.
         </p>
       </div>
 
@@ -165,7 +139,7 @@ export default function PricingPage() {
               {plan.featured && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
                   <span className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500 text-white text-[11px] font-bold shadow-md shadow-brand-500/30">
-                    Mais popular
+                    {plan.badge}
                   </span>
                 </div>
               )}
@@ -216,21 +190,19 @@ export default function PricingPage() {
 
               {/* CTA */}
               <button
-                disabled={plan.disabled || isLoading || isActivePlan(plan.id)}
-                onClick={() => !plan.disabled && !isActivePlan(plan.id) && handleSubscribe(plan.id)}
+                disabled={isLoading || isBlocked(plan)}
+                onClick={() => !isBlocked(plan) && handleSubscribe(plan.id)}
                 className={cn(
                   "w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-150",
-                  isActivePlan(plan.id)
+                  isBlocked(plan)
                     ? "bg-brand-500/10 border border-brand-500/30 text-brand-400 cursor-default"
-                    : plan.disabled
-                    ? "bg-muted/50 text-muted-foreground cursor-not-allowed"
                     : plan.featured
                     ? "bg-brand-500 hover:bg-brand-600 text-white shadow-sm shadow-brand-500/20 hover:shadow-brand-500/35"
                     : "border border-border/60 hover:border-brand-500/25 hover:bg-brand-500/5 text-foreground",
                   isLoading && "opacity-60 cursor-wait"
                 )}
               >
-                {isActivePlan(plan.id) ? (
+                {isBlocked(plan) ? (
                   <span className="flex items-center justify-center gap-2">
                     <Check className="h-3.5 w-3.5" />
                     Plano ativo
@@ -240,6 +212,8 @@ export default function PricingPage() {
                     <span className="h-3 w-3 rounded-full border-[1.5px] border-current border-t-transparent animate-spin" />
                     Processando...
                   </span>
+                ) : isActivePlan(plan.planId) ? (
+                  "Plano ativo · Renovar"
                 ) : (
                   plan.cta
                 )}
