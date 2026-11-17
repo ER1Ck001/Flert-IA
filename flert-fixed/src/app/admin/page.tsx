@@ -724,7 +724,7 @@ export default function AdminPage() {
                 </p>
 
                 <p className="text-[11px] text-muted-foreground/50 font-mono mb-4 p-2.5 rounded-lg bg-muted/20 border border-border/20 leading-relaxed">
-                  Assunto: "Não acha que está na hora de destravar suas conversas? 💘"
+                  Assunto: &ldquo;Não acha que está na hora de destravar suas conversas? 💘&rdquo;
                 </p>
 
                 <AnimatePresence mode="wait" initial={false}>
@@ -786,7 +786,7 @@ export default function AdminPage() {
                 </p>
 
                 <p className="text-[11px] text-muted-foreground/50 font-mono mb-4 p-2.5 rounded-lg bg-muted/20 border border-border/20 leading-relaxed">
-                  Assunto: "Seu plano expira em X dia(s) ⚡"
+                  Assunto: &ldquo;Seu plano expira em X dia(s) ⚡&rdquo;
                 </p>
 
                 <AnimatePresence mode="wait" initial={false}>
@@ -875,7 +875,7 @@ export default function AdminPage() {
                   onChange={e => setCustomBody(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors resize-none leading-relaxed" />
                 <p className="text-[11px] text-muted-foreground/40 mt-1.5">
-                  O email incluirá automaticamente a saudação com o nome do usuário e um botão "Acessar Flert IA".
+                  O email incluirá automaticamente a saudação com o nome do usuário e um botão &ldquo;Acessar Flert IA&rdquo;.
                 </p>
               </div>
 

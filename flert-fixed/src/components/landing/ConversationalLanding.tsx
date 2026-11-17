@@ -251,7 +251,7 @@ function DemoCard1() {
               transition={{ delay: 0.45 }}
               className="chat-tag bg-green-950/30 border border-green-900/22 px-3 py-1.5 inline-block"
             >
-              <p className="text-[11px] text-green-400/75 font-medium">✓ Ela respondeu: "hahaha que isso 😳" — conversa aberta</p>
+              <p className="text-[11px] text-green-400/75 font-medium">✓ Ela respondeu: &ldquo;hahaha que isso 😳&rdquo; — conversa aberta</p>
             </motion.div>
           </motion.div>
         )}
