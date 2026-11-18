@@ -148,3 +148,46 @@ describe("content guard — analyze + dashboard (4.4)", () => {
     expect(values).toEqual(["flirty", "funny", "casual", "witty", "serious", "pickup", "stories"]);
   });
 });
+
+describe("content guard — limpeza final (4.5)", () => {
+  const walk = (dir: string): string[] =>
+    existsSync(dir)
+      ? readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+          const full = path.join(dir, e.name);
+          if (e.isDirectory()) return walk(full);
+          return /\.(tsx?|css)$/.test(e.name) ? [path.relative(root, full).split(path.sep).join("/")] : [];
+        })
+      : [];
+  const srcFiles = walk(path.join(root, "src"));
+  it("varre src/", () => {
+    expect(srcFiles.length).toBeGreaterThan(50);
+  });
+
+  it.each(["#8B0A2A", "#C9A84C", "gold-", "font-cormorant"])("nenhum arquivo em src/ contém \"%s\"", (needle) => {
+    const offenders = srcFiles.filter((f) => read(f).toLowerCase().includes(needle.toLowerCase()));
+    expect(offenders).toEqual([]);
+  });
+
+  it("tailwind.config.ts não tem mais os aliases gold e cormorant (brand fica)", () => {
+    const tw = read("tailwind.config.ts");
+    expect(tw).not.toMatch(/\bgold\s*:/);
+    expect(tw).not.toMatch(/cormorant/i);
+    expect(tw).toMatch(/\bbrand\s*:/);
+  });
+
+  it("Button não declara variantes legadas (default/brand/destructive)", () => {
+    const btn = read("src/components/ui/button.tsx");
+    expect(btn).not.toMatch(/^\s*(default|brand|destructive)\s*:/m);
+  });
+
+  it("nenhum uso de variante legada do Button em src/", () => {
+    const legacy =
+      /variant=\{?\s*["'](default|brand|destructive)["']|variant=\{[^}]*\?\s*["'](default|brand|destructive)["']|variant:\s*["'](default|brand|destructive)["']|size=["']default["']/;
+    const offenders = srcFiles.filter((f) => f.endsWith(".tsx") && legacy.test(read(f)));
+    expect(offenders).toEqual([]);
+  });
+
+  it("admin não usa mais font-display italic", () => {
+    expect(read("src/app/admin/page.tsx")).not.toMatch(/\bitalic\b/);
+  });
+});

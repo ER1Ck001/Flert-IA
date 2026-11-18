@@ -41,9 +41,9 @@ type Stats = {
 
 const planConfig: Record<Plan, { label: string; color: string; bg: string; border: string; icon: React.ElementType }> = {
   FREE:     { label: "Grátis",    color: "text-muted-foreground", bg: "bg-muted/40",        border: "border-border/40",        icon: Shield },
-  PREMIUM:  { label: "Mensal",    color: "text-brand-400",        bg: "bg-brand-500/12",    border: "border-brand-500/30",     icon: Zap    },
-  ANNUAL:   { label: "Anual",     color: "text-violet-400",       bg: "bg-violet-500/12",   border: "border-violet-500/30",    icon: Star   },
-  LIFETIME: { label: "Vitalício", color: "text-amber-400",        bg: "bg-amber-500/12",    border: "border-amber-500/30",     icon: Crown  },
+  PREMIUM:  { label: "Mensal",    color: "text-brand-400",        bg: "bg-brand-500/15",    border: "border-brand-500/30",     icon: Zap    },
+  ANNUAL:   { label: "Anual",     color: "text-violet-400",       bg: "bg-violet-500/15",   border: "border-violet-500/30",    icon: Star   },
+  LIFETIME: { label: "Vitalício", color: "text-warning",        bg: "bg-warning/15",    border: "border-warning/30",     icon: Crown  },
 };
 
 const PLAN_PRICES = { FREE: 0, PREMIUM: 29.9, ANNUAL: 147 / 12, LIFETIME: 0 };
@@ -295,12 +295,12 @@ export default function AdminPage() {
 
   const statCards = [
     { label: "Total de usuários",  value: stats?.total ?? 0,      icon: Users,       color: "text-foreground",         sub: `${paidUsers} pagantes` },
-    { label: "Novos esta semana",  value: newThisWeek,            icon: UserPlus,    color: "text-green-400",           sub: "últimos 7 dias" },
+    { label: "Novos esta semana",  value: newThisWeek,            icon: UserPlus,    color: "text-success",           sub: "últimos 7 dias" },
     { label: "Grátis",             value: stats?.free ?? 0,       icon: Shield,      color: "text-muted-foreground",    sub: `${stats ? Math.round((stats.free / (stats.total || 1)) * 100) : 0}% do total` },
     { label: "Mensal",             value: stats?.premium ?? 0,    icon: Zap,         color: "text-brand-400",           sub: "R$29,90/mês" },
     { label: "Anual",              value: stats?.annual ?? 0,     icon: Star,        color: "text-violet-400",          sub: "R$147,00/ano" },
-    { label: "Vitalício",          value: stats?.lifetime ?? 0,   icon: Crown,       color: "text-amber-400",           sub: "pagamento único" },
-    { label: "MRR estimado",       value: `R$${mrr.toFixed(2).replace(".", ",")}`, icon: DollarSign, color: "text-green-400", sub: "receita mensal recorrente", raw: true },
+    { label: "Vitalício",          value: stats?.lifetime ?? 0,   icon: Crown,       color: "text-warning",           sub: "pagamento único" },
+    { label: "MRR estimado",       value: `R$${mrr.toFixed(2).replace(".", ",")}`, icon: DollarSign, color: "text-success", sub: "receita mensal recorrente", raw: true },
     { label: "Total de análises",  value: stats?.totalAnalyses ?? 0, icon: Activity, color: "text-brand-400",          sub: "desde o início" },
   ];
 
@@ -308,16 +308,16 @@ export default function AdminPage() {
     <div className="min-h-screen bg-background text-foreground">
 
       {/* ── Header ── */}
-      <header className="h-14 border-b border-border/40 bg-background/98 backdrop-blur-xl sticky top-0 z-40 px-6 flex items-center justify-between">
+      <header className="h-14 border-b border-border/40 bg-background/95 backdrop-blur-xl sticky top-0 z-40 px-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-1.5">
             <span className="text-brand-500 text-base leading-none">♥</span>
-            <span className="font-display text-lg font-semibold italic tracking-tight text-foreground">
-              Flert<em className="text-brand-500 not-italic">.</em>IA
+            <span className="font-display text-lg font-bold tracking-tight text-foreground">
+              Flert<span className="text-brand-500">.</span>IA
             </span>
           </Link>
           <div className="h-3 w-px bg-border/40" />
-          <div className="flex items-center gap-1.5 px-2.5 py-1 border border-brand-500/25 bg-brand-500/8">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 border border-brand-500/25 bg-brand-500/10">
             <Shield className="h-3 w-3 text-brand-400" />
             <span className="text-[9.5px] font-bold uppercase tracking-[.2em] text-brand-400">Admin</span>
           </div>
@@ -328,14 +328,14 @@ export default function AdminPage() {
             <Download className="h-3 w-3" /> Exportar CSV
           </button>
           <button onClick={load} disabled={loading}
-            className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground" title="Recarregar">
+            className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground" title="Recarregar" aria-label="Recarregar">
             <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
           </button>
-          <Link href="/dashboard" className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground" title="Dashboard">
+          <Link href="/dashboard" className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground" title="Dashboard" aria-label="Ir para o dashboard">
             <Sparkles className="h-3.5 w-3.5" />
           </Link>
           <button onClick={() => signOut({ callbackUrl: "/" })}
-            className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-destructive" title="Sair">
+            className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-danger" title="Sair" aria-label="Sair">
             <LogOut className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -346,7 +346,7 @@ export default function AdminPage() {
         {/* ── Title ── */}
         <div>
           <p className="text-[9.5px] font-bold uppercase tracking-[.28em] text-brand-500/70 mb-2">— Painel Administrativo —</p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground italic">Controle <em className="text-brand-400 not-italic">Total</em></h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">Controle <span className="text-signal">Total</span></h1>
           <p className="text-muted-foreground text-sm mt-1.5 font-light">Gerencie usuários, planos e monitore o crescimento do Flert IA</p>
         </div>
 
@@ -358,7 +358,7 @@ export default function AdminPage() {
               transition={{ delay: i * 0.04 }}
               className="border border-border/30 bg-card/10 px-4 py-4 hover:border-brand-500/20 hover:bg-brand-500/[0.02] transition-colors group">
               <s.icon className={cn("h-3.5 w-3.5 mb-2.5 transition-transform group-hover:scale-110", s.color)} />
-              <div className={cn("font-display text-xl font-semibold tracking-tight leading-none italic", s.color)}>
+              <div className={cn("font-display text-xl font-bold tracking-tight leading-none", s.color)}>
                 {(s as { raw?: boolean }).raw ? s.value : Number(s.value).toLocaleString("pt-BR")}
               </div>
               <div className="text-[9.5px] font-bold uppercase tracking-[.14em] text-muted-foreground/70 mt-1.5 leading-tight">{s.label}</div>
@@ -397,7 +397,7 @@ export default function AdminPage() {
                   value={search} onChange={e => setSearch(e.target.value)}
                   className="w-full h-9 pl-9 pr-8 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors" />
                 {search && (
-                  <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground">
+                  <button onClick={() => setSearch("")} aria-label="Limpar busca" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground">
                     <X className="h-3 w-3" />
                   </button>
                 )}
@@ -491,7 +491,7 @@ export default function AdminPage() {
                                 className={cn(
                                   "border-b border-border/20 transition-colors group",
                                   isExpanded ? "bg-card/40" : "hover:bg-card/25",
-                                  isConfirm && "bg-destructive/5"
+                                  isConfirm && "bg-danger/5"
                                 )}>
 
                                 <td className="px-4 py-3 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : user.id)}>
@@ -513,9 +513,9 @@ export default function AdminPage() {
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-muted-foreground truncate max-w-[160px] text-xs">{user.email ?? "—"}</span>
                                     {user.email && (
-                                      <button onClick={() => copyEmail(user.email!, user.id)}
+                                      <button onClick={() => copyEmail(user.email!, user.id)} aria-label="Copiar email"
                                         className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/40 hover:text-brand-400 flex-shrink-0">
-                                        {copiedId === user.id ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+                                        {copiedId === user.id ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
                                       </button>
                                     )}
                                   </div>
@@ -544,7 +544,7 @@ export default function AdminPage() {
                                           animate={{ opacity: 1, y: 0,  scale: 1    }}
                                           exit={{  opacity: 0, y: -6, scale: 0.96 }}
                                           transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                                          className="absolute top-full mt-1.5 left-0 z-50 w-40 rounded-xl border border-border/50 bg-background/98 backdrop-blur-xl shadow-xl overflow-hidden">
+                                          className="absolute top-full mt-1.5 left-0 z-50 w-40 rounded-xl border border-border/50 bg-background/95 backdrop-blur-xl shadow-xl overflow-hidden">
                                           {(["FREE", "PREMIUM", "ANNUAL", "LIFETIME"] as Plan[]).map(p => {
                                             const pc = planConfig[p];
                                             const PI = pc.icon;
@@ -573,7 +573,7 @@ export default function AdminPage() {
                                   <span className={cn(
                                     "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border",
                                     user.loginMethod === "google"
-                                      ? "bg-blue-500/8 border-blue-500/20 text-blue-400"
+                                      ? "bg-violet-500/10 border-violet-500/20 text-violet-400"
                                       : "bg-muted/40 border-border/30 text-muted-foreground"
                                   )}>
                                     {user.loginMethod === "google" ? "Google" : "Email"}
@@ -584,7 +584,7 @@ export default function AdminPage() {
                                   <div className="flex items-center gap-1.5">
                                     <div className={cn(
                                       "h-1.5 w-1.5 rounded-full flex-shrink-0",
-                                      user.analysisCount > 10 ? "bg-green-400" : user.analysisCount > 0 ? "bg-amber-400" : "bg-muted-foreground/30"
+                                      user.analysisCount > 10 ? "bg-success" : user.analysisCount > 0 ? "bg-warning" : "bg-muted-foreground/30"
                                     )} />
                                     <span className="text-foreground/80 text-sm">{user.analysisCount}</span>
                                   </div>
@@ -596,13 +596,13 @@ export default function AdminPage() {
                                   {user.subscription === "FREE" ? (
                                     <span className="text-muted-foreground/40 text-xs">—</span>
                                   ) : user.subscription === "LIFETIME" ? (
-                                    <span className="text-amber-400/70 text-xs font-medium">Eterno</span>
+                                    <span className="text-warning/70 text-xs font-medium">Eterno</span>
                                   ) : days === null ? (
                                     <span className="text-muted-foreground/40 text-xs">—</span>
                                   ) : days < 0 ? (
-                                    <span className="text-destructive text-xs font-semibold">Expirado</span>
+                                    <span className="text-danger text-xs font-semibold">Expirado</span>
                                   ) : days <= 7 ? (
-                                    <span className="text-amber-400 text-xs font-semibold">{days}d</span>
+                                    <span className="text-warning text-xs font-semibold">{days}d</span>
                                   ) : (
                                     <span className="text-muted-foreground text-xs">{fmt(user.expiresAt!)}</span>
                                   )}
@@ -619,7 +619,7 @@ export default function AdminPage() {
                                           Cancelar
                                         </button>
                                         <button onClick={() => deleteUser(user.id)} disabled={isDeleting}
-                                          className="px-2 py-1 rounded-lg text-xs bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50">
+                                          className="px-2 py-1 rounded-lg text-xs bg-danger/10 border border-danger/30 text-danger hover:bg-danger/20 transition-colors disabled:opacity-50">
                                           {isDeleting ? "..." : "Excluir"}
                                         </button>
                                       </motion.div>
@@ -630,13 +630,13 @@ export default function AdminPage() {
                                         {user.email && (
                                           <button onClick={() => openEmailModal(user)}
                                             className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-brand-400 hover:bg-brand-500/10 transition-colors"
-                                            title="Enviar email">
+                                            title="Enviar email" aria-label="Enviar email">
                                             <Mail className="h-3.5 w-3.5" />
                                           </button>
                                         )}
                                         <button onClick={() => setConfirmDeleteId(user.id)}
-                                          className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                          title="Excluir usuário">
+                                          className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-danger hover:bg-danger/10 transition-colors"
+                                          title="Excluir usuário" aria-label="Excluir usuário">
                                           <Trash2 className="h-3.5 w-3.5" />
                                         </button>
                                       </motion.div>
@@ -763,8 +763,8 @@ export default function AdminPage() {
               <div className="rounded-2xl border border-border/40 bg-card/20 p-6 flex flex-col">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                      <Clock className="h-5 w-5 text-amber-400" />
+                    <div className="h-10 w-10 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
+                      <Clock className="h-5 w-5 text-warning" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-foreground text-sm">Plano expirando em breve</h3>
@@ -775,7 +775,7 @@ export default function AdminPage() {
                     "px-2.5 py-1 rounded-lg text-xs font-bold border flex-shrink-0",
                     expiringCount === 0
                       ? "bg-muted/30 border-border/30 text-muted-foreground/50"
-                      : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                      : "bg-warning/10 border-warning/20 text-warning"
                   )}>
                     {expiringCount} usuário{expiringCount !== 1 ? "s" : ""}
                   </span>
@@ -800,7 +800,7 @@ export default function AdminPage() {
                       </button>
                       <button onClick={() => sendCampaign("expiring")}
                         disabled={sendingTemplate === "expiring" || expiringCount === 0}
-                        className="flex-1 py-2 rounded-xl text-xs bg-amber-500 hover:bg-amber-600 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
+                        className="flex-1 py-2 rounded-xl text-xs bg-warning hover:bg-warning/90 text-bg font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
                         {sendingTemplate === "expiring" ? (
                           <><span className="h-3 w-3 rounded-full border-[1.5px] border-white border-t-transparent animate-spin" /> Enviando...</>
                         ) : (
@@ -813,7 +813,7 @@ export default function AdminPage() {
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                       onClick={() => setConfirmTemplate("expiring")}
                       disabled={expiringCount === 0}
-                      className="w-full py-2.5 rounded-xl text-xs border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
+                      className="w-full py-2.5 rounded-xl text-xs border border-warning/30 text-warning hover:bg-warning/10 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
                       <Send className="h-3.5 w-3.5" />
                       {expiringCount === 0 ? "Nenhum plano expirando" : `Enviar para ${expiringCount} usuário${expiringCount !== 1 ? "s" : ""}`}
                     </motion.button>
@@ -882,7 +882,7 @@ export default function AdminPage() {
               <div className="flex items-center justify-between pt-4 border-t border-border/30">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   {(!customSubject.trim() || !customBody.trim()) && (
-                    <><AlertCircle className="h-3.5 w-3.5 text-amber-400/70" /> Preencha assunto e mensagem</>
+                    <><AlertCircle className="h-3.5 w-3.5 text-warning/70" /> Preencha assunto e mensagem</>
                   )}
                 </div>
 
@@ -949,7 +949,7 @@ export default function AdminPage() {
                     <p className="text-xs text-muted-foreground leading-tight">{emailModal.email}</p>
                   </div>
                 </div>
-                <button onClick={() => setEmailModal(null)}
+                <button onClick={() => setEmailModal(null)} aria-label="Fechar"
                   className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
                   <X className="h-4 w-4" />
                 </button>
@@ -961,14 +961,14 @@ export default function AdminPage() {
 
                 {([
                   { id: "free_upsell", label: "Convide para escolher um plano", desc: "\"Não acha que está na hora de destravar suas conversas?\"", icon: Zap,   color: "text-brand-400"  },
-                  { id: "expiring",    label: "Plano expirando em breve",        desc: "Lembra de renovar antes de perder o acesso",                icon: Clock, color: "text-amber-400"  },
+                  { id: "expiring",    label: "Plano expirando em breve",        desc: "Lembra de renovar antes de perder o acesso",                icon: Clock, color: "text-warning"  },
                   { id: "custom",      label: "Mensagem personalizada",           desc: "Escreva sua própria mensagem",                               icon: Mail,  color: "text-violet-400" },
                 ] as const).map(t => (
                   <button key={t.id} onClick={() => setModalTemplate(t.id)}
                     className={cn(
                       "w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all",
                       modalTemplate === t.id
-                        ? "border-brand-500/40 bg-brand-500/8"
+                        ? "border-brand-500/40 bg-brand-500/10"
                         : "border-border/30 hover:border-border/60 hover:bg-accent/30"
                     )}>
                     <t.icon className={cn("h-4 w-4 flex-shrink-0", t.color)} />

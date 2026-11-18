@@ -67,7 +67,7 @@ async function sendWelcomeEmail(email: string, name: string, plan: PaidPlan) {
             <p style="margin:0 0 20px;font-size:15px;color:#C8B89A;line-height:1.7">
               Sua compra foi confirmada e o plano <strong style="color:#ff2d95">${label}</strong> já está ativo na sua conta.
               ${isLifetime
-                ? "Você agora tem acesso <strong style=\"color:#C9A84C\">vitalício e ilimitado</strong> — nunca mais se preocupe com limites."
+                ? "Você agora tem acesso <strong style=\"color:#FF5FA0\">vitalício e ilimitado</strong> — nunca mais se preocupe com limites."
                 : "A partir de agora você tem tudo que precisa para transformar qualquer conversa em conexão real."
               }
             </p>

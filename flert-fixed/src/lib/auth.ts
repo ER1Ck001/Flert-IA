@@ -107,7 +107,7 @@ export const authOptions: NextAuthOptions = {
       <li style="margin:0 0 8px;padding-left:8px">✦ Até <strong style="color:#F2EDE8">50 análises por dia</strong> com IA avançada</li>
       <li style="margin:0 0 8px;padding-left:8px">✦ <strong style="color:#F2EDE8">7 tons diferentes</strong> — flerte, humor, direto, cantada, stories e mais</li>
       <li style="margin:0 0 8px;padding-left:8px">✦ Respostas que <strong style="color:#F2EDE8">parecem humanas</strong>, não geradas por IA</li>
-      <li style="margin:0 0 8px;padding-left:8px">✦ Plano <strong style="color:#C9A84C">Vitalício</strong> — pague uma vez, use para sempre</li>
+      <li style="margin:0 0 8px;padding-left:8px">✦ Plano <strong style="color:#FF5FA0">Vitalício</strong> — pague uma vez, use para sempre</li>
     </ul>
     <div style="text-align:center;margin:0 0 12px">
       <a href="${appUrl}/auth/login?callbackUrl=%2Fpricing" style="display:inline-block;background:linear-gradient(135deg,#cc2277,#ff2d95);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 24px rgba(255,45,149,0.3)">Escolher meu plano agora →</a>

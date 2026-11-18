@@ -29,14 +29,17 @@ describe("Button", () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it("aceita aliases legados de variante sem quebrar", () => {
+  it("renderiza as variantes primary/signal/danger (aliases legados removidos na 4.5)", () => {
     render(
       <>
-        <Button variant="brand">A</Button>
-        <Button variant="destructive">B</Button>
-        <Button variant="default">C</Button>
+        <Button variant="primary">A</Button>
+        <Button variant="signal">B</Button>
+        <Button variant="danger">C</Button>
       </>
     );
-    expect(screen.getAllByRole("button")).toHaveLength(3);
+    const [a, b, c] = screen.getAllByRole("button");
+    expect(a.className).toMatch(/bg-violet-600/);
+    expect(b.className).toMatch(/bg-cta/);
+    expect(c.className).toMatch(/bg-destructive/);
   });
 });

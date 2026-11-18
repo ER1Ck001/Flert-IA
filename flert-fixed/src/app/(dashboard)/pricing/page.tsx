@@ -3,53 +3,30 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Check, Zap, Crown, Star } from "lucide-react";
+import { Check, ChevronDown, Info } from "lucide-react";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
-import {
-  PLANS_IN_ORDER,
-  annualSavingsCents,
-  formatBRL,
-  getPlanBenefits,
-  type CheckoutKey,
-  type PaidPlan,
-} from "@/lib/plans";
+import { PLANS_IN_ORDER, type CheckoutKey, type PaidPlan, type PlanConfig } from "@/lib/plans";
 import { FAQ_ITEMS } from "@/content/faq";
+import { PlanCard } from "@/components/plans/PlanCard";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 
 type Plan = {
   id: CheckoutKey;
   planId: PaidPlan;
-  name: string;
-  price: string;
-  period: string;
-  description: string;
-  features: string[];
   cta: string;
-  icon: React.ElementType;
   featured: boolean;
-  badge?: string;
+  config: PlanConfig;
 };
 
-const ICONS: Record<PaidPlan, React.ElementType> = { PREMIUM: Zap, ANNUAL: Star, LIFETIME: Crown };
-const DESCRIPTIONS: Record<PaidPlan, string> = {
-  PREMIUM: "Para começar",
-  ANNUAL: `Economize ${formatBRL(annualSavingsCents())} em relação a 12 meses do Mensal`,
-  LIFETIME: "Pague uma vez, use sem mensalidade",
-};
-
-// Tudo derivado da fonte única de planos — preços, limites e benefícios reais.
+// Tudo derivado da fonte única de planos — preços, limites e benefícios reais (renderizados pelo PlanCard).
 const plans: Plan[] = PLANS_IN_ORDER.map((p) => ({
   id: p.checkoutKey,
   planId: p.id,
-  name: p.label,
-  price: formatBRL(p.priceCents),
-  period: p.periodLabel,
-  description: DESCRIPTIONS[p.id],
-  features: getPlanBenefits(p.id),
   cta: p.cta,
-  icon: ICONS[p.id],
   featured: Boolean(p.badge),
-  badge: p.badge,
+  config: p,
 }));
 
 const faqs = FAQ_ITEMS;
@@ -98,158 +75,91 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="max-w-3xl space-y-10">
+    <div className="mx-auto w-full max-w-app space-y-10">
+      <PageHeader
+        eyebrow="Planos"
+        title="Escolha seu plano"
+        description="Todos os planos incluem os mesmos recursos — muda só o limite diário de análises."
+        className="mb-0"
+      />
 
-      {/* ── Header ── */}
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-          Planos
-        </p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-          Escolha seu plano
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Todos os planos incluem os mesmos recursos — muda só o limite diário de análises.
-        </p>
-      </div>
-
-      {/* ── Plans grid ── */}
-      <div className={cn("grid gap-4 max-w-3xl mx-auto w-full", visiblePlans.length === 1 ? "max-w-sm" : visiblePlans.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3")}>
+      {/* ── Planos ── */}
+      <div
+        className={cn(
+          "mx-auto grid w-full gap-4",
+          visiblePlans.length === 1 ? "max-w-sm" : visiblePlans.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3"
+        )}
+      >
         {visiblePlans.map((plan) => {
-          const Icon = plan.icon;
           const isLoading = loading === plan.id;
+          const blocked = isBlocked(plan);
 
           return (
-            <div
+            <PlanCard
               key={plan.id}
-              className={cn(
-                "relative flex flex-col rounded-2xl border p-5 transition-all duration-200",
-                plan.featured
-                  ? "border-brand-500/35 bg-brand-500/[0.04] shadow-lg shadow-brand-500/[0.08]"
-                  : "border-border/50 bg-card/20 hover:border-border/80"
-              )}
-            >
-              {plan.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500 text-white text-[11px] font-bold shadow-md shadow-brand-500/30">
-                    {plan.badge}
-                  </span>
-                </div>
-              )}
-
-              {/* Plan info */}
-              <div className="mb-5">
-                <div className={cn(
-                  "h-8 w-8 rounded-lg flex items-center justify-center mb-3.5",
-                  plan.featured ? "bg-brand-500/15" : "bg-muted/80"
-                )}>
-                  <Icon className={cn(
-                    "h-4 w-4",
-                    plan.featured ? "text-brand-400" : "text-muted-foreground"
-                  )} />
-                </div>
-
-                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-                  {plan.name}
-                </p>
-                <div className="flex items-baseline gap-1 mb-0.5">
-                  <span className="font-display text-2xl font-bold tracking-tight text-foreground">
-                    {plan.price}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{plan.period}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">{plan.description}</p>
-              </div>
-
-              {/* Features */}
-              <ul className="space-y-2.5 mb-6 flex-1">
-                {plan.features.map((f, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm">
-                    <div className={cn(
-                      "h-3.5 w-3.5 rounded-full flex items-center justify-center flex-shrink-0",
-                      plan.featured ? "bg-brand-500/20" : "bg-muted"
-                    )}>
-                      <Check className={cn(
-                        "h-2 w-2",
-                        plan.featured ? "text-brand-400" : "text-muted-foreground/60"
-                      )} />
-                    </div>
-                    <span className={plan.featured ? "text-foreground/90" : "text-muted-foreground"}>
-                      {f}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* CTA */}
-              <button
-                disabled={isLoading || isBlocked(plan)}
-                onClick={() => !isBlocked(plan) && handleSubscribe(plan.id)}
-                className={cn(
-                  "w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-150",
-                  isBlocked(plan)
-                    ? "bg-brand-500/10 border border-brand-500/30 text-brand-400 cursor-default"
-                    : plan.featured
-                    ? "bg-brand-500 hover:bg-brand-600 text-white shadow-sm shadow-brand-500/20 hover:shadow-brand-500/35"
-                    : "border border-border/60 hover:border-brand-500/25 hover:bg-brand-500/5 text-foreground",
-                  isLoading && "opacity-60 cursor-wait"
-                )}
-              >
-                {isBlocked(plan) ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Check className="h-3.5 w-3.5" />
-                    Plano ativo
-                  </span>
-                ) : isLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="h-3 w-3 rounded-full border-[1.5px] border-current border-t-transparent animate-spin" />
-                    Processando...
-                  </span>
-                ) : isActivePlan(plan.planId) ? (
-                  "Plano ativo · Renovar"
-                ) : (
-                  plan.cta
-                )}
-              </button>
-            </div>
+              plan={plan.config}
+              headingLevel="h2"
+              action={
+                <Button
+                  variant={blocked ? "secondary" : plan.featured ? "signal" : "secondary"}
+                  size="lg"
+                  className="w-full"
+                  loading={isLoading}
+                  disabled={blocked}
+                  leftIcon={blocked ? <Check className="h-4 w-4" aria-hidden /> : undefined}
+                  onClick={() => !isBlocked(plan) && handleSubscribe(plan.id)}
+                >
+                  {blocked
+                    ? "Plano ativo"
+                    : isLoading
+                    ? "Processando..."
+                    : isActivePlan(plan.planId)
+                    ? "Plano ativo · Renovar"
+                    : plan.cta}
+                </Button>
+              }
+            />
           );
         })}
       </div>
 
       {/* ── FAQ ── */}
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
+      <section aria-labelledby="pricing-faq-title">
+        <h2 id="pricing-faq-title" className="mb-4 font-display text-h2 text-text">
           Dúvidas frequentes
-        </p>
-        <div className="grid md:grid-cols-2 gap-3">
-          {faqs.map((item, i) => (
-            <div key={i} className="p-4 rounded-xl border border-border/40 bg-card/20">
-              <p className="text-sm font-medium text-foreground mb-1">{item.q}</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">{item.a}</p>
-            </div>
+        </h2>
+        <div className="space-y-3">
+          {faqs.map((item) => (
+            <details key={item.q} className="group rounded-lg border border-border bg-surface">
+              <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 rounded-lg px-5 py-4 text-left text-body font-medium text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 [&::-webkit-details-marker]:hidden">
+                <span>{item.q}</span>
+                <ChevronDown
+                  className="h-5 w-5 shrink-0 text-text-2 transition-transform duration-200 group-open:rotate-180"
+                  aria-hidden
+                />
+              </summary>
+              <p className="px-5 pb-5 text-sm text-text-2">{item.a}</p>
+            </details>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* ── Refund policy notice ── */}
-      <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl border border-border/30 bg-card/10">
-        <div className="h-5 w-5 rounded-full bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <span className="text-[10px]">ℹ</span>
-        </div>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          <span className="font-semibold text-foreground/70">Política de reembolso: </span>
-          O reembolso é disponível exclusivamente para usuários que realizaram <strong className="text-foreground/70">no máximo 1 análise</strong> e solicitaram dentro de <strong className="text-foreground/70">12 horas</strong> após a compra. Fora dessas condições, não haverá reembolso. Para solicitar, entre em contato pelo{" "}
+      {/* ── Política de reembolso ── */}
+      <div className="flex items-start gap-3 rounded-lg border border-border bg-surface px-4 py-4">
+        <Info className="mt-0.5 h-5 w-5 shrink-0 text-violet-400" aria-hidden />
+        <p className="text-sm leading-relaxed text-text-2">
+          <span className="font-semibold text-text">Política de reembolso: </span>
+          O reembolso é disponível exclusivamente para usuários que realizaram <strong className="text-text">no máximo 1 análise</strong> e solicitaram dentro de <strong className="text-text">12 horas</strong> após a compra. Fora dessas condições, não haverá reembolso. Para solicitar, entre em contato pelo{" "}
           <a
             href="https://mail.google.com/mail/?view=cm&to=erickdev@flertia.com.br&su=Solicita%C3%A7%C3%A3o%20de%20Reembolso"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-brand-400 hover:text-brand-300 transition-colors"
+            className="rounded-sm font-medium text-violet-400 underline underline-offset-4 transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
           >
             suporte
           </a>.
         </p>
       </div>
-
     </div>
   );
 }

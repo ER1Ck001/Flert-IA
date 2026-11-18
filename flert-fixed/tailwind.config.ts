@@ -25,8 +25,6 @@ const config = {
         sans: ['var(--font-inter)', ...fontFamily.sans],
         display: displayStack,
         cabinet: displayStack,
-        // Alias temporário (remover na 4.5).
-        cormorant: displayStack,
       },
       fontSize: {
         display: ['clamp(2.5rem, 5vw + 1rem, 4.5rem)', { lineHeight: '1.02', fontWeight: '800', letterSpacing: '-0.03em' }],
@@ -117,19 +115,6 @@ const config = {
           800: '#5B21B6',
           900: '#4C1D95',
           950: '#2E1065',
-        },
-        // Alias temporário de pink (remover na 4.5).
-        gold: {
-          50: '#FFF0F6',
-          100: '#FFE0EE',
-          200: '#FFC2DD',
-          300: '#FF94C2',
-          400: rgb('pink-400'),
-          500: rgb('pink-500'),
-          600: rgb('pink-600'),
-          700: '#B8145C',
-          800: '#8F1149',
-          900: '#6B0F38',
         },
       },
       borderRadius: {

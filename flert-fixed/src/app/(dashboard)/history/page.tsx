@@ -3,8 +3,13 @@
 import { useState, useEffect } from "react";
 import { History as HistoryIcon, Search, Trash2, Copy, Check, Clock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { TONES, getToneLabel } from "@/components/analyze/tones";
 import toast from "react-hot-toast";
 
 interface HistoryItem {
@@ -15,20 +20,35 @@ interface HistoryItem {
   suggestions: string[];
 }
 
+/**
+ * Só apresentação: o título salvo pela API é "<modo> <tom> - <data>" (ex.: "Análise flirty - 10/11/2026").
+ * Se o último termo antes do " - " for uma chave de tom conhecida, devolve o rótulo legível.
+ */
+function toneKeyFromTitle(title: string): string | null {
+  const key = title.split(" - ")[0]?.trim().split(" ").pop();
+  return key && TONES.some((t) => t.value === key) ? key : null;
+}
+
+function displayTitle(title: string): string {
+  const key = toneKeyFromTitle(title);
+  if (!key) return title;
+  const [head, ...rest] = title.split(" - ");
+  const mode = head.trim().split(" ").slice(0, -1).join(" ");
+  return [mode || head, ...rest].join(" · ");
+}
+
 function SkeletonCard() {
   return (
-    <Card className="border-border/50">
-      <CardHeader>
-        <div className="h-5 w-48 bg-muted animate-pulse rounded" />
-        <div className="h-4 w-32 bg-muted animate-pulse rounded mt-2" />
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
-          ))}
-        </div>
-      </CardContent>
+    <Card className="space-y-4 p-4 sm:p-6">
+      <div className="space-y-2">
+        <Skeleton className="h-5 w-48 max-w-full" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+      <div className="space-y-2">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-12 w-full" />
+        ))}
+      </div>
     </Card>
   );
 }
@@ -100,117 +120,128 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Histórico</h1>
-          <p className="text-muted-foreground mt-1">Todas as suas análises anteriores</p>
-        </div>
-        <div className="relative w-full md:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar análises..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
+    <div className="mx-auto w-full max-w-app">
+      <PageHeader
+        eyebrow="Sua conta"
+        title="Histórico"
+        description="Todas as suas análises anteriores"
+        actions={
+          <div className="relative w-full sm:w-72">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-text-3"
+              aria-hidden
+            />
+            <Input
+              type="search"
+              aria-label="Buscar análises"
+              placeholder="Buscar análises..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-11"
+            />
+          </div>
+        }
+      />
 
       {loading ? (
-        <div className="grid gap-4">
+        <div className="grid gap-4" aria-busy="true" aria-label="Carregando histórico">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
         </div>
       ) : filteredHistory.length === 0 ? (
-        <Card className="border-border/50">
-          <CardContent className="py-16 text-center">
-            <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-              {search ? (
-                <Search className="h-8 w-8 text-muted-foreground" />
-              ) : (
-                <HistoryIcon className="h-8 w-8 text-muted-foreground" />
-              )}
-            </div>
-            <h3 className="text-lg font-semibold mb-2">
-              {search ? "Nenhuma análise encontrada" : "Nenhuma análise ainda"}
-            </h3>
-            <p className="text-muted-foreground text-sm">
-              {search
-                ? "Tente buscar com outros termos"
-                : "Comece analisando sua primeira conversa"}
-            </p>
-            {!search && (
-              <Button variant="brand" className="mt-4" onClick={() => (window.location.href = "/analyze")}>
-                <Sparkles className="mr-2 h-4 w-4" />
+        search ? (
+          <EmptyState
+            icon={Search}
+            title="Nenhuma análise encontrada"
+            description="Tente buscar com outros termos"
+          />
+        ) : (
+          <EmptyState
+            icon={HistoryIcon}
+            title="Nenhuma análise ainda"
+            description="Comece analisando sua primeira conversa"
+            action={
+              <Button
+                variant="signal"
+                leftIcon={<Sparkles className="h-4 w-4" aria-hidden />}
+                onClick={() => (window.location.href = "/analyze")}
+              >
                 Fazer análise
               </Button>
-            )}
-          </CardContent>
-        </Card>
+            }
+          />
+        )
       ) : (
-        <div className="grid gap-4">
-          {filteredHistory.map((item) => (
-            <Card key={item.id} className="border-border/50 hover:border-brand-500/20 transition-colors">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-base">{item.title}</CardTitle>
-                    <CardDescription className="flex items-center gap-2 mt-1">
-                      <Clock className="h-3 w-3" />
-                      {new Date(item.date).toLocaleDateString("pt-BR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                      <span className="mx-1">•</span>
-                      <span className="text-brand-500">{item.style}</span>
-                    </CardDescription>
+        <ul className="grid gap-4" aria-label="Análises">
+          {filteredHistory.map((item) => {
+            const toneKey = toneKeyFromTitle(item.title);
+            return (
+              <li key={item.id}>
+                <Card variant="interactive" className="p-4 sm:p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="font-display text-h3 text-text break-words">{displayTitle(item.title)}</h2>
+                      <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-text-2">
+                        <Clock className="h-4 w-4 shrink-0" aria-hidden />
+                        <time dateTime={item.date}>
+                          {new Date(item.date).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </time>
+                        <Badge variant="violet">{toneKey ? getToneLabel(toneKey) : item.style}</Badge>
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Remover análise"
+                      onClick={() => handleDelete(item.id)}
+                      className="-mr-2 -mt-2 hover:bg-danger/10 hover:text-danger"
+                    >
+                      <Trash2 className="h-5 w-5" aria-hidden />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(item.id)}
-                    className="hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {item.suggestions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground italic">Sem sugestões salvas</p>
-                  ) : (
-                    item.suggestions.map((suggestion, index) => (
-                      <div
-                        key={index}
-                        className="p-3 rounded-lg bg-muted/50 flex items-start justify-between gap-2 hover:bg-muted/80 transition-colors"
-                      >
-                        <p className="text-sm flex-1">{suggestion}</p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCopy(suggestion, `${item.id}-${index}`)}
-                          className="flex-shrink-0"
-                        >
-                          {copiedId === `${item.id}-${index}` ? (
-                            <Check className="h-3 w-3 text-green-500" />
-                          ) : (
-                            <Copy className="h-3 w-3" />
-                          )}
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+
+                  <div className="mt-4 space-y-2">
+                    {item.suggestions.length === 0 ? (
+                      <p className="text-sm text-text-2">Sem sugestões salvas</p>
+                    ) : (
+                      item.suggestions.map((suggestion, index) => {
+                        const copyKey = `${item.id}-${index}`;
+                        const copied = copiedId === copyKey;
+                        return (
+                          <div
+                            key={index}
+                            className="flex items-start justify-between gap-2 rounded-md border border-border bg-surface-2 py-1 pl-3 pr-1"
+                          >
+                            <p className="flex-1 py-2.5 text-sm text-text break-words">{suggestion}</p>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={copied ? "Sugestão copiada" : "Copiar sugestão"}
+                              onClick={() => handleCopy(suggestion, copyKey)}
+                            >
+                              {copied ? (
+                                <Check className="h-4 w-4 text-success" aria-hidden />
+                              ) : (
+                                <Copy className="h-4 w-4" aria-hidden />
+                              )}
+                            </Button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </Card>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

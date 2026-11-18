@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Shield, Trash2, LogOut, Loader2, AlertTriangle, Cookie } from "lucide-react";
+import { Bell, Shield, Trash2, LogOut, AlertTriangle, Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
+import { PageHeader } from "@/components/ui/page-header";
 import toast from "react-hot-toast";
 import { OPEN_CONSENT_EVENT } from "@/components/consent/ConsentBanner";
 import { DELETE_CONFIRMATION } from "@/lib/validation/auth";
@@ -99,102 +101,112 @@ export default function SettingsPage() {
   };
 
   return (
-    <motion.div className="max-w-2xl space-y-8" variants={container} initial="hidden" animate="show">
+    <motion.div className="mx-auto w-full max-w-2xl space-y-6" variants={container} initial="hidden" animate="show">
       {/* ── Header ── */}
       <motion.div variants={item}>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Conta</p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">Configurações</h1>
-        <p className="text-muted-foreground text-sm mt-1">Privacidade, sessões e dados da sua conta</p>
+        <PageHeader
+          eyebrow="Conta"
+          title="Configurações"
+          description="Privacidade, sessões e dados da sua conta"
+          className="mb-0"
+        />
       </motion.div>
 
       {/* ── Notificações (honesto: ainda não há preferências configuráveis) ── */}
-      <motion.div variants={item} className="rounded-2xl border border-border/40 bg-card/20 overflow-hidden">
-        <div className="px-5 py-4 border-b border-border/40">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-muted/80 flex items-center justify-center">
-              <Bell className="h-3.5 w-3.5 text-muted-foreground" />
+      <motion.section variants={item} aria-labelledby="settings-notifications" className="overflow-hidden rounded-lg border border-border bg-surface shadow-1">
+        <div className="border-b border-border px-4 py-4 sm:px-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-violet-500/15">
+              <Bell className="h-4 w-4 text-violet-400" aria-hidden />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Notificações</p>
-              <p className="text-xs text-muted-foreground">O que enviamos para você hoje</p>
+            <div className="min-w-0">
+              <h2 id="settings-notifications" className="font-display text-h3 text-text">Notificações</h2>
+              <p className="text-sm text-text-2">O que enviamos para você hoje</p>
             </div>
           </div>
         </div>
-        <div className="px-5 py-4">
-          <p className="text-sm text-muted-foreground leading-relaxed">
+        <div className="px-4 py-4 sm:px-5">
+          <p className="text-sm leading-relaxed text-text-2">
             Enviamos e-mails apenas sobre a sua conta: boas-vindas, confirmação de pagamento, redefinição de senha,
             exclusão de conta e avisos sobre o seu plano. Preferências de notificação personalizáveis ainda não estão
             disponíveis.
           </p>
         </div>
-      </motion.div>
+      </motion.section>
 
       {/* ── Privacidade ── */}
-      <motion.div variants={item} className="rounded-2xl border border-border/40 bg-card/20 overflow-hidden">
-        <div className="px-5 py-4 border-b border-border/40">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-muted/80 flex items-center justify-center">
-              <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+      <motion.section variants={item} aria-labelledby="settings-privacy" className="overflow-hidden rounded-lg border border-border bg-surface shadow-1">
+        <div className="border-b border-border px-4 py-4 sm:px-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-violet-500/15">
+              <Shield className="h-4 w-4 text-violet-400" aria-hidden />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Privacidade e Segurança</p>
-              <p className="text-xs text-muted-foreground">Como seus dados são tratados</p>
+            <div className="min-w-0">
+              <h2 id="settings-privacy" className="font-display text-h3 text-text">Privacidade e Segurança</h2>
+              <p className="text-sm text-text-2">Como seus dados são tratados</p>
             </div>
           </div>
         </div>
-        <div className="px-5 py-4 space-y-3">
+        <div className="space-y-3 px-4 py-4 sm:px-5">
           {PRIVACY_FACTS.map((p) => (
-            <div key={p.title} className="p-3.5 rounded-xl bg-muted/30 border border-border/30">
-              <p className="text-sm font-medium text-foreground">{p.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{p.desc}</p>
+            <div key={p.title} className="rounded-md border border-border bg-surface-2 p-3.5">
+              <p className="text-sm font-medium text-text">{p.title}</p>
+              <p className="mt-0.5 text-sm leading-relaxed text-text-2">{p.desc}</p>
             </div>
           ))}
           <Button
             variant="outline"
-            size="sm"
-            className="h-8 text-xs gap-1.5"
+            leftIcon={<Cookie className="h-4 w-4" aria-hidden />}
             onClick={() => window.dispatchEvent(new Event(OPEN_CONSENT_EVENT))}
           >
-            <Cookie className="h-3 w-3" />
             Gerenciar cookies
           </Button>
         </div>
-      </motion.div>
+      </motion.section>
 
       {/* ── Zona de perigo ── */}
-      <motion.div variants={item} className="rounded-2xl border border-destructive/20 bg-card/20 overflow-hidden">
-        <div className="px-5 py-4 border-b border-destructive/15">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-destructive/10 flex items-center justify-center">
-              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+      <motion.section variants={item} aria-labelledby="settings-danger" className="overflow-hidden rounded-lg border border-danger/30 bg-surface shadow-1">
+        <div className="border-b border-danger/20 px-4 py-4 sm:px-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-danger/15">
+              <Trash2 className="h-4 w-4 text-danger" aria-hidden />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-destructive">Zona de Perigo</p>
-              <p className="text-xs text-muted-foreground">Ações que afetam sua conta</p>
+            <div className="min-w-0">
+              <h2 id="settings-danger" className="font-display text-h3 text-danger">Zona de Perigo</h2>
+              <p className="text-sm text-text-2">Ações que afetam sua conta</p>
             </div>
           </div>
         </div>
-        <div className="px-5 py-4 space-y-4">
-          <div className="flex items-center justify-between gap-4 py-2 border-b border-border/30">
-            <div>
-              <p className="text-sm font-medium text-foreground">Sair de todos os dispositivos</p>
-              <p className="text-xs text-muted-foreground">Encerra todas as sessões abertas, inclusive esta</p>
+        <div className="space-y-4 px-4 py-4 sm:px-5">
+          <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-text">Sair de todos os dispositivos</p>
+              <p className="text-sm text-text-2">Encerra todas as sessões abertas, inclusive esta</p>
             </div>
-            <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 shrink-0" onClick={handleRevokeAll} disabled={revoking}>
-              {revoking ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogOut className="h-3 w-3" />}
+            <Button
+              variant="outline"
+              className="shrink-0"
+              onClick={handleRevokeAll}
+              loading={revoking}
+              leftIcon={<LogOut className="h-4 w-4" aria-hidden />}
+            >
               Sair de tudo
             </Button>
           </div>
 
-          <div className="py-2 space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-destructive">Excluir conta</p>
-                <p className="text-xs text-muted-foreground">Exclui permanentemente sua conta e o histórico de análises</p>
+          <div className="space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-danger">Excluir conta</p>
+                <p className="text-sm text-text-2">Exclui permanentemente sua conta e o histórico de análises</p>
               </div>
               {!deleteOpen && (
-                <Button variant="destructive" size="sm" className="h-8 text-xs gap-1.5 shrink-0" onClick={() => setDeleteOpen(true)}>
-                  <Trash2 className="h-3 w-3" />
+                <Button
+                  variant="danger"
+                  className="shrink-0"
+                  onClick={() => setDeleteOpen(true)}
+                  leftIcon={<Trash2 className="h-4 w-4" aria-hidden />}
+                >
                   Excluir conta
                 </Button>
               )}
@@ -209,16 +221,16 @@ export default function SettingsPage() {
                   transition={{ type: "spring", stiffness: 300, damping: 28 }}
                   className="overflow-hidden"
                 >
-                  <div className="p-4 rounded-xl bg-destructive/8 border border-destructive/20 space-y-3">
+                  <div className="space-y-4 rounded-md border border-danger/30 bg-danger/10 p-4">
                     <div className="flex items-start gap-2.5">
-                      <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Esta ação é <strong>irreversível</strong>. Seu perfil, histórico de análises e dados de assinatura
+                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden />
+                      <p className="text-sm leading-relaxed text-text-2">
+                        Esta ação é <strong className="text-text">irreversível</strong>. Seu perfil, histórico de análises e dados de assinatura
                         serão excluídos. Um plano ativo não é reembolsado automaticamente.
                       </p>
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="confirm-delete" className="text-xs">
+                      <Label htmlFor="confirm-delete" className="text-sm text-text">
                         Digite <strong>{DELETE_CONFIRMATION}</strong> para confirmar
                       </Label>
                       <Input
@@ -226,41 +238,31 @@ export default function SettingsPage() {
                         value={confirmText}
                         onChange={(e) => setConfirmText(e.target.value)}
                         autoComplete="off"
-                        className="h-9"
                       />
                     </div>
                     {hasPassword && (
                       <div className="space-y-1.5">
-                        <Label htmlFor="delete-password" className="text-xs">Sua senha</Label>
-                        <Input
+                        <Label htmlFor="delete-password" className="text-sm text-text">Sua senha</Label>
+                        <PasswordInput
                           id="delete-password"
-                          type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           autoComplete="current-password"
-                          className="h-9"
                         />
                       </div>
                     )}
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="h-8 text-xs flex-1" onClick={closeDelete} disabled={deleteLoading}>
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                      <Button variant="outline" className="flex-1" onClick={closeDelete} disabled={deleteLoading}>
                         Cancelar
                       </Button>
                       <Button
-                        variant="destructive"
-                        size="sm"
-                        className="h-8 text-xs flex-1"
+                        variant="danger"
+                        className="flex-1"
                         onClick={handleDeleteAccount}
-                        disabled={deleteLoading || !canDelete}
+                        loading={deleteLoading}
+                        disabled={!canDelete}
                       >
-                        {deleteLoading ? (
-                          <>
-                            <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-                            Excluindo...
-                          </>
-                        ) : (
-                          "Excluir minha conta"
-                        )}
+                        {deleteLoading ? "Excluindo..." : "Excluir minha conta"}
                       </Button>
                     </div>
                   </div>
@@ -269,7 +271,7 @@ export default function SettingsPage() {
             </AnimatePresence>
           </div>
         </div>
-      </motion.div>
+      </motion.section>
     </motion.div>
   );
 }

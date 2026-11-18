@@ -24,18 +24,12 @@ const buttonVariants = cva(
         ghost: "bg-transparent text-text-2 hover:text-text hover:bg-surface-2",
         danger,
         link: "h-auto px-0 text-violet-400 underline-offset-4 hover:underline",
-        // Aliases legados (remover na 4.5).
-        default: primary,
-        brand: signal,
-        destructive: danger,
       },
       size: {
         sm: "h-9 px-3 text-sm",
         md: "h-11 px-4",
         lg: "h-12 px-6 text-base",
         icon: "h-11 w-11 p-0",
-        // Alias legado.
-        default: "h-11 px-4",
       },
     },
     defaultVariants: {

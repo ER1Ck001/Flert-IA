@@ -80,8 +80,6 @@
   /* ── LEGACY: variáveis da paleta antiga usadas por /auth e /analyze (até 4.3/4.4) ── */
   --wine: rgb(var(--violet-600));
   --wine-2: #6D28D9;
-  --gold: rgb(var(--pink-400));
-  --gold-2: rgb(var(--pink-500));
   --bg-2: rgb(var(--surface));
   --bg-card: rgb(var(--surface-2));
   --tx: rgb(var(--text));

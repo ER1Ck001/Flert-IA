@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
                 <li style="margin:0 0 8px;padding-left:8px">✦ Até <strong style="color:#F2EDE8">50 análises por dia</strong> no Anual — ilimitadas no Vitalício</li>
                 <li style="margin:0 0 8px;padding-left:8px">✦ <strong style="color:#F2EDE8">7 tons diferentes</strong> — flerte, humor, direto, cantada, stories e mais</li>
                 <li style="margin:0 0 8px;padding-left:8px">✦ Análise de prints, ideias para começar conversas e ajuda em situações difíceis</li>
-                <li style="margin:0 0 8px;padding-left:8px">✦ Plano <strong style="color:#C9A84C">Vitalício</strong> disponível — pagamento único, sem mensalidade</li>
+                <li style="margin:0 0 8px;padding-left:8px">✦ Plano <strong style="color:#FF5FA0">Vitalício</strong> disponível — pagamento único, sem mensalidade</li>
               </ul>
 
               <div style="text-align:center;margin:0 0 12px">
