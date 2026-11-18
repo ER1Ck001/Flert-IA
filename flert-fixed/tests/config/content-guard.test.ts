@@ -24,7 +24,7 @@ describe("content guard — fundação Faísca", () => {
     expect(layout).toMatch(/viewportFit:\s*"cover"/);
   });
 
-  it("globals.css não usa @import (Cabinet vem só do <link>) nem Cormorant", () => {
+  it("globals.css não usa @import (fontes só via next/font) nem Cormorant", () => {
     expect(css).not.toMatch(/@import/);
     expect(css).not.toMatch(/cormorant/i);
   });

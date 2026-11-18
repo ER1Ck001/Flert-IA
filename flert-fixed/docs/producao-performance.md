@@ -568,3 +568,12 @@ carrega); "Carregar mais" no `/history` com mais de 20 análises; envio em massa
    (`DATABASE_URL`, `NEXTAUTH_SECRET`) e as recomendadas listadas em M10 estão no painel da Vercel.
    Se adotar M9: criar `DIRECT_URL`.
 3. Monitor de uptime opcional apontando para `GET /api/health`.
+
+## M2 resolvido: fonte de display trocada (Tarefa 9b)
+
+- **Decisão do dono:** trocar por fonte de licença aberta (o repositório continua público).
+- **Fonte:** Bricolage Grotesque, SIL Open Font License 1.1 (`src/fonts/bricolage/OFL.txt`), pesos 500/700/800, subset latin, arquivos tirados do pacote npm `@fontsource/bricolage-grotesque@5.3.0` (sem adicionar dependência).
+- **Carregamento:** `next/font/local` em `src/app/layout.tsx` com `display: "swap"` e `--font-display`; `tailwind.config.ts` usa `var(--font-display)` no `displayStack`. Sem rede no build.
+- **CSP:** `style-src 'self' 'unsafe-inline'` e `font-src 'self' data:` (Fontshare removida). Guardado por `tests/config/display-font.test.ts`.
+- **Smoke:** HTML sem referência à Fontshare; fontes servidas de `/_next/static/media/`; `h1` renderiza com a fonte nova, sem overflow a 1280px.
+- **Observação:** a Inter continua via `next/font/google` (baixada no build pela Vercel). Se o build ficar sem acesso ao Google Fonts, dá para aplicar o mesmo procedimento (`@fontsource/inter`, OFL).

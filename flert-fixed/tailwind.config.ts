@@ -3,7 +3,7 @@ import { fontFamily } from 'tailwindcss/defaultTheme'
 
 const rgb = (name: string) => `rgb(var(--${name}) / <alpha-value>)`
 
-const displayStack = ["'Cabinet Grotesk'", 'var(--font-inter)', ...fontFamily.sans]
+const displayStack = ['var(--font-display)', 'var(--font-inter)', ...fontFamily.sans]
 
 const config = {
   darkMode: ['class'],
@@ -24,7 +24,6 @@ const config = {
       fontFamily: {
         sans: ['var(--font-inter)', ...fontFamily.sans],
         display: displayStack,
-        cabinet: displayStack,
       },
       fontSize: {
         display: ['clamp(2.5rem, 5vw + 1rem, 4.5rem)', { lineHeight: '1.02', fontWeight: '800', letterSpacing: '-0.03em' }],

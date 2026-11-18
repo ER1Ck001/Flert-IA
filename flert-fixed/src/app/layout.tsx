@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Analytics } from "@vercel/analytics/next";
@@ -12,6 +13,19 @@ import { SITE_URL } from "@/lib/seo";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+// Fonte de display (títulos e logo): Bricolage Grotesque, licença SIL OFL 1.1 (src/fonts/bricolage/OFL.txt).
+// Arquivos no repositório e servidos pela própria origem — sem CSS externo bloqueando o render e sem
+// depender de rede no build.
+const display = localFont({
+  src: [
+    { path: "../fonts/bricolage/bricolage-grotesque-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/bricolage/bricolage-grotesque-latin-700-normal.woff2", weight: "700", style: "normal" },
+    { path: "../fonts/bricolage/bricolage-grotesque-latin-800-normal.woff2", weight: "800", style: "normal" },
+  ],
+  variable: "--font-display",
   display: "swap",
 });
 
@@ -44,15 +58,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning className={`dark ${inter.variable}`} style={{ colorScheme: "dark" }}>
-      <head>
-        <link rel="preconnect" href="https://api.fontshare.com" />
-        <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&display=swap"
-        />
-      </head>
+    <html lang="pt-BR" suppressHydrationWarning className={`dark ${inter.variable} ${display.variable}`} style={{ colorScheme: "dark" }}>
       <body className="font-sans bg-bg text-text antialiased">
         <a
           href="#main"

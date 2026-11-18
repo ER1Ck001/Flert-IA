@@ -7,8 +7,8 @@ const isDev = process.env.NODE_ENV !== "production";
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://connect.facebook.net`,
-  "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
-  "font-src 'self' data: https://cdn.fontshare.com https://api.fontshare.com",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
   "img-src 'self' data: blob: https://www.facebook.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://res.cloudinary.com",
   "media-src 'self'",
   "connect-src 'self' https://www.facebook.com https://connect.facebook.net https://vitals.vercel-insights.com",
