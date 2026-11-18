@@ -16,15 +16,31 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Spinner } from "@/components/ui/spinner";
+import { CheckboxField } from "@/components/ui/checkbox-field";
+import { LEGAL_PUBLISHED } from "@/content/legal/config";
+
+const legalLinkClass = "font-medium text-violet-400 underline underline-offset-4 hover:text-text";
+
+/** Rótulo da caixa obrigatória: só cita (e linka) os documentos quando LEGAL_PUBLISHED = true. */
+function AdultLabel() {
+  if (!LEGAL_PUBLISHED) return <>Tenho 18 anos ou mais</>;
+  return (
+    <>
+      Tenho 18 anos ou mais e li e aceito os{" "}
+      <Link href="/termos" target="_blank" className={legalLinkClass}>Termos de Uso</Link> e a{" "}
+      <Link href="/privacidade" target="_blank" className={legalLinkClass}>Política de Privacidade</Link>
+    </>
+  );
+}
 
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const plan = searchParams.get("plan");
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+  const [formData, setFormData] = useState({ name: "", email: "", password: "", adultConfirmed: false, marketingOptIn: false });
   const [errors, setErrors] = useState<FieldErrors>({});
-  const setField = (key: keyof typeof formData, value: string) => {
+  const setField = <K extends keyof typeof formData>(key: K, value: (typeof formData)[K]) => {
     setFormData((d) => ({ ...d, [key]: value }));
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
   };
@@ -37,7 +53,7 @@ function RegisterForm() {
       // Erro no próprio campo (role=alert + aria-invalid) e foco nele.
       const fieldErrors = toFieldErrors(parsed.error.issues);
       setErrors(fieldErrors);
-      focusFirstError(fieldErrors, ["name", "email", "password"]);
+      focusFirstError(fieldErrors, ["name", "email", "password", "adultConfirmed"]);
       return;
     }
     setErrors({});
@@ -125,6 +141,21 @@ function RegisterForm() {
             />
           )}
         </Field>
+
+        <CheckboxField
+          id="adultConfirmed"
+          label={<AdultLabel />}
+          checked={formData.adultConfirmed}
+          onCheckedChange={(v) => setField("adultConfirmed", v)}
+          error={errors.adultConfirmed}
+          required
+        />
+        <CheckboxField
+          id="marketingOptIn"
+          label="Quero receber novidades e ofertas do Flert IA por e-mail (opcional). Dá para cancelar quando quiser."
+          checked={formData.marketingOptIn}
+          onCheckedChange={(v) => setField("marketingOptIn", v)}
+        />
 
         <Button type="submit" variant="signal" size="lg" className="w-full" loading={loading}>
           Criar conta

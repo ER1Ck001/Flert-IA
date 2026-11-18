@@ -1,6 +1,7 @@
 // Schemas de conta — fonte única para front e back (isomórfico).
 import { z } from "zod";
 import { emptyToUndefined, utf8ByteLength } from "@/lib/validation/common";
+import { LEGAL_PUBLISHED } from "@/content/legal/config";
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
@@ -41,11 +42,34 @@ export const nameSchema = z
       .refine((s) => !LOOKS_LIKE_URL.test(s), "Nome não pode conter links")
   );
 
-export const registerSchema = z.object({
-  name: nameSchema,
-  email: emailSchema,
-  password: newPasswordSchema,
-});
+/**
+ * Confirmação obrigatória de 18+ (Tarefa 10). Com os documentos legais publicados, a mesma caixa
+ * inclui o aceite dos Termos de Uso e da Política de Privacidade.
+ */
+export const adultConfirmationMessage = (legalPublished: boolean) =>
+  legalPublished
+    ? "Para criar a conta, confirme que tem 18 anos ou mais e aceite os Termos de Uso e a Política de Privacidade"
+    : "Confirme que você tem 18 anos ou mais";
+
+export const adultConfirmedSchema = (legalPublished: boolean = LEGAL_PUBLISHED) =>
+  z.literal(true, { errorMap: () => ({ message: adultConfirmationMessage(legalPublished) }) });
+
+export function buildRegisterSchema(legalPublished: boolean) {
+  return z.object({
+    name: nameSchema,
+    email: emailSchema,
+    password: newPasswordSchema,
+    adultConfirmed: adultConfirmedSchema(legalPublished),
+    /** Opt-in de e-mails promocionais: opcional, desligado por padrão. */
+    marketingOptIn: z.boolean({ invalid_type_error: "Valor inválido" }).default(false),
+  });
+}
+
+export const registerSchema = buildRegisterSchema(LEGAL_PUBLISHED);
+
+export const confirmAgeSchema = z.object({ adultConfirmed: adultConfirmedSchema() });
+
+export const marketingPreferenceSchema = z.object({ optIn: z.boolean({ required_error: "Valor inválido", invalid_type_error: "Valor inválido" }) }).strict();
 
 export const loginSchema = z.object({
   email: emailSchema,

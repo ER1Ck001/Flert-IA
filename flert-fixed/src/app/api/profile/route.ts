@@ -40,6 +40,7 @@ export async function GET(_request: NextRequest) {
         image: user.image,
         // Contas criadas pelo Google não têm senha: o front esconde troca de senha/e-mail.
         hasPassword: Boolean(user.password),
+        marketingOptIn: user.marketingOptIn,
         subscriptionStatus: getEffectivePlan(user.subscriptionStatus),
         isExpired: isPlanExpired(user.subscriptionStatus),
         expiresAt: user.subscriptionStatus?.expiresAt ?? null,

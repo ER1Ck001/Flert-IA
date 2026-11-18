@@ -65,7 +65,8 @@ describe("POST /api/admin/email", () => {
   });
 
   it("nome do destinatário é escapado no HTML", async () => {
-    m.prisma.user.findUnique.mockResolvedValue({ email: "u@x.com", name: "<b>Ana</b>", subscriptionStatus: null });
+    // Tarefa 10: envio individual exige opt-in de marketing.
+    m.prisma.user.findUnique.mockResolvedValue({ email: "u@x.com", name: "<b>Ana</b>", marketingOptIn: true, subscriptionStatus: null });
     const res = await sendEmail(json("/api/admin/email", "POST", { template: "custom", userId: ID, customSubject: "Novidade", customBody: "Olá" }));
     expect(res.status).toBe(200);
     expect(m.sendMail.mock.calls[0][0].html).toContain("&lt;b&gt;Ana");

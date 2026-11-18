@@ -5,6 +5,7 @@ import { signOut } from "next-auth/react";
 import { m, AnimatePresence } from "framer-motion";
 import { Bell, Shield, Trash2, LogOut, AlertTriangle, Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -48,6 +49,9 @@ const PRIVACY_FACTS = [
 export default function SettingsPage() {
   // null = ainda carregando (não bloquear contas Google nem pedir senha à toa).
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
+  // null = carregando (interruptor desabilitado até saber o valor salvo).
+  const [marketingOptIn, setMarketingOptIn] = useState<boolean | null>(null);
+  const [savingMarketing, setSavingMarketing] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [revokeOpen, setRevokeOpen] = useState(false);
   const deleteTriggerRef = useRef<HTMLButtonElement>(null);
@@ -61,9 +65,34 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch("/api/profile")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setHasPassword(d ? d.user?.hasPassword !== false : true))
-      .catch(() => setHasPassword(true));
+      .then((d) => {
+        setHasPassword(d ? d.user?.hasPassword !== false : true);
+        setMarketingOptIn(d?.user?.marketingOptIn === true);
+      })
+      .catch(() => {
+        setHasPassword(true);
+        setMarketingOptIn(false);
+      });
   }, []);
+
+  const handleMarketingChange = async (optIn: boolean) => {
+    setSavingMarketing(true);
+    try {
+      const res = await fetch("/api/account/marketing", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ optIn }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "Erro ao salvar a preferência");
+      setMarketingOptIn(data?.marketingOptIn === true);
+      toast.success(optIn ? "Você vai receber novidades e ofertas por e-mail." : "Pronto, sem e-mails de novidades e ofertas.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar a preferência");
+    } finally {
+      setSavingMarketing(false);
+    }
+  };
 
   const handleRevokeAll = async () => {
     setRevoking(true);
@@ -128,7 +157,7 @@ export default function SettingsPage() {
         />
       </m.div>
 
-      {/* ── Notificações (honesto: ainda não há preferências configuráveis) ── */}
+      {/* ── Notificações: opt-in de e-mails promocionais (LGPD) ── */}
       <m.section variants={item} aria-labelledby="settings-notifications" className="overflow-hidden rounded-lg border border-border bg-surface shadow-1">
         <div className="border-b border-border px-4 py-4 sm:px-5">
           <div className="flex items-center gap-3">
@@ -137,15 +166,31 @@ export default function SettingsPage() {
             </div>
             <div className="min-w-0">
               <h2 id="settings-notifications" className="font-display text-h3 text-text">Notificações</h2>
-              <p className="text-sm text-text-2">O que enviamos para você hoje</p>
+              <p className="text-sm text-text-2">O que enviamos para você por e-mail</p>
             </div>
           </div>
         </div>
-        <div className="px-4 py-4 sm:px-5">
+        <div className="space-y-3 px-4 py-4 sm:px-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p id="marketing-optin-label" className="text-sm font-medium text-text">E-mails de novidades e ofertas</p>
+              <p id="marketing-optin-desc" className="mt-0.5 text-sm leading-relaxed text-text-2">
+                Novidades do Flert IA, ofertas de planos e lembretes de renovação. Só enviamos se você ligar, e você pode
+                desligar quando quiser (também pelo link &ldquo;Não quero mais receber&rdquo; em cada e-mail).
+              </p>
+            </div>
+            <Switch
+              aria-labelledby="marketing-optin-label"
+              aria-describedby="marketing-optin-desc"
+              checked={marketingOptIn === true}
+              disabled={marketingOptIn === null || savingMarketing}
+              onCheckedChange={handleMarketingChange}
+              className="mt-0.5 focus-visible:ring-violet-400 focus-visible:ring-offset-bg data-[state=checked]:bg-violet-500 data-[state=unchecked]:bg-surface-3"
+            />
+          </div>
           <p className="text-sm leading-relaxed text-text-2">
-            Enviamos e-mails sobre a sua conta (boas-vindas, confirmação de pagamento, redefinição de senha, exclusão
-            de conta e avisos sobre o seu plano) e, de vez em quando, novidades do Flert IA. Preferências de notificação
-            personalizáveis ainda não estão disponíveis.
+            E-mails sobre a sua conta (boas-vindas, confirmação de pagamento, redefinição de senha e exclusão de conta)
+            continuam chegando, independentemente desta opção.
           </p>
         </div>
       </m.section>
@@ -243,7 +288,7 @@ export default function SettingsPage() {
                       <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden />
                       <p className="text-sm leading-relaxed text-text-2">
                         Esta ação é <strong className="text-text">irreversível</strong>. Seu perfil, histórico de análises e dados de assinatura
-                        serão excluídos. Um plano ativo não é reembolsado automaticamente.
+                        serão excluídos. Um plano ativo não é reembolsado automaticamente: se a compra tem até 7 dias, peça o reembolso pelo suporte antes de excluir.
                       </p>
                     </div>
                     <div className="space-y-1.5">

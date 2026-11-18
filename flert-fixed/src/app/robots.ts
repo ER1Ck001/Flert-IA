@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         // Área logada, admin, auth e API não são conteúdo público (as páginas também têm noindex).
-        disallow: ["/api/", "/admin", "/dashboard", "/analyze", "/history", "/profile", "/settings", "/pricing", "/auth/"],
+        disallow: ["/api/", "/admin", "/dashboard", "/analyze", "/history", "/profile", "/settings", "/pricing", "/auth/", "/descadastrar"],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,

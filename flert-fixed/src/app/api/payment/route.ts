@@ -6,6 +6,7 @@ import crypto from "node:crypto";
 import { EXTERNAL_ID_PREFIX } from "@/lib/payments/abacatepay-webhook";
 import { rateLimit } from "@/lib/rate-limit";
 import { assertSameOrigin, errorMessage, tooMany } from "@/lib/http";
+import { requireAdultConfirmed } from "@/lib/adult";
 import {
   PLAN_CONFIG,
   getEffectivePlan,
@@ -60,6 +61,10 @@ export async function POST(request: NextRequest) {
 
     const limit = await rateLimit("payment", session.user.id, 10, 3600, { onError: "allow" });
     if (!limit.allowed) return tooMany(limit.retryAfterSec, "Muitas tentativas de pagamento. Aguarde alguns minutos.");
+
+    // 18+ (Tarefa 10): sem confirmação no banco, não cria cobrança.
+    const notAdult = await requireAdultConfirmed(session.user.id);
+    if (notAdult) return notAdult;
 
     const body = await request.json().catch(() => null);
     const plan: unknown = body?.plan;

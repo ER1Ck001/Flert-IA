@@ -1,6 +1,16 @@
 import { Logo } from "@/components/brand/Logo";
 import { SUPPORT_EMAIL } from "@/components/app/nav-items";
+import Link from "next/link";
+import { LEGAL_PUBLISHED } from "@/content/legal/config";
 import { CookiePrefsButton } from "./CookiePrefsButton";
+
+// Termos e Privacidade só aparecem depois de publicados (src/content/legal/config.ts).
+const LEGAL_LINKS = LEGAL_PUBLISHED
+  ? [
+      { href: "/termos", label: "Termos de Uso" },
+      { href: "/privacidade", label: "Política de Privacidade" },
+    ]
+  : [];
 
 export function LandingFooter() {
   const year = new Date().getFullYear();
@@ -20,6 +30,13 @@ export function LandingFooter() {
               Suporte: {SUPPORT_EMAIL}
             </a>
           </li>
+          {LEGAL_LINKS.map((l) => (
+            <li key={l.href}>
+              <Link href={l.href} className="inline-flex min-h-11 items-center rounded-sm text-sm text-text-2 underline-offset-4 hover:text-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
+                {l.label}
+              </Link>
+            </li>
+          ))}
           <li>
             <CookiePrefsButton />
           </li>

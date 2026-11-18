@@ -72,15 +72,17 @@ describe("POST /api/admin/email em lotes", () => {
 
   it("seleção de destinatários idêntica (mesmos filtros)", async () => {
     await run({ template: "free_upsell" });
-    expect(m.prisma.user.findMany.mock.calls[0][0].where).toEqual({ subscriptionStatus: { status: "FREE" } });
+    // Tarefa 10: mesmos filtros de antes + opt-in de marketing (LGPD).
+    expect(m.prisma.user.findMany.mock.calls[0][0].where).toEqual({ subscriptionStatus: { status: "FREE" }, marketingOptIn: true });
     await run({ template: "custom", targetPlan: "PREMIUM", customSubject: "a", customBody: "b" });
-    expect(m.prisma.user.findMany.mock.calls[1][0].where).toEqual({ subscriptionStatus: { status: "PREMIUM" } });
+    expect(m.prisma.user.findMany.mock.calls[1][0].where).toEqual({ subscriptionStatus: { status: "PREMIUM" }, marketingOptIn: true });
     await run({ template: "custom", targetPlan: "ALL", customSubject: "a", customBody: "b" });
-    expect(m.prisma.user.findMany.mock.calls[2][0].where).toEqual({});
+    expect(m.prisma.user.findMany.mock.calls[2][0].where).toEqual({ marketingOptIn: true });
     await run({ template: "expiring" });
     const where = m.prisma.subscriptionStatus.findMany.mock.calls[0][0].where;
     expect(where.status).toEqual({ in: ["PREMIUM", "ANNUAL"] });
     expect(Object.keys(where.expiresAt).sort()).toEqual(["gte", "lte"]);
+    expect(where.user).toEqual({ marketingOptIn: true });
   });
 
   it("no máximo 5 envios simultâneos", async () => {

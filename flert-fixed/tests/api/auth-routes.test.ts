@@ -51,7 +51,8 @@ beforeEach(() => {
 
 // ─────────────────────────────────────────────────────────────
 describe("POST /api/auth/register", () => {
-  const body = { name: "  Ana   Souza ", email: " ANA@X.com ", password: "segredo123" };
+  // Tarefa 10: confirmação de 18+ obrigatória no cadastro.
+  const body = { name: "  Ana   Souza ", email: " ANA@X.com ", password: "segredo123", adultConfirmed: true };
 
   it("201: grava e-mail/nome normalizados e não devolve a senha", async () => {
     const res = await register(req("/api/auth/register", body));

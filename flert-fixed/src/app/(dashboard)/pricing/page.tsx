@@ -163,7 +163,7 @@ export default function PricingPage() {
         <Info className="mt-0.5 h-5 w-5 shrink-0 text-violet-400" aria-hidden />
         <p className="text-sm leading-relaxed text-text-2">
           <span className="font-semibold text-text">Política de reembolso: </span>
-          o reembolso está disponível se você tiver feito <strong className="text-text">no máximo 1 análise</strong> e pedir em até <strong className="text-text">12 horas</strong> após a compra. Fora dessas condições, não há reembolso. Para pedir, fale com o{" "}
+          você pode pedir o reembolso <strong className="text-text">integral</strong> em até <strong className="text-text">7 dias</strong> após a compra (direito de arrependimento, art. 49 do CDC). O pedido é feito por e-mail e atendido manualmente; o estorno segue o prazo do meio de pagamento. Para pedir, fale com o{" "}
           <a
             href="https://mail.google.com/mail/?view=cm&to=erickdev@flertia.com.br&su=Solicita%C3%A7%C3%A3o%20de%20Reembolso"
             target="_blank"

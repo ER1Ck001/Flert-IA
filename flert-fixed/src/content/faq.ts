@@ -38,7 +38,7 @@ export const FAQ_ITEMS: readonly FaqItem[] = [
   },
   {
     q: "Existe garantia ou reembolso?",
-    a: "O reembolso está disponível se você tiver feito no máximo 1 análise e pedir em até 12 horas após a compra, pelo e-mail de suporte.",
+    a: "Sim. Você pode pedir o reembolso integral em até 7 dias após a compra, pelo e-mail de suporte. O pedido é atendido manualmente e o estorno segue o prazo do meio de pagamento.",
   },
   {
     q: "O plano Vitalício expira?",

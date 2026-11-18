@@ -22,7 +22,7 @@ mercado está marcada como **[pesquisa]** e não foi verificada além das fontes
 | Histórico com busca e remoção; exclusão de conta pelo próprio usuário. | `history/page.tsx`; `settings/page.tsx:216-217` |
 | Regras de segurança do prompt: sem assédio, ameaça, ódio, conteúdo sexual explícito, menores, nem instruções para enganar ou pressionar. | `prompts.ts:119-122` |
 | Pagamento via AbacatePay; app não guarda dados de cartão. | `settings/page.tsx:39-40` |
-| Reembolso: só com **no máximo 1 análise** e pedido em **até 12 horas**. | `pricing/page.tsx:166`; `faq.ts:20` |
+| Reembolso: **integral em até 7 dias** após a compra, pedido por e-mail ao suporte (manual). | `pricing/page.tsx:166`; `faq.ts:20` |
 
 ### Preços (de `plans.ts`, formatados por `formatBRL`)
 
@@ -142,10 +142,9 @@ Não há cobrança automática. Mensal vale 30 dias e Anual 1 ano; para continua
 restantes são somados.
 
 **"E se eu me arrepender?"**
-Política atual: reembolso só com no máximo 1 análise e pedido em até 12 horas após a compra. **Risco
-jurídico:** o art. 49 do CDC prevê direito de arrependimento de 7 dias em compras fora do estabelecimento,
-o que costuma incluir compras pela internet (fontes abaixo) — a política atual pode ser contestada. Não é
-parecer jurídico; o dono deve validar com advogado antes de anunciar.
+Política atual (Tarefa 10): reembolso integral se pedido em até 7 dias após a compra, pelo e-mail de
+suporte, atendido manualmente. Segue o direito de arrependimento do art. 49 do CDC (fontes abaixo). Não
+prometer estorno automático nem prazo de estorno além do meio de pagamento.
 
 **"E se a IA não entender meu print?"**
 O app mostra um erro claro com "Tentar novamente". Se foi falha de conexão com a IA, a tentativa nunca é

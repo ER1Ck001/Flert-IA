@@ -25,7 +25,7 @@ consistência ou clareza que afeta a confiança. **Baixa** = estilo.
 - **Contradições com o código:** `settings/page.tsx:146` diz que só mandamos e-mails sobre a conta, mas o
   admin manda campanhas sem descadastro; `auth.ts:102` diz "Até 50 análises por dia" (o Vitalício é
   ilimitado); `admin/email/route.ts:66` fixa "a partir de R$ 29,90/mês" (o Anual sai mais barato por mês).
-- **Risco jurídico:** reembolso de 12 h / 1 análise frente ao art. 49 do CDC; não há Termos nem Política
+- **Risco jurídico (resolvido na Tarefa 10):** reembolso com prazo de horas e limite de análises frente ao art. 49 do CDC (agora: 7 dias, integral); não havia Termos nem Política
   de Privacidade.
 
 ---
@@ -38,11 +38,11 @@ consistência ou clareza que afeta a confiança. **Baixa** = estilo.
 
 | # | Status | Observação |
 |---|---|---|
-| L1 | Pendente (dono) | Concordância corrigida ("O reembolso está disponível se…"); a regra 12 h / 1 análise foi mantida. Validar com advogado o art. 49 do CDC (7 dias). |
+| L1 | Feito (Tarefa 10) | Decisão do dono: reembolso integral em até 7 dias (CDC art. 49), pedido manual por e-mail ao suporte. FAQ, pricing e Termos (rascunho) usam a mesma regra. |
 | L2 | Feito | P: "O plano Vitalício expira?" R: "Não. … enquanto o Flert IA estiver no ar." |
 | L3 | Feito | Começa com "Não."; durações derivadas de `PLAN_CONFIG`. |
 | L4 | Feito | 4 perguntas novas (app de namoro, plano gratuito, print, falha da IA). "Grátis" trocado por "gratuito"/"não custa nada" (brand-voice). |
-| L5 | Pendente (dono) | Termos de uso e Política de privacidade não existem; links entram quando houver as páginas. |
+| L5 | Em andamento (Tarefa 10) | /termos e /privacidade criados como rascunho (`src/content/legal/*`, `LEGAL_PUBLISHED = false`). Os links do rodapé e do cadastro aparecem ao publicar, depois da revisão jurídica. |
 | L6 | Feito | "…Valores em reais, sem cobrança automática." |
 | L7 | Feito | "Ousada, mas feita a partir da conversa." (o prompt do tom pede "sem ser vulgar"). |
 | L8 | Feito | "…edite se quiser e copie." |
@@ -52,12 +52,12 @@ consistência ou clareza que afeta a confiança. **Baixa** = estilo.
 | L12 | Feito | "…em “Preferências de cookies”, no rodapé da página inicial." (o botão só existe no rodapé da landing). |
 | L13 | Pendente (dono) | Vercel Analytics/Speed Insights: confirmar e citar na Política de privacidade. |
 | A1 | Feito | "Crie sua conta. As análises fazem parte dos planos, que você escolhe em seguida." |
-| A2 | Pendente (dono) | Aceite de termos e confirmação 18+ no cadastro. |
+| A2 | Feito (Tarefa 10) | Caixa obrigatória "Tenho 18 anos ou mais" no cadastro e em /auth/confirmar-idade (Google e contas antigas); o aceite dos Termos entra na mesma caixa quando publicados. |
 | A3 | Feito | Título "Que bom te ver de novo"; toast "Login feito." |
 | A4 | Feito | Títulos de auth sem ponto final. |
 | A5 | Feito | "E-mail" nos rótulos, toasts e mensagens de validação dos formulários. Mensagens de erro da API ("Email já cadastrado") ficaram, por serem contrato testado. |
 | P1 | Feito | Texto honesto: conta + "de vez em quando, novidades do Flert IA". Opt-in e descadastro continuam **pendentes (dono/LGPD)** — ver E11. |
-| P2 | Pendente (dono) | Só tom/clareza ("está disponível se você tiver feito… e pedir em até 12 horas"); mesma regra do FAQ. Constante única não criada (o texto do pricing tem negrito em JSX). CDC como em L1. |
+| P2 | Feito (Tarefa 10) | Pricing com a regra de 7 dias (integral, pedido por e-mail, sem prometer estorno automático), igual ao FAQ. Constante única não criada (o texto do pricing tem negrito em JSX). |
 | P3 | Feito | "…ficam num banco de dados gerenciado." (criptografia em repouso não verificável no código). |
 | P4 | Feito | "Ver planos" no menu lateral e na folha Conta. |
 | P5 | Feito | "Ex.: alguém que estudou comigo…" |
@@ -82,7 +82,7 @@ consistência ou clareza que afeta a confiança. **Baixa** = estilo.
 | E8 | Feito | Sem urgência/competição. |
 | E9 | Feito | "Você escolhe, edita e manda do seu jeito". |
 | E10 | Feito | Assunto "Seu Flert IA está pronto, falta escolher um plano"; corpo proposto. |
-| E11 | Pendente (dono) | Sem opt-in nem descadastro (LGPD). Não foi criado link de "sair da lista" porque a função não existe. |
+| E11 | Feito (Tarefa 10) | Opt-in no cadastro e em Configurações (contas existentes começam sem). Campanhas só para quem aceitou, com link "Não quero mais receber" e List-Unsubscribe (one-click). |
 | E12 | Feito | "Mensal R$ 29,90/mês · Anual R$ 147,00/ano · Vitalício R$ 297,00 (pagamento único)", via `formatBRL`. |
 | E13 | Feito | "…renove antes do fim: os dias que restam são somados ao novo período. Não há renovação automática." |
 | E14 | Feito | "Escolha seu plano para começar". |
@@ -111,7 +111,7 @@ consistência ou clareza que afeta a confiança. **Baixa** = estilo.
 
 | # | Arquivo:linha | Texto atual | Problema | Proposta | Prior. |
 |---|---|---|---|---|---|
-| L1 | `src/content/faq.ts:20` | "O reembolso é disponível apenas para usuários que realizaram no máximo 1 análise e solicitaram dentro de 12 horas após a compra. Basta entrar em contato pelo suporte." | legal: pode conflitar com o direito de arrependimento de 7 dias (CDC art. 49). Também tem erro de concordância ("é disponível"). **[dono]** | Depois da validação jurídica, por exemplo: "Você pode pedir reembolso em até 7 dias após a compra pelo e-mail de suporte." Se a regra atual for mantida: "O reembolso está disponível se você tiver feito no máximo 1 análise e pedir em até 12 horas após a compra, pelo e-mail de suporte." | Alta |
+| L1 | `src/content/faq.ts:20` | Texto antigo com a regra anterior (prazo de horas e limite de análises). | legal: conflitava com o direito de arrependimento de 7 dias (CDC art. 49). Também tinha erro de concordância ("é disponível"). **[dono]** | Aplicado na Tarefa 10: "Sim. Você pode pedir o reembolso integral em até 7 dias após a compra, pelo e-mail de suporte…" | Alta |
 | L2 | `src/content/faq.ts:23-24` | "O plano vitalício é mesmo para sempre?" / "Sim. É um pagamento único, sem mensalidade e sem data de expiração." | alegação: "Sim, para sempre" depende de o serviço continuar existindo | P: "O plano Vitalício expira?" R: "Não. É um pagamento único, sem mensalidade e sem data de expiração: o acesso continua enquanto o Flert IA estiver no ar." | Média |
 | L3 | `src/content/faq.ts:14-15` | "Os planos renovam automaticamente?" / "O acesso vale pelo período pago (30 dias no Mensal, 1 ano no Anual). Você pode renovar…" | clareza: não responde "não" | "Não. O acesso vale pelo período pago (30 dias no Mensal, 1 ano no Anual) e não há cobrança automática. Se renovar antes do fim, o novo período é somado ao que ainda resta." | Média |
 | L4 | `src/content/faq.ts:12` (lista) | — (faltam perguntas) | clareza: as objeções principais não estão no FAQ | Acrescentar: **"Tem plano grátis?"** → "Criar conta é grátis, mas as análises fazem parte dos planos. A demonstração desta página mostra exemplos sem precisar de conta." **"O que acontece com o meu print?"** → "A imagem e o texto são enviados para a OpenAI só para gerar as sugestões. A imagem não fica salva no Flert IA; o histórico guarda só as sugestões, e você pode apagá-las ou excluir a conta quando quiser." **"E se a IA falhar?"** → "O app mostra o erro e um botão para tentar de novo. Falhas de conexão com a IA nunca contam no seu limite; se a IA devolver uma resposta inválida, a tentativa é devolvida até 3 vezes por dia, e o aviso diz quando não for." **"O Flert IA é um app de namoro?"** → "Não. Não tem perfis nem matches. Você traz a conversa que já tem e recebe sugestões de resposta." | Média |
@@ -142,7 +142,7 @@ consistência ou clareza que afeta a confiança. **Baixa** = estilo.
 | # | Arquivo:linha | Texto atual | Problema | Proposta | Prior. |
 |---|---|---|---|---|---|
 | P1 | `src/app/(dashboard)/settings/page.tsx:146-148` | "Enviamos e-mails apenas sobre a sua conta: boas-vindas, confirmação de pagamento, redefinição de senha, exclusão de conta e avisos sobre o seu plano…" | exatidão/legal: o admin manda "free_upsell" e campanhas com texto livre (`admin/email/route.ts:162-173`) sem opt-in nem descadastro **[dono]** | Se as campanhas continuarem: "Enviamos e-mails sobre a sua conta (boas-vindas, pagamento, senha, exclusão e avisos do plano) e, se você autorizar, novidades do Flert IA. Você pode sair da lista pelo link no fim de cada e-mail." Se não: manter o texto e tirar as campanhas promocionais do admin. | Alta |
-| P2 | `src/app/(dashboard)/pricing/page.tsx:166` | "O reembolso é disponível exclusivamente para usuários que realizaram no máximo 1 análise… Fora dessas condições, não haverá reembolso." | legal (ver L1) **[dono]** | Mesmo texto final de L1, com a mesma regra nos dois lugares (de preferência numa constante única). | Alta |
+| P2 | `src/app/(dashboard)/pricing/page.tsx:166` | Texto antigo com a regra anterior (prazo de horas e limite de análises), "Fora dessas condições, não haverá reembolso." | legal (ver L1) **[dono]** | Mesmo texto final de L1, com a mesma regra nos dois lugares (de preferência numa constante única). | Alta |
 | P3 | `src/app/(dashboard)/settings/page.tsx:32` | "Os dados trafegam por HTTPS e ficam em banco de dados com criptografia em repouso do provedor." | alegação: a criptografia em repouso depende do provedor do banco, que o código não mostra | Confirmar com o provedor. Se não der: "Os dados trafegam por HTTPS e ficam num banco de dados gerenciado." | Média |
 | P4 | `src/components/app/AccountSheet.tsx:76-77`, `src/components/app/AppSidebar.tsx:78-79` | "Seja Premium" / "Compare planos e limites" | exatidão: não existe plano "Premium" (Mensal, Anual, Vitalício; `plans.ts:32-55`) | "Ver planos" / "Compare planos e limites" | Média |
 | P5 | `src/app/(dashboard)/analyze/page.tsx:394` | "Ex: menina que estudou comigo, gosta de viajar e tem bom humor. Quero começar uma conversa leve..." | tom: gênero fixo; "menina" pode soar como menor de idade | "Ex.: alguém que estudou comigo, gosta de viajar e tem bom humor. Quero começar uma conversa leve…" | Média |

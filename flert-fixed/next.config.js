@@ -56,6 +56,8 @@ const nextConfig = {
       { source: "/:path*", headers: securityHeaders },
       // O link de redefinição leva o token na URL: nunca enviar Referer a partir dessa página.
       { source: "/auth/reset-password", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
+      // Idem para o link de descadastro (userId + assinatura na URL).
+      { source: "/descadastrar", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
     ];
   },
 };

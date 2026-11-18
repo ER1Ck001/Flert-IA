@@ -5,9 +5,10 @@ export const CONSENT_EVENT = "flert-consent-change";
 
 export type Consent = { v: number; marketing: boolean; at: number };
 
-/** O Pixel só carrega com aceite explícito e nunca em /auth/* (o link de redefinição leva token na URL). */
+/** O Pixel só carrega com aceite explícito e nunca em /auth/* nem em /descadastrar (token na URL). */
 export function shouldLoadPixel(consent: Consent | null, pathname: string): boolean {
-  return consent?.v === CONSENT_VERSION && consent.marketing === true && !pathname.startsWith("/auth");
+  const tokenInUrl = pathname.startsWith("/auth") || pathname.startsWith("/descadastrar");
+  return consent?.v === CONSENT_VERSION && consent.marketing === true && !tokenInUrl;
 }
 
 export function readConsent(storage: Pick<Storage, "getItem"> | undefined): Consent | null {

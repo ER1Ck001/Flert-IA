@@ -14,7 +14,7 @@ Todos os exemplos de conversa abaixo são **fictícios** e devem aparecer com o 
 |---|---|---|---|
 | P1 | Publicar **Termos de Uso** e **Política de Privacidade** e linkar no rodapé e no cadastro | Não existem (`docs/ux-review.md:79`); o print tem dados de terceiros e é processado pela OpenAI | Dono + jurídico |
 | P2 | Confirmação de **18+** no cadastro | Produto de flerte; anúncios serão 18+; hoje não há verificação | Dono (mudança de produto) |
-| P3 | Revisar a **política de reembolso** (1 análise / 12 h) frente ao art. 49 do CDC (7 dias) | Risco de reclamação/Procon ao escalar vendas | Jurídico |
+| P3 | **Feito (Tarefa 10):** política de reembolso agora é integral em até 7 dias (art. 49 do CDC), pedido manual por e-mail | Risco de reclamação/Procon ao escalar vendas | Jurídico |
 | P4 | Opt-in de e-mail de marketing + link de descadastro | `admin/email/route.ts` envia "free_upsell" e campanhas livres sem descadastro, e `settings/page.tsx:146` diz "Enviamos e-mails apenas sobre a sua conta" | Dono + dev |
 | P5 | Reescrever os e-mails atuais (auditoria) | Promessas de resultado em todo e-mail de boas-vindas | Tarefa 8 |
 | P6 | Instrumentar conversões (seção 8) | Hoje o Pixel só envia `PageView` | Dev |

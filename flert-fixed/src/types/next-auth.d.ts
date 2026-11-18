@@ -19,5 +19,7 @@ declare module "next-auth/jwt" {
     sv?: number;
     /** Última conferência da versão no banco (ms). */
     svCheckedAt?: number;
+    /** Confirmou 18+ (espelho de User.adultConfirmedAt; o servidor confere no banco nas APIs pagas). */
+    adult?: boolean;
   }
 }

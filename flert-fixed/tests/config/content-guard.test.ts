@@ -304,10 +304,10 @@ describe("content guard — copy e marca (Tarefa 8)", () => {
     expect(byQ(/meu print/)?.a).toMatch(/OpenAI/);
     expect(byQ(/IA falhar/)?.a).toMatch(/não conta|nunca contam/);
     expect(byQ(/app de namoro/)?.a).toMatch(/^Não\./);
-    // Reembolso: mesma regra (12 h / 1 análise), só corrigida a concordância.
+    // Reembolso (Tarefa 10, decisão do dono): integral em até 7 dias (CDC art. 49), pedido por e-mail.
     const refund = byQ(/reembolso/)?.a ?? "";
-    expect(refund).toMatch(/no máximo 1 análise/);
-    expect(refund).toMatch(/12 horas/);
+    expect(refund).toMatch(/7 dias/);
+    expect(refund).toMatch(/integral/);
     expect(refund).not.toMatch(/é disponível/);
   });
 

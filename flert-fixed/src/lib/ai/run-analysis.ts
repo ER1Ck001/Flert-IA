@@ -7,6 +7,7 @@ import { getEntitlement } from "@/lib/subscription";
 import { refundDailyUsage, releaseDailyUsage, reserveDailyUsage } from "@/lib/usage";
 import { generateSuggestions, type GenerateInput } from "@/lib/ai/generate";
 import { errorMessage } from "@/lib/http";
+import { requireAdultConfirmed } from "@/lib/adult";
 
 // ── Limites de entrada (custo e abuso) ─────────────────────────
 export const MAX_CONTEXT_CHARS = 2000;
@@ -52,6 +53,10 @@ export async function runAnalysis(userId: string, input: GenerateInput, title: s
       { status: 429 }
     );
   }
+
+  // 18+ (Tarefa 10): conferido no banco antes de qualquer custo com a IA.
+  const notAdult = await requireAdultConfirmed(userId);
+  if (notAdult) return notAdult;
 
   const entitlement = await getEntitlement(userId);
   if (!entitlement.isPaid) {

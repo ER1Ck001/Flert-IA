@@ -33,6 +33,8 @@ type AdminUser = {
   activatedAt: string | null;
   expiresAt: string | null;
   analysisCount: number;
+  /** Aceitou e-mails promocionais (só esses recebem campanhas). */
+  marketingOptIn: boolean;
 };
 
 /** Resultado acumulado de um envio em massa feito em várias chamadas (ver /api/admin/email). */
@@ -175,16 +177,17 @@ export default function AdminPage() {
   const paidUsers   = users.filter(u => u.subscription !== "FREE").length;
   const mrr         = users.reduce((acc, u) => acc + (PLAN_PRICES[u.subscription] ?? 0), 0);
 
-  // Email campaign counts
-  const freeCount     = users.filter(u => u.subscription === "FREE").length;
-  const expiringCount = users.filter(u => {
+  // Email campaign counts — só quem deu opt-in recebe (o servidor aplica o mesmo filtro).
+  const optedIn       = users.filter(u => u.marketingOptIn);
+  const freeCount     = optedIn.filter(u => u.subscription === "FREE").length;
+  const expiringCount = optedIn.filter(u => {
     if (!u.expiresAt || u.subscription === "FREE" || u.subscription === "LIFETIME") return false;
     const d = daysUntil(u.expiresAt);
     return d !== null && d >= 0 && d <= 7;
   }).length;
   const customCount = customTarget === "ALL"
-    ? users.length
-    : users.filter(u => u.subscription === customTarget).length;
+    ? optedIn.length
+    : optedIn.filter(u => u.subscription === customTarget).length;
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -829,6 +832,10 @@ export default function AdminPage() {
             <div>
               <h2 className="font-display text-h3 text-text">Envio de emails</h2>
               <p className="mt-1 text-sm text-text-2">Envie emails em massa para segmentos específicos de usuários.</p>
+              <p className="mt-1 text-sm text-text-2">
+                Só recebem as campanhas os usuários que aceitaram e-mails de novidades e ofertas ({optedIn.length} de {users.length}).
+                Cada e-mail leva o link &ldquo;Não quero mais receber&rdquo;.
+              </p>
             </div>
 
             {campaignProgress && (
@@ -1061,6 +1068,11 @@ export default function AdminPage() {
 
             {/* Template selector */}
             <div className="max-h-[60dvh] space-y-2 overflow-y-auto px-5 py-4">
+              {!emailModal.marketingOptIn && (
+                <p role="note" className="mb-3 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-text">
+                  Este usuário não aceitou receber e-mails promocionais: o envio será recusado.
+                </p>
+              )}
               <p className="mb-3 text-caption font-semibold uppercase text-text-2" id="modal-template-label">Escolha o email</p>
 
               <div role="group" aria-labelledby="modal-template-label" className="space-y-2">

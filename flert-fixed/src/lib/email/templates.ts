@@ -13,11 +13,17 @@ import { SITE_URL } from "@/lib/seo";
 import { SUPPORT_EMAIL } from "@/lib/support";
 import { APP_TIMEZONE } from "@/lib/time";
 import { emailFirstName, escapeHtml, sanitizeHeader, subjectFirstName } from "./escape";
+import type { UnsubscribeLinks } from "./unsubscribe";
 
 export interface EmailContent {
   subject: string;
   html: string;
+  /** Só nos promocionais: List-Unsubscribe + List-Unsubscribe-Post (RFC 8058). */
+  headers?: Record<string, string>;
 }
+
+/** Texto do link de descadastro em todo e-mail promocional. */
+export const UNSUBSCRIBE_LABEL = "Não quero mais receber";
 
 const appUrl = () => escapeHtml(process.env.NEXT_PUBLIC_APP_URL || SITE_URL);
 
@@ -35,7 +41,18 @@ const cta = (href: string, label: string) => `<div style="text-align:center;marg
   <a href="${href}" style="display:inline-block;background:linear-gradient(135deg,#cc2277,#ff2d95);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 24px rgba(255,45,149,0.3)">${label} →</a>
 </div>`;
 
-function layout({ eyebrow, body, footerNote }: { eyebrow?: string; body: string; footerNote: string }): string {
+function layout({
+  eyebrow,
+  body,
+  footerNote,
+  unsubscribeUrl,
+}: {
+  eyebrow?: string;
+  body: string;
+  footerNote: string;
+  /** Promocionais: link visível de descadastro no rodapé. */
+  unsubscribeUrl?: string;
+}): string {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8" /></head>
@@ -50,7 +67,12 @@ function layout({ eyebrow, body, footerNote }: { eyebrow?: string; body: string;
     </div>
     <div style="background:#0a0608;padding:24px 32px;border-radius:0 0 20px 20px;${BORDER};border-top:1px solid rgba(201,168,76,0.08)">
       <p style="margin:0 0 8px;font-size:12px;color:#5C4A52;line-height:1.6">Dúvidas? Fale com a gente em <a href="mailto:${SUPPORT_EMAIL}" style="color:#ff2d95;text-decoration:none">${SUPPORT_EMAIL}</a>.</p>
-      <p style="margin:0;font-size:11px;color:#3d2d35">Flert IA · flertia.com.br · ${footerNote}</p>
+      <p style="margin:0;font-size:11px;color:#3d2d35">Flert IA · flertia.com.br · ${footerNote}</p>${
+        unsubscribeUrl
+          ? `
+      <p style="margin:8px 0 0;font-size:12px;color:#9E8E7E">Não quer mais receber novidades e ofertas? <a href="${escapeHtml(unsubscribeUrl)}" style="color:#ff2d95;text-decoration:underline">${UNSUBSCRIBE_LABEL}</a>.</p>`
+          : ""
+      }
     </div>
   </div>
 </body>
@@ -127,15 +149,29 @@ export function planActivatedEmail({
 }
 
 // ── Campanhas do admin ──────────────────────────────────────
-const CAMPAIGN_FOOTER = "Você recebeu este e-mail porque tem uma conta no Flert IA.";
+const CAMPAIGN_FOOTER = "Você recebeu este e-mail porque aceitou receber novidades e ofertas do Flert IA.";
+
+/** Cabeçalhos de descadastro com um clique (RFC 2369 + RFC 8058). */
+const unsubscribeHeaders = (links: UnsubscribeLinks): Record<string, string> => ({
+  "List-Unsubscribe": `<${links.oneClickUrl}>`,
+  "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+});
 
 export const FREE_UPSELL_SUBJECT = "Seu Flert IA está pronto, falta escolher um plano";
 
-export function freeUpsellEmail({ name }: { name: string | null | undefined }): EmailContent {
+export function freeUpsellEmail({
+  name,
+  unsubscribe,
+}: {
+  name: string | null | undefined;
+  unsubscribe: UnsubscribeLinks;
+}): EmailContent {
   return {
     subject: FREE_UPSELL_SUBJECT,
+    headers: unsubscribeHeaders(unsubscribe),
     html: layout({
       footerNote: CAMPAIGN_FOOTER,
+      unsubscribeUrl: unsubscribe.pageUrl,
       body: [
         greeting(emailFirstName(name)),
         p("Você criou sua conta no Flert IA, mas ainda não escolheu um plano. As análises começam assim que você escolher."),
@@ -156,11 +192,21 @@ const daysText = (days: number) => `${days} dia${days !== 1 ? "s" : ""}`;
 
 export const expiringSubject = (days: number) => `Seu plano Flert IA vence em ${daysText(days)}`;
 
-export function expiringEmail({ name, days }: { name: string | null | undefined; days: number }): EmailContent {
+export function expiringEmail({
+  name,
+  days,
+  unsubscribe,
+}: {
+  name: string | null | undefined;
+  days: number;
+  unsubscribe: UnsubscribeLinks;
+}): EmailContent {
   return {
     subject: expiringSubject(days),
+    headers: unsubscribeHeaders(unsubscribe),
     html: layout({
       footerNote: CAMPAIGN_FOOTER,
+      unsubscribeUrl: unsubscribe.pageUrl,
       body: [
         greeting(emailFirstName(name)),
         p(`Seu plano no <strong style="color:#ff2d95">Flert IA</strong> vence em <strong style="color:#F2EDE8">${daysText(days)}</strong>.`),
@@ -175,10 +221,12 @@ export function customEmail({
   name,
   subject,
   body,
+  unsubscribe,
 }: {
   name: string | null | undefined;
   subject: string | null | undefined;
   body: string | null | undefined;
+  unsubscribe: UnsubscribeLinks;
 }): EmailContent {
   const paragraphs = escapeHtml(body ?? "")
     .split("\n")
@@ -187,8 +235,10 @@ export function customEmail({
     .join("");
   return {
     subject: sanitizeHeader(subject || "Novidades no Flert IA"),
+    headers: unsubscribeHeaders(unsubscribe),
     html: layout({
       footerNote: CAMPAIGN_FOOTER,
+      unsubscribeUrl: unsubscribe.pageUrl,
       body: [greeting(emailFirstName(name)), paragraphs, cta(`${appUrl()}/auth/login?callbackUrl=%2Fdashboard`, "Acessar o Flert IA")].join("\n"),
     }),
   };

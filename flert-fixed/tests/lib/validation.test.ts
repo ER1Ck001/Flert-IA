@@ -97,10 +97,11 @@ describe("registerSchema", () => {
       name: "  Ana  Souza ",
       email: " ANA@X.com ",
       password: "segredo123",
+      adultConfirmed: true, // Tarefa 10: confirmação 18+ obrigatória
       isAdmin: true,
       subscriptionStatus: "LIFETIME",
     });
-    expect(r).toEqual({ name: "Ana Souza", email: "ana@x.com", password: "segredo123" });
+    expect(r).toEqual({ name: "Ana Souza", email: "ana@x.com", password: "segredo123", adultConfirmed: true, marketingOptIn: false });
   });
 
   it("mensagens de erro em português", () => {

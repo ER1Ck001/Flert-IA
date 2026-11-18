@@ -280,6 +280,28 @@ Exibe sugestões com botão "Copiar" ✅
 
 ---
 
+## Termos, Privacidade e consentimentos (LGPD)
+
+> **rascunho — revisar com advogado antes de publicar.** Os textos de `src/content/legal/termos.ts` e
+> `src/content/legal/privacidade.ts` descrevem o que o código faz hoje, mas não são parecer jurídico.
+
+- Enquanto `LEGAL_PUBLISHED = false` (`src/content/legal/config.ts`), `/termos` e `/privacidade` dão 404 em
+  produção e aparecem em dev com o banner "Rascunho — não publicado"; os links do rodapé e do cadastro
+  ficam escondidos e as páginas não entram no sitemap.
+- Para publicar: preencher `[NOME/RAZÃO SOCIAL]`, `[CPF/CNPJ]`, `[ENDEREÇO]` e `[E-MAIL DO ENCARREGADO]`
+  (constante `CONTROLLER` em `config.ts`), revisar com advogado, atualizar `LEGAL_VERSION` e `LAST_UPDATED`
+  e trocar `LEGAL_PUBLISHED` para `true`. O teste `tests/config/legal-docs.test.ts` falha se algum
+  placeholder `[...]` sobrar. Publicado, o cadastro passa a exigir o aceite dos Termos na mesma caixa do 18+.
+- 18+: obrigatório no cadastro; contas Google e contas antigas confirmam em `/auth/confirmar-idade`
+  (o middleware redireciona as páginas do app; análises e criação de pagamento respondem 403 sem a confirmação).
+- E-mails promocionais (campanhas do admin): só para `User.marketingOptIn = true` (contas existentes começam
+  sem), com link "Não quero mais receber" e `List-Unsubscribe` one-click (`/api/email/unsubscribe`).
+  Os links são assinados com `NEXTAUTH_SECRET`: trocar o segredo invalida os links já enviados.
+- Migration: `prisma/migrations/20261121000000_legal_consent` (só `ADD COLUMN IF NOT EXISTS`).
+- Reembolso: integral em até 7 dias após a compra (CDC art. 49), pedido manual por e-mail ao suporte.
+
+---
+
 ## Scripts disponíveis
 
 ```bash

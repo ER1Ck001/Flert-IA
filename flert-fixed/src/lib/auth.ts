@@ -11,6 +11,7 @@ import { welcomeEmail } from "@/lib/email/templates";
 import { findUserByEmail } from "@/lib/users";
 import { checkSessionVersion } from "@/lib/session-version";
 import { errorMessage } from "@/lib/http";
+import { isAdultConfirmed } from "@/lib/adult";
 
 /**
  * Adapter do Prisma com e-mail normalizado: sem isso o login Google com "Foo@x.com" criaria
@@ -93,6 +94,9 @@ export const authOptions: NextAuthOptions = {
         // Versão de sessão no login: incrementá-la no banco invalida este token.
         token.sv = (user as { sessionVersion?: number }).sessionVersion ?? 0;
         token.svCheckedAt = Date.now();
+        // 18+ lido do banco no login (credenciais e Google). O middleware usa o claim para
+        // redirecionar à confirmação; as APIs pagas conferem de novo no banco.
+        token.adult = await isAdultConfirmed(user.id).catch(() => false);
       } else if ((await checkSessionVersion(token)) === "revoked") {
         // Senha trocada/redefinida, "sair de todos os dispositivos" ou conta excluída.
         // Erro no callback jwt faz o NextAuth descartar a sessão (getServerSession → null).
@@ -102,12 +106,14 @@ export const authOptions: NextAuthOptions = {
       if (trigger === "update" && token.id) {
         const fresh = await prisma.user.findUnique({
           where: { id: token.id },
-          select: { name: true, email: true, image: true },
+          select: { name: true, email: true, image: true, adultConfirmedAt: true },
         });
         if (fresh) {
           token.name  = fresh.name;
           token.email = fresh.email;
           token.image = fresh.image;
+          // Após /api/account/confirm-age o cliente chama update(): o claim muda na hora.
+          token.adult = Boolean(fresh.adultConfirmedAt);
         }
       }
       return token;

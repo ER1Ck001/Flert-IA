@@ -11,6 +11,9 @@ import {
 import { PLANS_IN_ORDER, PLAN_CONFIG, formatBRL, getPlanBenefits } from "@/lib/plans";
 import { SUPPORT_EMAIL } from "@/lib/support";
 
+// Tarefa 10: campanhas exigem os links de descadastro.
+const UNSUB = { pageUrl: "https://app.test/descadastrar?u=u1&t=abc", oneClickUrl: "https://app.test/api/email/unsubscribe?u=u1&t=abc" };
+
 const EMOJI = /(?![©®™])\p{Extended_Pictographic}/gu;
 const emojiCount = (s: string) => (s.match(EMOJI) ?? []).length;
 
@@ -38,9 +41,9 @@ const BANNED = [
 const all = () => [
   welcomeEmail({ name: "Ana Lima" }),
   ...PLANS_IN_ORDER.map((p) => planActivatedEmail({ name: "Ana", plan: p.id, expiresAt: new Date("2026-12-18T15:00:00Z") })),
-  freeUpsellEmail({ name: "Ana" }),
-  expiringEmail({ name: "Ana", days: 3 }),
-  customEmail({ name: "Ana", subject: "Novidades no Flert IA", body: "Linha 1\nLinha 2" }),
+  freeUpsellEmail({ name: "Ana", unsubscribe: UNSUB }),
+  expiringEmail({ name: "Ana", days: 3, unsubscribe: UNSUB }),
+  customEmail({ name: "Ana", subject: "Novidades no Flert IA", body: "Linha 1\nLinha 2", unsubscribe: UNSUB }),
 ];
 
 describe("templates de e-mail — regras da voz", () => {
@@ -119,7 +122,7 @@ describe("planActivatedEmail", () => {
 
 describe("campanhas do admin", () => {
   it("free_upsell: assunto factual e todos os preços vindos de plans.ts", () => {
-    const m = freeUpsellEmail({ name: "Ana" });
+    const m = freeUpsellEmail({ name: "Ana", unsubscribe: UNSUB });
     expect(m.subject).toBe(FREE_UPSELL_SUBJECT);
     expect(m.subject).toBe("Seu Flert IA está pronto, falta escolher um plano");
     for (const p of PLANS_IN_ORDER) expect(m.html).toContain(`${p.label} ${formatBRL(p.priceCents)}`);
@@ -129,11 +132,11 @@ describe("campanhas do admin", () => {
   it("expiring: assunto sem emoji, singular e plural", () => {
     expect(expiringSubject(1)).toBe("Seu plano Flert IA vence em 1 dia");
     expect(expiringSubject(3)).toBe("Seu plano Flert IA vence em 3 dias");
-    expect(expiringEmail({ name: "Ana", days: 3 }).html).toContain("os dias que restam são somados ao novo período");
+    expect(expiringEmail({ name: "Ana", days: 3, unsubscribe: UNSUB }).html).toContain("os dias que restam são somados ao novo período");
   });
 
   it("custom: escapa o corpo e limpa o assunto", () => {
-    const m = customEmail({ name: "Ana", subject: "Oi\r\nBcc: a@b.c", body: "<script>x</script>\nSegunda" });
+    const m = customEmail({ name: "Ana", subject: "Oi\r\nBcc: a@b.c", body: "<script>x</script>\nSegunda", unsubscribe: UNSUB });
     expect(m.subject).not.toMatch(/[\r\n]/);
     expect(m.html).toContain("&lt;script&gt;");
     expect(m.html).not.toContain("<script>");

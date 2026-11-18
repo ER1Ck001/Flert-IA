@@ -12,6 +12,7 @@ const m = vi.hoisted(() => ({
   refundDailyUsage: vi.fn(),
   rateLimit: vi.fn(),
   conversationCreate: vi.fn(),
+  userFindUnique: vi.fn(),
 }));
 
 vi.mock("openai", () => ({
@@ -28,7 +29,10 @@ vi.mock("@/lib/usage", () => ({
   refundDailyUsage: m.refundDailyUsage,
 }));
 vi.mock("@/lib/rate-limit", () => ({ rateLimit: m.rateLimit }));
-vi.mock("@/lib/prisma", () => ({ prisma: { conversation: { create: m.conversationCreate } } }));
+// Tarefa 10: as rotas conferem a confirmação de 18+ no banco antes do plano.
+vi.mock("@/lib/prisma", () => ({
+  prisma: { conversation: { create: m.conversationCreate }, user: { findUnique: m.userFindUnique } },
+}));
 
 import { POST as postImage } from "@/app/api/analyze/route";
 import { POST as postText } from "@/app/api/analyze/text/route";
@@ -54,6 +58,7 @@ beforeEach(() => {
   m.releaseDailyUsage.mockResolvedValue(undefined);
   m.refundDailyUsage.mockResolvedValue(true);
   m.rateLimit.mockResolvedValue({ allowed: true, remaining: 9, retryAfterSec: 0 });
+  m.userFindUnique.mockResolvedValue({ adultConfirmedAt: new Date() });
   m.create.mockImplementation(
     (_body: unknown, opts?: { signal?: AbortSignal }) =>
       new Promise((_, reject) => opts?.signal?.addEventListener("abort", () => reject(new Error("aborted"))))

@@ -6,7 +6,13 @@ const { getServerSession, rateLimit } = vi.hoisted(() => ({ getServerSession: vi
 vi.mock("next-auth", () => ({ getServerSession }));
 vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@/lib/rate-limit", () => ({ rateLimit }));
-vi.mock("@/lib/prisma", () => ({ prisma: { subscriptionStatus: { findUnique: vi.fn() } } }));
+// Tarefa 10: criar cobrança exige a confirmação de 18+ no banco.
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    subscriptionStatus: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn(async () => ({ adultConfirmedAt: new Date("2026-01-01") })) },
+  },
+}));
 
 import { POST } from "@/app/api/payment/route";
 

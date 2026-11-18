@@ -12,11 +12,12 @@ const USERS = [
   {
     id: "u1", name: "Ana Lima", email: "ana@example.com", image: null, createdAt: "2026-11-01T12:00:00.000Z",
     loginMethod: "email", subscription: "PREMIUM", activatedAt: "2026-11-01T12:00:00.000Z",
-    expiresAt: "2026-12-01T12:00:00.000Z", analysisCount: 12,
+    expiresAt: "2026-12-01T12:00:00.000Z", analysisCount: 12, marketingOptIn: true,
   },
   {
     id: "u2", name: "Bruno", email: "bruno@example.com", image: null, createdAt: "2026-10-01T12:00:00.000Z",
-    loginMethod: "google", subscription: "FREE", activatedAt: null, expiresAt: null, analysisCount: 0,
+    // Tarefa 10: campanhas contam só quem deu opt-in.
+    loginMethod: "google", subscription: "FREE", activatedAt: null, expiresAt: null, analysisCount: 0, marketingOptIn: true,
   },
 ];
 const STATS = { total: 2, free: 1, premium: 1, annual: 0, lifetime: 0, totalAnalyses: 12 };

@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({
   rateLimit: vi.fn(),
   generateSuggestions: vi.fn(),
   conversationCreate: vi.fn(),
+  userFindUnique: vi.fn(),
 }));
 
 vi.mock("next-auth", () => ({ getServerSession: m.getServerSession }));
@@ -22,7 +23,10 @@ vi.mock("@/lib/usage", () => ({
 }));
 vi.mock("@/lib/rate-limit", () => ({ rateLimit: m.rateLimit }));
 vi.mock("@/lib/ai/generate", () => ({ generateSuggestions: m.generateSuggestions }));
-vi.mock("@/lib/prisma", () => ({ prisma: { conversation: { create: m.conversationCreate } } }));
+// Tarefa 10: as rotas conferem a confirmação de 18+ no banco antes do plano.
+vi.mock("@/lib/prisma", () => ({
+  prisma: { conversation: { create: m.conversationCreate }, user: { findUnique: m.userFindUnique } },
+}));
 
 import { POST as postImage } from "@/app/api/analyze/route";
 import { POST as postText } from "@/app/api/analyze/text/route";
@@ -50,6 +54,7 @@ beforeEach(() => {
   m.refundDailyUsage.mockResolvedValue(true);
   m.rateLimit.mockResolvedValue({ allowed: true, remaining: 9, retryAfterSec: 0 });
   m.generateSuggestions.mockResolvedValue({ ok: true, suggestions: SUGS });
+  m.userFindUnique.mockResolvedValue({ adultConfirmedAt: new Date() });
   m.conversationCreate.mockResolvedValue({ id: "c1" });
 });
 
@@ -57,6 +62,16 @@ describe.each(routes)("$name", ({ post, url, body }) => {
   it("401 sem sessão, sem tocar em cota nem IA", async () => {
     m.getServerSession.mockResolvedValue(null);
     expect((await post(req(url, body))).status).toBe(401);
+    expect(m.reserveDailyUsage).not.toHaveBeenCalled();
+    expect(m.generateSuggestions).not.toHaveBeenCalled();
+  });
+
+  it("403 sem confirmação de 18+ no banco, antes de plano, cota e IA (Tarefa 10)", async () => {
+    m.userFindUnique.mockResolvedValue({ adultConfirmedAt: null });
+    const res = await post(req(url, body));
+    expect(res.status).toBe(403);
+    expect((await res.json()).adultRequired).toBe(true);
+    expect(m.getEntitlement).not.toHaveBeenCalled();
     expect(m.reserveDailyUsage).not.toHaveBeenCalled();
     expect(m.generateSuggestions).not.toHaveBeenCalled();
   });

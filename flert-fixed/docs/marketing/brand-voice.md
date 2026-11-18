@@ -98,7 +98,7 @@ nunca faz: promessa de resultado, depoimento, contagem de usuários, nota, "%", 
 - **Capitalização:** frase normal em títulos e botões ("Criar conta", "Escolha seu plano"). Caixa alta só no estilo visual de *eyebrow* (CSS `uppercase`), nunca digitada.
 - **Pontuação em títulos:** a UI de auth usa ponto final ("Criar conta."); o resto do app não. Decisão: **sem ponto final em títulos**, para consistência (registrado na auditoria, prioridade baixa).
 - **Travessão:** "—" com espaços para explicar ("3 respostas em 7 tons — você escolhe e copia"). Máximo um por frase.
-- **Números:** algarismos para quantidades do produto (3, 7, 30, 50, 10 MB, 12 horas). Por extenso só em início de frase ou expressões ("Três passos").
+- **Números:** algarismos para quantidades do produto (3, 7, 30, 50, 10 MB, 7 dias). Por extenso só em início de frase ou expressões ("Três passos").
 - **Preços:** sempre com `formatBRL()`: "R$ 29,90", "R$ 147,00", "R$ 297,00" (espaço depois de "R$", vírgula decimal, ponto de milhar). Nunca escrever preço à mão em template; puxar de `PLAN_CONFIG`. Período: "R$ 29,90/mês", "R$ 147,00/ano", "R$ 297,00 · pagamento único".
 - **"E-mail"** com hífen (o app usa assim; auth e e-mails às vezes escrevem "Email" — padronizar).
 - **Horário:** "meia-noite (horário de Brasília)".

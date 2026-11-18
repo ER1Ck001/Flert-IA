@@ -8,6 +8,7 @@ import { registerSchema } from "@/lib/validation/auth";
 import { findUserByEmail } from "@/lib/users";
 import { welcomeEmail } from "@/lib/email/templates";
 import { isReservedAdminEmail } from "@/lib/admin";
+import { LEGAL_PUBLISHED, LEGAL_VERSION } from "@/content/legal/config";
 
 const transporter = createMailTransport();
 
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     const parsed = await parseJsonBody(request, registerSchema);
     if (!parsed.ok) return parsed.response;
-    const { name, email, password } = parsed.data;
+    const { name, email, password, marketingOptIn } = parsed.data;
 
     // E-mail do admin é reservado (só o login Google, que comprova posse, pode criá-lo).
     if (isReservedAdminEmail(email) || (await findUserByEmail(email))) {
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
+    const now = new Date();
 
     let user;
     try {
@@ -36,6 +38,11 @@ export async function POST(request: NextRequest) {
           name,
           email,
           password: hashedPassword,
+          // Consentimentos (Tarefa 10): 18+ é obrigatório no schema; opt-in de marketing é opcional.
+          adultConfirmedAt: now,
+          marketingOptIn,
+          marketingOptInAt: marketingOptIn ? now : null,
+          ...(LEGAL_PUBLISHED ? { termsAcceptedAt: now, termsVersion: LEGAL_VERSION } : {}),
           subscriptionStatus: { create: { status: "FREE" } },
         },
       });

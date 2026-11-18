@@ -67,6 +67,14 @@ model User {
   image          String?
   password       String?   // bcryptjs hash (credentials login)
   sessionVersion Int       @default(0) // incrementar invalida todas as sessões (JWT) do usuário
+
+  // Consentimentos (Tarefa 10, LGPD). Contas existentes começam sem opt-in e sem confirmação 18+.
+  marketingOptIn   Boolean   @default(false) // aceitou e-mails promocionais (campanhas do admin)
+  marketingOptInAt DateTime? // quando o opt-in atual foi dado (null quando desligado)
+  adultConfirmedAt DateTime? // confirmou ter 18 anos ou mais
+  termsAcceptedAt  DateTime? // aceitou os Termos/Política (só quando publicados)
+  termsVersion     String?   // LEGAL_VERSION aceita (src/content/legal/config.ts)
+
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

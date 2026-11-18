@@ -45,6 +45,7 @@ export async function GET() {
       activatedAt: u.subscriptionStatus?.activatedAt ?? null,
       expiresAt: u.subscriptionStatus?.expiresAt ?? null,
       analysisCount: u._count.conversations,
+      marketingOptIn: u.marketingOptIn,
     }));
 
     return NextResponse.json({ users: formatted, stats });
