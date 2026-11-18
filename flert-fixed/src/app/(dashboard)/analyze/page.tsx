@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, type ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { ArrowLeft, Camera, ImageUp, LifeBuoy, MessageCirclePlus, PenLine } from "lucide-react";
@@ -332,7 +332,7 @@ export default function AnalyzePage() {
 
       {/* ══ HUB ══ */}
       {view === "hub" && (
-        <motion.div key="hub" className="space-y-6"
+        <m.div key="hub" className="space-y-6"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: DUR.base }}>
           {renderHeader("Análise com IA", <>Analisar <span className="text-signal">conversa</span></>, "Escolha como quer usar a IA hoje.", false)}
@@ -346,28 +346,28 @@ export default function AnalyzePage() {
               <ModeCard key={card.id} icon={card.icon} title={card.title} description={card.desc} onClick={() => goTo(card.id)} />
             ))}
           </div>
-        </motion.div>
+        </m.div>
       )}
 
       {/* ══ CARD 1: Sugestões de respostas (image → suggestions) ══ */}
       {view === "analyze" && (
-        <motion.div key="analyze" className="space-y-6 pb-24 lg:pb-0" {...slideIn} transition={transition}>
+        <m.div key="analyze" className="space-y-6 pb-24 lg:pb-0" {...slideIn} transition={transition}>
           {renderHeader("Sugestões de respostas", <>Analisar <span className="text-signal">print</span></>, "Envie o print e a IA gera 3 respostas no seu tom.")}
           {renderImageGrid(false, "Conte o clima da conversa e o que você quer dizer…", 5, "Gerar sugestões")}
           {renderSuggestions(handleAnalyzeWithImage)}
-        </motion.div>
+        </m.div>
       )}
 
       {/* ══ CARD 2: Inicie uma conversa ══ */}
       {view === "start" && (
-        <motion.div key="start" className="space-y-6" {...slideIn} transition={transition}>
+        <m.div key="start" className="space-y-6" {...slideIn} transition={transition}>
           {renderHeader("Inicie uma conversa", <>Primeira <span className="text-signal">mensagem</span></>, "A IA sugere 3 formas de começar a conversa.", true, startStep !== "text", startStep)}
 
           <AnimatePresence mode="wait">
 
             {/* Choose sub-option */}
             {startStep === "choose" && (
-              <motion.div key="choose" className="space-y-4" {...fadeStep} transition={transition}>
+              <m.div key="choose" className="space-y-4" {...fadeStep} transition={transition}>
                 <p className="text-body text-text-2">Como quer criar a mensagem?</p>
                 <div className="grid max-w-2xl gap-3 sm:grid-cols-2 sm:gap-4">
                   <ModeCard
@@ -383,12 +383,12 @@ export default function AnalyzePage() {
                     onClick={() => { resetForm(); setStartStep("photo"); }}
                   />
                 </div>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Sub-option: Gerar mensagem (text) */}
             {startStep === "text" && (
-              <motion.div key="start-text" className="max-w-2xl space-y-6 pb-24 lg:pb-0" {...fadeStep} transition={transition}>
+              <m.div key="start-text" className="max-w-2xl space-y-6 pb-24 lg:pb-0" {...fadeStep} transition={transition}>
                 {renderContext(
                   "Sobre quem você quer falar?",
                   "Ex.: alguém que estudou comigo, gosta de viajar e tem bom humor. Quero começar uma conversa leve…",
@@ -398,23 +398,23 @@ export default function AnalyzePage() {
                 {renderTones()}
                 {renderBtn("Gerar abertura", !context.trim(), () => handleAnalyzeWithText("start"))}
                 {renderSuggestions(() => handleAnalyzeWithText("start"))}
-              </motion.div>
+              </m.div>
             )}
 
             {/* Sub-option: Enviar foto (stories tone included) */}
             {startStep === "photo" && (
-              <motion.div key="start-photo" className="space-y-6 pb-24 lg:pb-0" {...fadeStep} transition={transition}>
+              <m.div key="start-photo" className="space-y-6 pb-24 lg:pb-0" {...fadeStep} transition={transition}>
                 {renderImageGrid(true, "Ex.: vi o story da viagem e quero comentar algo…", 4, "Gerar resposta")}
                 {renderSuggestions(handleAnalyzeWithImage)}
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
-        </motion.div>
+        </m.div>
       )}
 
       {/* ══ CARD 3: Situação estranha ══ */}
       {view === "situation" && (
-        <motion.div key="situation" className="space-y-6 pb-24 lg:pb-0" {...slideIn} transition={transition}>
+        <m.div key="situation" className="space-y-6 pb-24 lg:pb-0" {...slideIn} transition={transition}>
           {renderHeader("Situação estranha", <>Situação <span className="text-signal">estranha</span></>, "Descreva o que está acontecendo e receba 3 sugestões de resposta.", true, false)}
 
           <div className="max-w-2xl space-y-6">
@@ -428,7 +428,7 @@ export default function AnalyzePage() {
             {renderBtn("Gerar sugestões", !context.trim(), () => handleAnalyzeWithText("situation"))}
             {renderSuggestions(() => handleAnalyzeWithText("situation"))}
           </div>
-        </motion.div>
+        </m.div>
       )}
 
     </AnimatePresence>

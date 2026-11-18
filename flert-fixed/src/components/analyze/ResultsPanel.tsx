@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { AlertTriangle, RotateCcw, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { stagger, useMotionSafe } from "@/lib/motion";
@@ -75,7 +75,7 @@ export function ResultsPanel({ loading, suggestions, copiedIndex, onCopy, error,
             <h2 className="font-display text-h3 text-text">Sugestões</h2>
             <p className="text-sm text-text-2">escolha uma ou adapte</p>
           </div>
-          <motion.ol
+          <m.ol
             aria-label="Sugestões geradas"
             className="space-y-3"
             variants={listVariants}
@@ -85,7 +85,7 @@ export function ResultsPanel({ loading, suggestions, copiedIndex, onCopy, error,
             {suggestions.map((s, i) => (
               <SuggestionCard key={i} index={i} text={s} copied={copiedIndex === i} onCopy={() => onCopy(s, i)} />
             ))}
-          </motion.ol>
+          </m.ol>
         </>
       ) : null}
     </section>

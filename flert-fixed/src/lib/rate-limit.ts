@@ -4,6 +4,7 @@
 import crypto from "node:crypto";
 import { isIPv6 } from "node:net";
 import { prisma } from "@/lib/prisma";
+import { errorMessage } from "@/lib/http";
 
 export type RateLimitResult = { allowed: boolean; remaining: number; retryAfterSec: number };
 
@@ -43,7 +44,7 @@ export async function rateLimit(
     const retryAfterSec = Math.max(1, Math.ceil((resetAt.getTime() - Date.now()) / 1000));
     return { allowed: count <= limit, remaining: Math.max(0, limit - count), retryAfterSec };
   } catch (error) {
-    console.error("Rate limit error:", error instanceof Error ? error.message : "unknown");
+    console.error("Rate limit error:", errorMessage(error));
     const allowed = (opts.onError ?? "allow") === "allow";
     return { allowed, remaining: 0, retryAfterSec: 60 };
   }

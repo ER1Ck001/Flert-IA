@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { Camera, Check, Copy, Info, MessageSquareText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { stagger, suggestionIn, useMotionSafe } from "@/lib/motion";
@@ -102,12 +102,12 @@ export function InteractiveDemo() {
           </div>
         ) : (
           <ul className="mt-4 space-y-2" aria-label="Mensagens recebidas no exemplo">
-            {scenario.messages.map((m) => (
+            {scenario.messages.map((msg) => (
               <li
-                key={m.text}
+                key={msg.text}
                 className="max-w-[85%] rounded-2xl rounded-bl-md bg-surface-2 px-4 py-2.5 text-sm text-text"
               >
-                {m.text}
+                {msg.text}
               </li>
             ))}
           </ul>
@@ -131,7 +131,7 @@ export function InteractiveDemo() {
           {loading ? (
             <FaiscaLoader stepMs={300} />
           ) : (
-            <motion.ol
+            <m.ol
               key={`${scenarioId}-${tone}`}
               aria-label="Sugestões de exemplo"
               className="space-y-3"
@@ -143,7 +143,7 @@ export function InteractiveDemo() {
                 const n = i + 1;
                 const isCopied = copied === i;
                 return (
-                  <motion.li
+                  <m.li
                     key={text}
                     variants={itemVariants}
                     className="flex items-start gap-3 rounded-lg border border-border bg-surface p-4"
@@ -168,10 +168,10 @@ export function InteractiveDemo() {
                       {isCopied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
                       <span className="hidden sm:inline">{isCopied ? "Copiado" : "Copiar"}</span>
                     </button>
-                  </motion.li>
+                  </m.li>
                 );
               })}
-            </motion.ol>
+            </m.ol>
           )}
         </div>
 

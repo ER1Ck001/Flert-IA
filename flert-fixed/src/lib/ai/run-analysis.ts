@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getEntitlement } from "@/lib/subscription";
 import { refundDailyUsage, releaseDailyUsage, reserveDailyUsage } from "@/lib/usage";
 import { generateSuggestions, type GenerateInput } from "@/lib/ai/generate";
+import { errorMessage } from "@/lib/http";
 
 // ── Limites de entrada (custo e abuso) ─────────────────────────
 export const MAX_CONTEXT_CHARS = 2000;
@@ -33,7 +34,7 @@ async function safely(action: () => Promise<unknown>, label: string): Promise<vo
   try {
     await action();
   } catch (error) {
-    console.error(`${label}:`, error instanceof Error ? error.message : "unknown");
+    console.error(`${label}:`, errorMessage(error));
   }
 }
 
@@ -97,7 +98,7 @@ export async function runAnalysis(userId: string, input: GenerateInput, title: s
       try {
         refunded = await refundDailyUsage(userId, reservation.dayKey);
       } catch (error) {
-        console.error("Usage refund error:", error instanceof Error ? error.message : "unknown");
+        console.error("Usage refund error:", errorMessage(error));
       }
     }
     return NextResponse.json(
@@ -116,7 +117,7 @@ export async function runAnalysis(userId: string, input: GenerateInput, title: s
     });
   } catch (error) {
     await release();
-    console.error("Analysis save error:", error instanceof Error ? error.message : "unknown");
+    console.error("Analysis save error:", errorMessage(error));
     return NextResponse.json({ error: "Erro ao salvar a análise. Tente novamente." }, { status: 500 });
   }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { AlertTriangle, Hourglass, Lock, Timer, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fadeUp, useMotionSafe } from "@/lib/motion";
@@ -46,7 +46,7 @@ export function AnalyzeGate({ kind, dailyLimit, onAction }: AnalyzeGateProps) {
   const isError = kind === "error";
 
   return (
-    <motion.div
+    <m.div
       role={isError ? "alert" : undefined}
       variants={variants}
       initial="hidden"
@@ -68,6 +68,6 @@ export function AnalyzeGate({ kind, dailyLimit, onAction }: AnalyzeGateProps) {
       <Button variant={isError ? "secondary" : "signal"} size="lg" className="mt-2 w-full sm:w-auto" onClick={onAction}>
         {action}
       </Button>
-    </motion.div>
+    </m.div>
   );
 }

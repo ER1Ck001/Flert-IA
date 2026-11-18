@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { assertSameOrigin } from "@/lib/http";
+import { assertSameOrigin, errorMessage } from "@/lib/http";
 import { runAnalysis, validateContext } from "@/lib/ai/run-analysis";
 import { TEXT_MODES, type TextMode } from "@/lib/ai/prompts";
 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       `${modeLabel} ${style ?? "flirty"} - ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
     );
   } catch (error) {
-    console.error("Analyze text error:", error instanceof Error ? error.message : "unknown");
+    console.error("Analyze text error:", errorMessage(error));
     return NextResponse.json({ error: "Erro ao gerar sugestões" }, { status: 500 });
   }
 }

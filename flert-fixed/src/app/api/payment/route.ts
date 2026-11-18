@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: checkoutUrl });
   } catch (error) {
-    console.error("Payment create error:", error instanceof Error ? error.message : "unknown");
+    console.error("Payment create error:", errorMessage(error));
     return NextResponse.json(
       { error: "Erro ao criar pagamento" },
       { status: 500 }

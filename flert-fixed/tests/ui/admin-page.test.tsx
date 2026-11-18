@@ -127,3 +127,58 @@ describe("Admin page — layout mobile e acessibilidade", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/admin/users/u1", { method: "DELETE" }));
   });
 });
+
+// Tarefa 9 (M8): envio em massa em lotes — o painel mostra enviados/restantes e permite continuar.
+describe("Admin page — campanhas em lotes", () => {
+  function mockCampaign(responses: unknown[]) {
+    const bodies: Record<string, unknown>[] = [];
+    const fn = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/admin/users") {
+        return { ok: true, status: 200, json: async () => ({ users: USERS, stats: STATS }) } as Response;
+      }
+      if (url === "/api/admin/email" && init?.method === "POST") {
+        bodies.push(JSON.parse(String(init.body)));
+        const next = responses.shift();
+        return { ok: true, status: 200, json: async () => next } as Response;
+      }
+      throw new Error(`rota não mockada: ${init?.method ?? "GET"} ${url}`);
+    });
+    vi.stubGlobal("fetch", fn);
+    return bodies;
+  }
+
+  it("mostra enviados e restantes e continua do cursor até terminar", async () => {
+    const bodies = mockCampaign([
+      { sent: 5, failed: 0, total: 12, processed: 5, remaining: 7, nextCursor: "u0005" },
+      { sent: 6, failed: 1, total: 12, processed: 7, remaining: 0, nextCursor: null },
+    ]);
+    render(<AdminPage />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("tab", { name: /Campanhas de email/ }));
+    // O 1º é o card "Sem plano" (free_upsell); o personalizado tem o mesmo rótulo.
+    await user.click((await screen.findAllByRole("button", { name: /Enviar para 1 usuário/ }))[0]);
+    await user.click(screen.getByRole("button", { name: "Confirmar envio" }));
+
+    const status = await screen.findByRole("status", { name: "Progresso do envio" });
+    await waitFor(() => expect(status).toHaveTextContent("5 enviados · 0 falharam · 7 restantes (de 12)"));
+    expect(bodies[0]).toEqual({ template: "free_upsell" });
+
+    await user.click(within(status).getByRole("button", { name: "Continuar envio (7 restantes)" }));
+    await waitFor(() => expect(bodies[1]).toEqual({ template: "free_upsell", cursor: "u0005" }));
+    await waitFor(() => expect(status).toHaveTextContent("Envio concluído: 11 enviados · 1 falharam (de 12)"));
+    expect(within(status).queryByRole("button", { name: /Continuar envio/ })).not.toBeInTheDocument();
+  });
+
+  it("lista que cabe em uma chamada: só o resumo, sem botão de continuar", async () => {
+    mockCampaign([{ sent: 1, failed: 0, total: 1, processed: 1, remaining: 0, nextCursor: null }]);
+    render(<AdminPage />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("tab", { name: /Campanhas de email/ }));
+    // O 1º é o card "Sem plano" (free_upsell); o personalizado tem o mesmo rótulo.
+    await user.click((await screen.findAllByRole("button", { name: /Enviar para 1 usuário/ }))[0]);
+    await user.click(screen.getByRole("button", { name: "Confirmar envio" }));
+    const status = await screen.findByRole("status", { name: "Progresso do envio" });
+    await waitFor(() => expect(status).toHaveTextContent("Envio concluído: 1 enviados · 0 falharam (de 1)"));
+    expect(within(status).queryByRole("button", { name: /Continuar envio/ })).not.toBeInTheDocument();
+  });
+});

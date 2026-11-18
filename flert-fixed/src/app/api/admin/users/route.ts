@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdminUser } from "@/lib/admin";
+import { errorMessage } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,7 @@ export async function GET() {
 
     return NextResponse.json({ users: formatted, stats });
   } catch (error) {
-    console.error("Admin users GET error:", error instanceof Error ? error.message : "unknown");
+    console.error("Admin users GET error:", errorMessage(error));
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }

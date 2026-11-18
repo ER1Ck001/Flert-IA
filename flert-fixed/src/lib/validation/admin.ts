@@ -16,6 +16,8 @@ export const adminEmailSchema = z
       .refine((s) => !/[\r\n]/.test(s), "Assunto não pode ter quebras de linha")
       .optional(),
     customBody: z.string().trim().max(10_000, "Mensagem deve ter no máximo 10.000 caracteres").optional(),
+    /** Continuação de um envio em massa: id do último destinatário já processado. */
+    cursor: idSchema.optional(),
   })
   .superRefine((d, ctx) => {
     if (d.template !== "custom") return;

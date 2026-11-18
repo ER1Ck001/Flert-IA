@@ -121,15 +121,6 @@ OPENAI_API_KEY="sk-..."
 OPENAI_MODEL="gpt-4o"
 ```
 
-#### UploadThing
-1. Acesse [uploadthing.com](https://uploadthing.com)
-2. Crie uma app → copie as credenciais
-
-```
-UPLOADTHING_SECRET="sk_live_..."
-UPLOADTHING_APP_ID="..."
-```
-
 #### Abacate Pay
 1. Acesse [abacatepay.com](https://abacatepay.com)
 2. Crie uma conta e obtenha a API Key

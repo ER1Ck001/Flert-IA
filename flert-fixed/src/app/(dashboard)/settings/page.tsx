@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { Bell, Shield, Trash2, LogOut, AlertTriangle, Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,19 +117,19 @@ export default function SettingsPage() {
   }, [deleteOpen]);
 
   return (
-    <motion.div className="mx-auto w-full max-w-2xl space-y-6" variants={container} initial="hidden" animate="show">
+    <m.div className="mx-auto w-full max-w-2xl space-y-6" variants={container} initial="hidden" animate="show">
       {/* ── Header ── */}
-      <motion.div variants={item}>
+      <m.div variants={item}>
         <PageHeader
           eyebrow="Conta"
           title="Configurações"
           description="Privacidade, sessões e dados da sua conta"
           className="mb-0"
         />
-      </motion.div>
+      </m.div>
 
       {/* ── Notificações (honesto: ainda não há preferências configuráveis) ── */}
-      <motion.section variants={item} aria-labelledby="settings-notifications" className="overflow-hidden rounded-lg border border-border bg-surface shadow-1">
+      <m.section variants={item} aria-labelledby="settings-notifications" className="overflow-hidden rounded-lg border border-border bg-surface shadow-1">
         <div className="border-b border-border px-4 py-4 sm:px-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-violet-500/15">
@@ -148,10 +148,10 @@ export default function SettingsPage() {
             personalizáveis ainda não estão disponíveis.
           </p>
         </div>
-      </motion.section>
+      </m.section>
 
       {/* ── Privacidade ── */}
-      <motion.section variants={item} aria-labelledby="settings-privacy" className="overflow-hidden rounded-lg border border-border bg-surface shadow-1">
+      <m.section variants={item} aria-labelledby="settings-privacy" className="overflow-hidden rounded-lg border border-border bg-surface shadow-1">
         <div className="border-b border-border px-4 py-4 sm:px-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-violet-500/15">
@@ -178,10 +178,10 @@ export default function SettingsPage() {
             Gerenciar cookies
           </Button>
         </div>
-      </motion.section>
+      </m.section>
 
       {/* ── Zona de perigo ── */}
-      <motion.section variants={item} aria-labelledby="settings-danger" className="overflow-hidden rounded-lg border border-danger/30 bg-surface shadow-1">
+      <m.section variants={item} aria-labelledby="settings-danger" className="overflow-hidden rounded-lg border border-danger/30 bg-surface shadow-1">
         <div className="border-b border-danger/20 px-4 py-4 sm:px-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-danger/15">
@@ -231,7 +231,7 @@ export default function SettingsPage() {
 
             <AnimatePresence>
               {deleteOpen && (
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
@@ -284,12 +284,12 @@ export default function SettingsPage() {
                       </Button>
                     </div>
                   </div>
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </div>
         </div>
-      </motion.section>
+      </m.section>
 
       <ConfirmDialog
         open={revokeOpen}
@@ -301,6 +301,6 @@ export default function SettingsPage() {
         loading={revoking}
         onConfirm={handleRevokeAll}
       />
-    </motion.div>
+    </m.div>
   );
 }

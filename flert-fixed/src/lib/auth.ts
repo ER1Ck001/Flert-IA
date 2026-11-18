@@ -10,6 +10,7 @@ import { normalizeEmail } from "@/lib/validation/auth";
 import { welcomeEmail } from "@/lib/email/templates";
 import { findUserByEmail } from "@/lib/users";
 import { checkSessionVersion } from "@/lib/session-version";
+import { errorMessage } from "@/lib/http";
 
 /**
  * Adapter do Prisma com e-mail normalizado: sem isso o login Google com "Foo@x.com" criaria
@@ -79,7 +80,7 @@ export const authOptions: NextAuthOptions = {
         to:      user.email,
         subject: welcome.subject,
         html:    welcome.html,
-      }).catch(err => console.error("OAuth welcome email error:", err instanceof Error ? err.message : "unknown"));
+      }).catch(err => console.error("OAuth welcome email error:", errorMessage(err)));
     },
   },
   callbacks: {

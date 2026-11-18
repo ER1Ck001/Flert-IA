@@ -39,6 +39,26 @@ function displayTitle(title: string): string {
   return [mode || head, ...rest].join(" · ");
 }
 
+type ApiConversation = {
+  id: string;
+  title: string | null;
+  createdAt: string;
+  messages: { role: string; content: string }[];
+};
+
+/** Tamanho da página pedida à API (a API aceita até 50). */
+const PAGE_SIZE = 20;
+
+function toItem(conv: ApiConversation): HistoryItem {
+  return {
+    id: conv.id,
+    title: conv.title || "Análise sem título",
+    style: conv.title?.split(" - ")[0] || "Análise",
+    date: conv.createdAt,
+    suggestions: conv.messages.filter((m) => m.role === "assistant").map((m) => m.content),
+  };
+}
+
 function SkeletonCard() {
   return (
     <Card className="space-y-4 p-4 sm:p-6">
@@ -62,33 +82,18 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<HistoryItem | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const fetchHistory = useCallback(async () => {
       setLoading(true);
       setLoadError(false);
       try {
-        const res = await fetch("/api/history");
+        const res = await fetch(`/api/history?limit=${PAGE_SIZE}`);
         if (!res.ok) throw new Error("Falha ao buscar histórico");
         const data = await res.json();
-
-        const mapped: HistoryItem[] = (data.conversations || []).map(
-          (conv: {
-            id: string;
-            title: string | null;
-            createdAt: string;
-            messages: { role: string; content: string }[];
-          }) => ({
-            id: conv.id,
-            title: conv.title || "Análise sem título",
-            style: conv.title?.split(" - ")[0] || "Análise",
-            date: conv.createdAt,
-            suggestions: conv.messages
-              .filter((m) => m.role === "assistant")
-              .map((m) => m.content),
-          })
-        );
-
-        setHistory(mapped);
+        setHistory(((data.conversations || []) as ApiConversation[]).map(toItem));
+        setNextCursor(typeof data.nextCursor === "string" ? data.nextCursor : null);
       } catch {
         // Estado de erro visível na página (não confundir com "nenhuma análise").
         setLoadError(true);
@@ -100,6 +105,27 @@ export default function HistoryPage() {
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  const loadMore = async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/history?limit=${PAGE_SIZE}&cursor=${encodeURIComponent(nextCursor)}`);
+      if (!res.ok) throw new Error("Falha ao carregar mais");
+      const data = await res.json();
+      const more = ((data.conversations || []) as ApiConversation[]).map(toItem);
+      // Sem duplicar itens (ex.: lista alterada entre uma página e outra).
+      setHistory((current) => {
+        const seen = new Set(current.map((item) => item.id));
+        return [...current, ...more.filter((item) => !seen.has(item.id))];
+      });
+      setNextCursor(typeof data.nextCursor === "string" ? data.nextCursor : null);
+    } catch {
+      toast.error("Erro ao carregar mais análises");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // Busca pelo título exibido, pelo rótulo do tom e pelo texto das sugestões.
   const q = search.trim().toLowerCase();
@@ -170,6 +196,7 @@ export default function HistoryPage() {
       {q && !loading && !loadError && (
         <p aria-live="polite" className="mb-4 text-sm text-text-2">
           {filteredHistory.length === 1 ? "1 análise encontrada" : `${filteredHistory.length} análises encontradas`}
+          {nextCursor && " · A busca considera só as análises já carregadas. Use “Carregar mais” para incluir as anteriores."}
         </p>
       )}
 
@@ -277,6 +304,14 @@ export default function HistoryPage() {
             );
           })}
         </ul>
+      )}
+
+      {!loading && !loadError && nextCursor && (
+        <div className="mt-6 flex justify-center">
+          <Button variant="secondary" loading={loadingMore} onClick={loadMore}>
+            {loadingMore ? "Carregando…" : "Carregar mais"}
+          </Button>
+        </div>
       )}
 
       <ConfirmDialog

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { suggestionIn, useMotionSafe } from "@/lib/motion";
@@ -47,13 +47,13 @@ export function SuggestionCard({ index, text, copied, onCopy, className }: Sugge
   };
 
   return (
-    <motion.li
+    <m.li
       variants={variants}
       className={cn("relative flex items-start gap-3 rounded-lg border border-border bg-surface p-4 shadow-1", className)}
     >
       {/* Borda signal que aparece uma vez (600ms) ao chegar a sugestão. */}
       {!prefersReduced && (
-        <motion.span
+        <m.span
           aria-hidden
           className="border-signal pointer-events-none absolute -inset-px rounded-lg"
           initial={{ opacity: 1 }}
@@ -81,6 +81,6 @@ export function SuggestionCard({ index, text, copied, onCopy, className }: Sugge
         {isCopied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
         <span className="hidden sm:inline">{isCopied ? "Copiado" : "Copiar"}</span>
       </button>
-    </motion.li>
+    </m.li>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   Sparkles,
   ArrowRight,
@@ -115,7 +115,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <motion.div
+    <m.div
       className="max-w-3xl space-y-8"
       variants={container}
       initial="hidden"
@@ -123,23 +123,23 @@ export default function DashboardPage() {
     >
 
       {/* ── Greeting ── */}
-      <motion.div variants={item}>
+      <m.div variants={item}>
         <PageHeader
           className="mb-0"
           eyebrow="Início"
           title={getGreeting(session?.user?.name)}
           description="O que você quer responder hoje?"
         />
-      </motion.div>
+      </m.div>
 
       {fromCheckout && (
-        <motion.div variants={item}>
+        <m.div variants={item}>
           <PaymentNotice isPaid={isPaid} />
-        </motion.div>
+        </m.div>
       )}
 
       {/* ── Primary CTA ── */}
-      <motion.div variants={item}>
+      <m.div variants={item}>
         <Link
           href="/analyze"
           className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
@@ -171,10 +171,10 @@ export default function DashboardPage() {
             </div>
           </Card>
         </Link>
-      </motion.div>
+      </m.div>
 
       {/* ── Stats ── */}
-      <motion.section variants={item} aria-labelledby="dash-stats">
+      <m.section variants={item} aria-labelledby="dash-stats">
         <h2 id="dash-stats" className="mb-3 text-caption uppercase text-text-2">
           Seus números
         </h2>
@@ -198,10 +198,10 @@ export default function DashboardPage() {
             </li>
           ))}
         </ul>
-      </motion.section>
+      </m.section>
 
       {/* ── Quick links ── */}
-      <motion.section variants={item} aria-labelledby="dash-links">
+      <m.section variants={item} aria-labelledby="dash-links">
         <h2 id="dash-links" className="mb-3 text-caption uppercase text-text-2">
           Acesso rápido
         </h2>
@@ -212,10 +212,10 @@ export default function DashboardPage() {
             </Button>
           ))}
         </div>
-      </motion.section>
+      </m.section>
 
       {/* ── How it works ── */}
-      <motion.section variants={item} aria-labelledby="dash-how">
+      <m.section variants={item} aria-labelledby="dash-how">
         <Card variant="outline" className="p-5">
           <h2 id="dash-how" className="mb-4 text-caption uppercase text-text-2">
             Como funciona
@@ -232,8 +232,8 @@ export default function DashboardPage() {
             ))}
           </ol>
         </Card>
-      </motion.section>
+      </m.section>
 
-    </motion.div>
+    </m.div>
   );
 }

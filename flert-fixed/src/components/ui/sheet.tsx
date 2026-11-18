@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DUR, EASE, scaleIn, sheetUp, useMotionSafe } from "@/lib/motion";
@@ -52,7 +52,7 @@ export function Sheet({ open, onOpenChange, title, description, hideTitle, child
         {open && (
           <DialogPrimitive.Portal forceMount>
             <DialogPrimitive.Overlay asChild forceMount>
-              <motion.div
+              <m.div
                 className="fixed inset-0 z-[60] bg-black/60"
                 variants={backdrop}
                 initial="hidden"
@@ -65,7 +65,7 @@ export function Sheet({ open, onOpenChange, title, description, hideTitle, child
               forceMount
               {...(description ? {} : { "aria-describedby": undefined })}
             >
-              <motion.div
+              <m.div
                 variants={content}
                 initial="hidden"
                 animate="show"
@@ -98,7 +98,7 @@ export function Sheet({ open, onOpenChange, title, description, hideTitle, child
                   </DialogPrimitive.Close>
                 </div>
                 {children}
-              </motion.div>
+              </m.div>
             </DialogPrimitive.Content>
           </DialogPrimitive.Portal>
         )}

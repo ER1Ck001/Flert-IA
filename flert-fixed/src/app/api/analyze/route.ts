@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { assertSameOrigin } from "@/lib/http";
+import { assertSameOrigin, errorMessage } from "@/lib/http";
 import { runAnalysis, validateContext, validateImageDataUrl } from "@/lib/ai/run-analysis";
 
 // Tempo para a chamada à OpenAI (timeout 30s + 1 retry) sem a plataforma matar a função.
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       `Análise ${style ?? "flirty"} - ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
     );
   } catch (error) {
-    console.error("Analyze error:", error instanceof Error ? error.message : "unknown");
+    console.error("Analyze error:", errorMessage(error));
     return NextResponse.json({ error: "Erro ao analisar conversa" }, { status: 500 });
   }
 }

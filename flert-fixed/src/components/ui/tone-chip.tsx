@@ -1,10 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "framer-motion";
+import { LazyMotion, m } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SPRING } from "@/lib/motion";
+
+// layoutId (indicador deslizante) precisa das features de layout (domMax). Elas vêm sob demanda,
+// fora do bundle inicial; até carregarem, o indicador aparece sem animar a troca.
+const loadDomMax = () => import("@/components/motion/dom-max").then((mod) => mod.default);
 
 export interface ToneOption<V extends string = string> {
   value: V;
@@ -82,51 +86,53 @@ export function ToneChipGroup<V extends string = string>({
         className
       )}
     >
-      <div
-        role="radiogroup"
-        aria-label={label}
-        aria-disabled={disabled || undefined}
-        className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
-      >
-        {options.map((opt, i) => {
-          const checked = opt.value === value;
-          const Icon = opt.icon;
-          return (
-            <button
-              key={opt.value}
-              ref={(el) => {
-                refs.current[i] = el;
-              }}
-              type="button"
-              role="radio"
-              aria-checked={checked}
-              tabIndex={i === focusIndex ? 0 : -1}
-              disabled={disabled}
-              onClick={() => select(i)}
-              onKeyDown={(e) => onKeyDown(e, i)}
-              className={cn(
-                "relative inline-flex h-11 shrink-0 snap-start items-center gap-2 rounded-full border px-4 text-sm font-medium",
-                "transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-                "disabled:cursor-not-allowed disabled:opacity-50",
-                checked
-                  ? "border-transparent text-text"
-                  : "border-border bg-surface-2 text-text-2 hover:border-border-strong hover:text-text"
-              )}
-            >
-              {checked && (
-                <motion.span
-                  layoutId={`tone-indicator-${indicatorId}`}
-                  transition={SPRING}
-                  aria-hidden
-                  className="border-signal absolute inset-0 rounded-full shadow-glow-violet"
-                />
-              )}
-              {Icon && <Icon className="relative h-4 w-4" aria-hidden />}
-              <span className="relative">{opt.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      <LazyMotion features={loadDomMax}>
+        <div
+          role="radiogroup"
+          aria-label={label}
+          aria-disabled={disabled || undefined}
+          className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
+        >
+          {options.map((opt, i) => {
+            const checked = opt.value === value;
+            const Icon = opt.icon;
+            return (
+              <button
+                key={opt.value}
+                ref={(el) => {
+                  refs.current[i] = el;
+                }}
+                type="button"
+                role="radio"
+                aria-checked={checked}
+                tabIndex={i === focusIndex ? 0 : -1}
+                disabled={disabled}
+                onClick={() => select(i)}
+                onKeyDown={(e) => onKeyDown(e, i)}
+                className={cn(
+                  "relative inline-flex h-11 shrink-0 snap-start items-center gap-2 rounded-full border px-4 text-sm font-medium",
+                  "transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+                  "disabled:cursor-not-allowed disabled:opacity-50",
+                  checked
+                    ? "border-transparent text-text"
+                    : "border-border bg-surface-2 text-text-2 hover:border-border-strong hover:text-text"
+                )}
+              >
+                {checked && (
+                  <m.span
+                    layoutId={`tone-indicator-${indicatorId}`}
+                    transition={SPRING}
+                    aria-hidden
+                    className="border-signal absolute inset-0 rounded-full shadow-glow-violet"
+                  />
+                )}
+                {Icon && <Icon className="relative h-4 w-4" aria-hidden />}
+                <span className="relative">{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </LazyMotion>
     </div>
   );
 }

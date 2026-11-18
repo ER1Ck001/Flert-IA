@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState, useEffect, useMemo, useCallback } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   Users, Search, Trash2, Crown, Zap, Star,
   Copy, Check, RefreshCw, Shield, Activity,
@@ -33,6 +33,18 @@ type AdminUser = {
   activatedAt: string | null;
   expiresAt: string | null;
   analysisCount: number;
+};
+
+/** Resultado acumulado de um envio em massa feito em várias chamadas (ver /api/admin/email). */
+type CampaignProgress = {
+  template: string;
+  /** Payload da 1ª chamada (sem cursor), repetido nas continuações. */
+  payload: Record<string, string>;
+  sent: number;
+  failed: number;
+  total: number;
+  remaining: number;
+  nextCursor: string | null;
 };
 
 type Stats = {
@@ -117,6 +129,8 @@ export default function AdminPage() {
   const [customTarget, setCustomTarget]       = useState<string>("FREE");
   const [customSubject, setCustomSubject]     = useState<string>("");
   const [customBody, setCustomBody]           = useState<string>("");
+  // Envio em massa em lotes: a API para antes do limite de tempo e devolve o que falta + cursor.
+  const [campaignProgress, setCampaignProgress] = useState<CampaignProgress | null>(null);
 
   // Single-user email modal
   const [emailModal, setEmailModal]       = useState<AdminUser | null>(null);
@@ -268,11 +282,12 @@ export default function AdminPage() {
     finally { setSendingModal(false); }
   };
 
-  const sendCampaign = async (templateId: string) => {
+  const sendCampaign = async (templateId: string, resume?: CampaignProgress) => {
     setSendingTemplate(templateId);
     try {
-      const payload: Record<string, string> = { template: templateId };
-      if (templateId === "custom") {
+      // Continuação: reaproveita exatamente o payload da 1ª chamada, só com o cursor.
+      const payload: Record<string, string> = resume ? { ...resume.payload } : { template: templateId };
+      if (!resume && templateId === "custom") {
         if (!customSubject.trim() || !customBody.trim()) {
           toast.error("Preencha assunto e mensagem");
           return;
@@ -281,6 +296,8 @@ export default function AdminPage() {
         payload.customBody    = customBody;
         payload.targetPlan    = customTarget;
       }
+      const basePayload = { ...payload };
+      if (resume?.nextCursor) payload.cursor = resume.nextCursor;
       const res  = await fetch("/api/admin/email", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
@@ -288,12 +305,21 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      const msg = data.failed > 0
-        ? `${data.sent} enviados, ${data.failed} falharam (de ${data.total})`
-        : `${data.sent} email${data.sent !== 1 ? "s" : ""} enviados!`;
-      data.failed > 0 ? toast.error(msg) : toast.success(msg);
+      const sent      = (resume?.sent ?? 0) + (Number(data.sent) || 0);
+      const failed    = (resume?.failed ?? 0) + (Number(data.failed) || 0);
+      const remaining = Number(data.remaining) || 0;
+      const nextCursor = remaining > 0 && typeof data.nextCursor === "string" ? data.nextCursor : null;
+      setCampaignProgress({ template: templateId, payload: basePayload, sent, failed, total: Number(data.total) || 0, remaining, nextCursor });
+      if (nextCursor) {
+        toast.success(`${sent} enviados até agora. Faltam ${remaining}: clique em “Continuar envio”.`);
+      } else {
+        const msg = failed > 0
+          ? `${sent} enviados, ${failed} falharam (de ${data.total})`
+          : `${sent} email${sent !== 1 ? "s" : ""} enviados!`;
+        failed > 0 ? toast.error(msg) : toast.success(msg);
+        if (templateId === "custom") { setCustomSubject(""); setCustomBody(""); }
+      }
       setConfirmTemplate(null);
-      if (templateId === "custom") { setCustomSubject(""); setCustomBody(""); }
     } catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao enviar"); }
     finally { setSendingTemplate(null); }
   };
@@ -544,7 +570,7 @@ export default function AdminPage() {
         {/* ── Stats grid ── */}
         <ul aria-label="Resumo" aria-busy={loading || undefined} className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
           {statCards.map((s, i) => (
-            <motion.li key={s.label}
+            <m.li key={s.label}
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
               className="min-w-0 rounded-lg border border-border bg-surface px-4 py-4">
@@ -554,7 +580,7 @@ export default function AdminPage() {
               </div>
               <div className="mt-1.5 text-caption font-semibold uppercase leading-tight text-text-2">{s.label}</div>
               <div className="mt-0.5 text-caption leading-tight text-text-2">{s.sub}</div>
-            </motion.li>
+            </m.li>
           ))}
         </ul>
 
@@ -804,6 +830,26 @@ export default function AdminPage() {
               <h2 className="font-display text-h3 text-text">Envio de emails</h2>
               <p className="mt-1 text-sm text-text-2">Envie emails em massa para segmentos específicos de usuários.</p>
             </div>
+
+            {campaignProgress && (
+              <div role="status" aria-label="Progresso do envio"
+                className="flex flex-col gap-3 rounded-lg border border-border bg-surface-2 p-4 text-sm text-text sm:flex-row sm:items-center sm:justify-between">
+                <p>
+                  {campaignProgress.nextCursor
+                    ? `${campaignProgress.sent} enviados · ${campaignProgress.failed} falharam · ${campaignProgress.remaining} restantes (de ${campaignProgress.total})`
+                    : `Envio concluído: ${campaignProgress.sent} enviados · ${campaignProgress.failed} falharam (de ${campaignProgress.total})`}
+                </p>
+                {campaignProgress.nextCursor && (
+                  <Button onClick={() => sendCampaign(campaignProgress.template, campaignProgress)}
+                    loading={sendingTemplate === campaignProgress.template}
+                    leftIcon={<Send className="h-4 w-4" aria-hidden />}>
+                    {sendingTemplate === campaignProgress.template
+                      ? "Enviando..."
+                      : `Continuar envio (${campaignProgress.remaining} restantes)`}
+                  </Button>
+                )}
+              </div>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2">
 

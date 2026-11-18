@@ -11,6 +11,7 @@ import {
 } from "@/lib/payments/abacatepay-webhook";
 import { type PaidPlan } from "@/lib/plans";
 import { planActivatedEmail } from "@/lib/email/templates";
+import { errorMessage } from "@/lib/http";
 
 // Transação + e-mail de boas-vindas (SMTP com timeouts em lib/email/transport; pior caso ~40 s).
 export const maxDuration = 60;
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     return await handle(request, rawBody);
   } catch (error) {
-    console.error("Webhook error:", error instanceof Error ? error.message : "unknown");
+    console.error("Webhook error:", errorMessage(error));
     return NextResponse.json({ error: "Erro ao processar webhook" }, { status: 500 });
   }
 }
@@ -147,7 +148,7 @@ async function handle(request: NextRequest, rawBody: string): Promise<NextRespon
     try {
       await sendWelcomeEmail(user.email, user.name ?? "você", applied.plan, applied.expiresAt);
     } catch (emailErr) {
-      console.error("Welcome email error:", emailErr instanceof Error ? emailErr.message : "unknown");
+      console.error("Welcome email error:", errorMessage(emailErr));
     }
   }
 

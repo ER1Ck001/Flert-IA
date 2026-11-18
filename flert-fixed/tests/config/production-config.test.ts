@@ -95,3 +95,28 @@ describe("limites de tempo das funções", () => {
     expect(read(f)).toMatch(/export const maxDuration = \d+;/);
   });
 });
+
+// Tarefa 9 (itens pequenos).
+describe("limpeza e metadados do pacote", () => {
+  const pkg = JSON.parse(read("package.json"));
+
+  it("package.json declara engines.node >=20", () => {
+    expect(pkg.engines).toEqual({ node: ">=20" });
+  });
+
+  it("assets antigos de public/couple foram removidos", () => {
+    expect(existsSync(path.join(root, "public/couple"))).toBe(false);
+  });
+
+  it(".env.example não lista variáveis que o código não lê", () => {
+    const example = read(".env.example");
+    for (const v of ["UPLOADTHING_SECRET", "UPLOADTHING_APP_ID", "UPLOADTHING_TOKEN", "PRODUCT_PRICE_CENTS", "NEXT_PUBLIC_APP_NAME"]) {
+      expect(example, v).not.toMatch(new RegExp(`^${v}=`, "m"));
+    }
+  });
+
+  it("DIRECT_URL só documentado (comentado) no exemplo, nunca exigido pelo schema", () => {
+    expect(read(".env.example")).toMatch(/^# DIRECT_URL=/m);
+    expect(read("prisma/schema.prisma")).not.toMatch(/DIRECT_URL/);
+  });
+});

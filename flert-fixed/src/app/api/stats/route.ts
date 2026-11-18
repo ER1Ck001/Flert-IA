@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getEntitlement } from "@/lib/subscription";
 import { getUsageCount } from "@/lib/usage";
 import { nextResetAt } from "@/lib/time";
+import { errorMessage } from "@/lib/http";
 
 // Depende da sessão: nunca pode ser pré-renderizada no build.
 export const dynamic = "force-dynamic";
@@ -40,7 +41,7 @@ export async function GET() {
       resetsAt: nextResetAt(now).toISOString(),
     });
   } catch (error) {
-    console.error("Stats error:", error instanceof Error ? error.message : "unknown");
+    console.error("Stats error:", errorMessage(error));
     return NextResponse.json({ error: "Erro ao carregar estatísticas" }, { status: 500 });
   }
 }

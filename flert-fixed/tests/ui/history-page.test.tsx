@@ -31,8 +31,9 @@ const CONVERSATIONS = [
 
 function mockFetch(conversations: unknown[]) {
   const fn = vi.fn(async (url: string, init?: RequestInit) => {
-    if (url === "/api/history" && !init?.method) {
-      return { ok: true, status: 200, json: async () => ({ conversations }) } as Response;
+    // Tarefa 9: o cliente agora pede a 1ª página (?limit=20); sem próxima página aqui.
+    if (url === "/api/history?limit=20" && !init?.method) {
+      return { ok: true, status: 200, json: async () => ({ conversations, nextCursor: null }) } as Response;
     }
     if (url.startsWith("/api/history?id=") && init?.method === "DELETE") {
       return { ok: true, status: 200, json: async () => ({ success: true }) } as Response;
@@ -128,5 +129,79 @@ describe("History page", () => {
     await waitFor(() => expect(screen.queryByText("Sugestão número um")).not.toBeInTheDocument());
     expect(screen.getByText("Outra sugestão")).toBeInTheDocument();
     expect(screen.getByText("1 análise encontrada")).toHaveAttribute("aria-live", "polite");
+  });
+
+  describe("paginação (Carregar mais)", () => {
+    const OLDER = {
+      id: "c3",
+      title: "Análise casual - 01/11/2026",
+      createdAt: "2026-11-01T12:00:00.000Z",
+      messages: [{ role: "assistant", content: "Sugestão antiga" }],
+    };
+
+    function mockPaged(opts: { failSecond?: boolean } = {}) {
+      let releaseSecond: () => void = () => {};
+      const secondGate = new Promise<void>((r) => (releaseSecond = r));
+      const fn = vi.fn(async (url: string, init?: RequestInit) => {
+        if (url === "/api/history?limit=20" && !init?.method) {
+          return { ok: true, status: 200, json: async () => ({ conversations: CONVERSATIONS, nextCursor: "c2" }) } as Response;
+        }
+        if (url === "/api/history?limit=20&cursor=c2" && !init?.method) {
+          await secondGate;
+          if (opts.failSecond) return { ok: false, status: 500, json: async () => ({}) } as Response;
+          return { ok: true, status: 200, json: async () => ({ conversations: [OLDER], nextCursor: null }) } as Response;
+        }
+        throw new Error(`rota não mockada: ${init?.method ?? "GET"} ${url}`);
+      });
+      vi.stubGlobal("fetch", fn);
+      return { fn, releaseSecond };
+    }
+
+    it("sem próxima página não mostra o botão", async () => {
+      mockFetch(CONVERSATIONS);
+      render(<HistoryPage />);
+      await screen.findByText("Sugestão número um");
+      expect(screen.queryByRole("button", { name: /Carregar mais/ })).not.toBeInTheDocument();
+    });
+
+    it("carrega a próxima página pelo cursor, com estado de carregamento acessível, e acrescenta à lista", async () => {
+      const { fn, releaseSecond } = mockPaged();
+      render(<HistoryPage />);
+      await screen.findByText("Sugestão número um");
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: "Carregar mais" }));
+      const busy = await screen.findByRole("button", { name: /Carregando/ });
+      expect(busy).toBeDisabled();
+      expect(busy).toHaveAttribute("aria-busy", "true");
+      expect(fn).toHaveBeenCalledWith("/api/history?limit=20&cursor=c2");
+
+      releaseSecond();
+      expect(await screen.findByText("Sugestão antiga")).toBeInTheDocument();
+      expect(screen.getByText("Sugestão número um")).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: "Remover análise" })).toHaveLength(3);
+      // Última página: o botão some.
+      await waitFor(() => expect(screen.queryByRole("button", { name: /Carregar mais|Carregando/ })).not.toBeInTheDocument());
+    });
+
+    it("falha ao carregar mais mantém a lista e avisa", async () => {
+      const { releaseSecond } = mockPaged({ failSecond: true });
+      render(<HistoryPage />);
+      await screen.findByText("Sugestão número um");
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: "Carregar mais" }));
+      releaseSecond();
+      await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith("Erro ao carregar mais análises"));
+      expect(screen.getByText("Sugestão número um")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Carregar mais" })).toBeEnabled();
+    });
+
+    it("busca com mais páginas por carregar avisa que considera só as análises carregadas", async () => {
+      mockPaged();
+      render(<HistoryPage />);
+      await screen.findByText("Sugestão número um");
+      await userEvent.type(screen.getByRole("searchbox", { name: /Buscar/ }), "Engraçado");
+      expect(await screen.findByText(/A busca considera só as análises já carregadas/)).toBeInTheDocument();
+    });
   });
 });

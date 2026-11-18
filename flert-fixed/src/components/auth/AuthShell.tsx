@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowLeft, Copy, ImageUp, SlidersHorizontal } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { fadeUp, useMotionSafe } from "@/lib/motion";
@@ -87,13 +87,13 @@ export function AuthShell({ title, description, eyebrow, footer, children }: Aut
         </div>
 
         <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
-          <motion.div initial="hidden" animate="show" variants={variants} className="w-full min-w-0 max-w-md">
+          <m.div initial="hidden" animate="show" variants={variants} className="w-full min-w-0 max-w-md">
             {eyebrow && <div className="mb-4">{eyebrow}</div>}
             <h1 className="font-display text-h1 text-text">{title}</h1>
             {description && <p className="mt-2 text-body text-text-2">{description}</p>}
             <div className="mt-8">{children}</div>
             {footer && <div className="mt-8 text-center text-sm text-text-2">{footer}</div>}
-          </motion.div>
+          </m.div>
         </div>
       </main>
     </div>

@@ -124,7 +124,7 @@ CSS: um arquivo, 51,6 kB (11,2 kB gzip). Fonte Inter via `next/font` (só o subs
 
 ## Média
 
-### M1. framer-motion completo em todas as rotas (35,5 kB gzip) — [proposto]
+### M1. framer-motion completo em todas as rotas (35,5 kB gzip) — [proposto] → **Feito (Tarefa 9)**
 - **Local:** 13 arquivos importam `motion`, entre eles `src/app/providers.tsx:5` (MotionConfig)
   e `src/components/landing/InteractiveDemo.tsx:4`. A landing carrega o chunk inteiro por causa da demo.
 - **Evidência:** o chunk `3258-*.js` (35,5 kB gzip) está no JS de `/`, `/analyze`, `/dashboard`,
@@ -135,7 +135,7 @@ CSS: um arquivo, 51,6 kB (11,2 kB gzip). Fonte Inter via `next/font` (só o subs
   (sheet, dialog, gates). Isso muda comportamento e quebraria testes de UI que renderizam fora do
   `Providers`. Precisa de uma tarefa própria, com QA visual.
 
-### M2. Cabinet Grotesk via stylesheet externo bloqueante — [proposto]
+### M2. Cabinet Grotesk via stylesheet externo bloqueante — [proposto] → **Pendente (Tarefa 9: licença)**
 - **Local:** `src/app/layout.tsx:52-56` (`<link rel="stylesheet" href="https://api.fontshare.com/v2/css?...">`).
 - **Evidência:** o CSS de um terceiro bloqueia o render: DNS + TLS de `api.fontshare.com` e depois o
   CSS. Os WOFF2 vêm de `cdn.fontshare.com` e não passam pelo `next/font` (sem preload, sem fallback
@@ -168,7 +168,7 @@ CSS: um arquivo, 51,6 kB (11,2 kB gzip). Fonte Inter via `next/font` (só o subs
 - **Correção:** `res.json().catch(() => ({}))`, que cai na mensagem padrão ("Erro ao analisar/gerar.
   Tente novamente."). Teste: `tests/ui/analyze-page.test.tsx` (+1).
 
-### M6. Pior caso da OpenAI passa do `maxDuration` — [proposto]
+### M6. Pior caso da OpenAI passa do `maxDuration` — [proposto] → **Feito (Tarefa 9)**
 - **Local:** `src/lib/ai/generate.ts:18` (`timeout: 30_000, maxRetries: 1`) e `:55` (`MAX_ATTEMPTS = 2`);
   `src/app/api/analyze/route.ts:8` (`maxDuration = 60`).
 - **Evidência:** timeout + retry = até 60 s numa tentativa. Se a OpenAI travar, a função morre em
@@ -177,19 +177,19 @@ CSS: um arquivo, 51,6 kB (11,2 kB gzip). Fonte Inter via `next/font` (só o subs
 - **Proposta:** prazo total (ex.: `AbortSignal.timeout(50_000)` compartilhado entre as tentativas),
   ou `timeout: 25_000`. Muda a política de retry, por isso fica com o dono.
 
-### M7. `/api/history` sem paginação — [proposto]
+### M7. `/api/history` sem paginação — [proposto] → **Feito (Tarefa 9)**
 - **Local:** `src/app/api/history/route.ts:16`. Devolve **todas** as conversas com todas as mensagens.
 - **Evidência:** cresce de forma linear: 50 análises/dia no plano pago ≈ 1.500 conversas e 4.500
   mensagens por mês numa resposta só.
 - **Proposta:** `take` + cursor (`?cursor=`) e carregar mais no front. Muda o contrato da API.
 
-### M8. Envio de e-mail em massa sequencial no admin — [proposto]
+### M8. Envio de e-mail em massa sequencial no admin — [proposto] → **Feito (Tarefa 9)**
 - **Local:** `src/app/api/admin/email/route.ts:163` (loop `await sendMail`), `maxDuration = 60`.
 - **Evidência:** a ~1–2 s por envio, listas acima de ~30–60 usuários estouram 60 s no meio do
   loop. A resposta se perde e parte dos e-mails já foi enviada.
 - **Proposta:** fila (Vercel Queues/cron), lotes paralelos limitados, ou um provedor com envio em lote.
 
-### M9. Neon: sem `directUrl` para migrations — [proposto]
+### M9. Neon: sem `directUrl` para migrations — [proposto] → **Documentado (Tarefa 9)**; schema sem mudança
 - **Local:** `prisma/schema.prisma:8-11` (só `url = env("DATABASE_URL")`).
 - **Evidência:** daqui não dá para saber se `DATABASE_URL` é a URL pooled (`-pooler`). Os
   `.env` não foram lidos. Com pooled (PgBouncer em modo transaction), `migrate deploy` não deve
@@ -227,16 +227,16 @@ CSS: um arquivo, 51,6 kB (11,2 kB gzip). Fonte Inter via `next/font` (só o subs
 | B1 | Sem `robots.txt`/`sitemap.xml` | não existiam | **[corrigido]** `src/app/robots.ts` (bloqueia `/api/`, `/admin`, área logada, `/auth/`) e `src/app/sitemap.ts` (só `/`). URL canônica em `SITE_URL` (`src/lib/seo.ts`), também usada no `metadataBase` |
 | B2 | Sem health check | — | **[corrigido]** `GET /api/health` → `{"status":"ok"}`, `no-store`, sem banco, versão ou env. Teste `tests/api/health.test.ts` |
 | B3 | Log do objeto de erro inteiro | `src/app/api/payment/route.ts` GET (`console.error(..., error)`) | **[corrigido]** `errorMessage(error)`: erros do Prisma viram só `Nome:código` |
-| B4 | Logs com `error.message` cru (erro do Prisma inclui a invocação com valores) | `api/history`, `api/stats`, `api/analyze*`, `api/webhooks/abacatepay` (catch), `lib/rate-limit.ts:46`, `lib/ai/run-analysis.ts:36,100,119` | [proposto] trocar por `errorMessage()` |
+| B4 | Logs com `error.message` cru (erro do Prisma inclui a invocação com valores) | `api/history`, `api/stats`, `api/analyze*`, `api/webhooks/abacatepay` (catch), `lib/rate-limit.ts:46`, `lib/ai/run-analysis.ts:36,100,119` | **Feito (Tarefa 9)**: todos os logs do servidor usam `errorMessage()`; guarda em `tests/config/safe-logs.test.ts` |
 | B5 | `findUserByEmail` faz `ILIKE` (varredura em `User`) a cada e-mail não encontrado | `src/lib/users.ts:13` | [proposto] remover o fallback depois de aplicar `normalize_emails` (o próprio comentário prevê isso) |
 | B6 | `/api/admin/users` carrega todos os usuários e conta planos em memória | `src/app/api/admin/users/route.ts:17-34` | [proposto] `groupBy` por status + paginação |
 | B7 | Páginas logadas são shells estáticos com fetch no cliente (HTML → JS → `/api/stats`) | build: `○ /dashboard`, `○ /analyze` | [proposto] prefetch no servidor numa tarefa de arquitetura |
 | B8 | Sem `global-error.tsx` (erro no layout raiz cai na página padrão do Next) | `src/app/` | [proposto] |
-| B9 | `package.json` sem `engines` (Node local 24.15; Vercel usa o que estiver no painel) | `package.json` | [proposto] `"engines": { "node": "20.x \|\| 22.x" }`, alinhado ao painel (mudar isso troca o Node da Vercel, por isso não foi aplicado) |
+| B9 | `package.json` sem `engines` (Node local 24.15; Vercel usa o que estiver no painel) | `package.json` | [proposto] `"engines": { "node": "20.x \|\| 22.x" }`, alinhado ao painel (mudar isso troca o Node da Vercel, por isso não foi aplicado) → **Feito (Tarefa 9)**: `"engines": { "node": ">=20" }` |
 | B10 | `legacy-peer-deps=true` esconde conflito de peer: `next-auth@4.24.15` pede `nodemailer ^7.0.7`, instalado **10.x** | `.npmrc`, `netlify.toml` | [proposto] revisar no upgrade. `netlify.toml` está obsoleto (o deploy é na Vercel) |
 | B11 | `fix.sql` na raiz com um ID de usuário real e `UPDATE` para LIFETIME (repositório público) | `fix.sql` | [proposto] apagar |
-| B12 | 5,5 MB de assets não referenciados (`video.mp4` 3,4 MB, `scene-4.jpg` 1,7 MB…) | `public/couple/` (`grep couple src` = 0) | [proposto] apagar |
-| B13 | `.env.example` lista variáveis que o código não lê | `UPLOADTHING_SECRET`, `UPLOADTHING_APP_ID`, `UPLOADTHING_TOKEN`, `PRODUCT_PRICE_CENTS`, `NEXT_PUBLIC_APP_NAME` (grep `process.env` = 0) | [proposto] remover. Todas as variáveis lidas pelo código estão no exemplo |
+| B12 | 5,5 MB de assets não referenciados (`video.mp4` 3,4 MB, `scene-4.jpg` 1,7 MB…) | `public/couple/` (`grep couple src` = 0) | **Feito (Tarefa 9)**: apagado (grep em src, public, docs, tests, next.config, CSS: só o content-guard, que proíbe o uso) |
+| B13 | `.env.example` lista variáveis que o código não lê | `UPLOADTHING_SECRET`, `UPLOADTHING_APP_ID`, `UPLOADTHING_TOKEN`, `PRODUCT_PRICE_CENTS`, `NEXT_PUBLIC_APP_NAME` (grep `process.env` = 0) | **Feito (Tarefa 9)**: removidas (e a seção UploadThing do README). `DIRECT_URL` documentado como opcional, comentado |
 
 ### Conferido e sem problema
 - **Headers de segurança/CSP** intactos (`tests/config/security-headers.test.ts`; resposta de
@@ -367,6 +367,198 @@ análise de print e de texto (cota); `/admin` (listar, mudar plano, excluir usu�
 React 19); console sem violação de CSP nem erro de hidratação.
 
 ---
+
+## Tarefa 9 — melhorias de performance
+
+Ambiente: Next 15.5.29, React 19.2, framer-motion 11.18.2, Node local v24.15.0,
+`$env:OPENAI_API_KEY=$null; npx next build`. Nenhuma dependência nova.
+
+| Proposta | Status | Resumo |
+|---|---|---|
+| M1 LazyMotion | **Feito** | `m` + `LazyMotion` (`domAnimation` síncrono, `strict`); `domMax` só no tone-chip, sob demanda |
+| M2 Cabinet Grotesk self-host | **Pendente** | licença permite self-host, mas proíbe pôr os arquivos em repositório público (ver abaixo) |
+| M6 Prazo total da OpenAI | **Feito** | 45 s para todas as tentativas e retries; estouro = `openai_error` → cota liberada |
+| M7 Paginação do histórico | **Feito** | cursor + `limit` (padrão 20, máx. 50), compatível com o cliente antigo; "Carregar mais" |
+| M8 E-mail em massa | **Feito** | 5 envios em paralelo, corte de 30 s, prazo de 45 s; devolve `remaining` + `nextCursor` |
+| M9 `DIRECT_URL` | **Documentado** | só comentado no `.env.example`; `schema.prisma` sem mudança |
+| B4 logs com `error.message` | **Feito** | 13 logs do servidor → `errorMessage()` |
+| B9 `engines` | **Feito** | `"node": ">=20"` |
+| B12 `public/couple/` | **Feito** | 5,5 MB apagados |
+| B13 `.env.example` | **Feito** | 5 variáveis não lidas removidas |
+
+### Bundle: antes × depois (M1)
+
+`First Load JS` do `next build`:
+
+| Rota | Antes | Depois | Diferença |
+|---|---|---|---|
+| `/` | 159 kB | **131 kB** | −28 kB |
+| `/analyze` | 173 kB | **145 kB** | −28 kB |
+| `/dashboard` | 165 kB | **137 kB** | −28 kB |
+| `/history` | 139 kB | 139 kB | 0 (página +1,2 kB do "Carregar mais") |
+| `/pricing` | 134 kB | 134 kB | 0 |
+| `/settings` | 195 kB | 167 kB | −28 kB |
+| `/admin` | 194 kB | 167 kB | −27 kB (página +0,3 kB do progresso do envio) |
+| `/auth/login` | 172 kB | 144 kB | −28 kB |
+| `/auth/register` | 186 kB | 158 kB | −28 kB |
+| Compartilhado | 103 kB | 103 kB | — |
+
+JS real por rota (script sobre `.next/app-build-manifest.json`: união de layout raiz + layout do
+grupo + página, gzip). Mesmo método antes e depois:
+
+| Rota | Antes | Depois |
+|---|---|---|
+| `/` | 178,7 kB | 170,6 kB |
+| `/analyze` | 210,5 kB | 202,9 kB |
+| `/dashboard` | 196,6 kB | 187,7 kB |
+| `/history` | 198,3 kB | 191,3 kB |
+| `/pricing` | 195,8 kB | 188,6 kB |
+| `/settings` | 213,0 kB | 205,0 kB |
+
+O chunk do framer-motion no carregamento inicial caiu de 35,5 kB para ~20 kB gzip, mais ~5 kB de
+definições de features. As features de layout (`domMax`) ficam num chunk assíncrono que só o
+tone-chip pede. No smoke, ele carregou na landing depois da hidratação, e o indicador do tom ficou
+com o `transform` controlado pelo framer.
+
+**Como ficou:**
+- `src/components/motion/MotionProvider.tsx`: `<MotionConfig reducedMotion="user">` (igual a antes)
+  + `<LazyMotion features={domAnimation} strict>`. `domAnimation` cobre animate, variants,
+  exit/`AnimatePresence` e hover/tap/focus, ou seja, tudo o que o app usa fora do `layoutId`.
+  `strict` faz um `motion.*` perdido lançar erro em dev e nos testes.
+- `src/components/ui/tone-chip.tsx`: o único `layoutId` do app. Fica num `<LazyMotion>` próprio
+  que carrega `domMax` via `import("@/components/motion/dom-max")`. Até o chunk chegar (uma única
+  vez), o indicador aparece sem animar a troca. Ninguém usa drag nem `layout`.
+- 11 componentes trocaram `motion.*` por `m.*`. Variants, transições, `useReducedMotion`,
+  `useMotionSafe` e `reduced()` não mudaram.
+- Testes: `tests/config/lazy-motion.test.ts` (nenhum `motion` importado, `domMax` só dinâmico) e
+  `tests/ui/motion-provider.test.tsx` (`m` renderiza, `motion` lança em strict, a saída do
+  `AnimatePresence` conclui).
+- Fora do `Providers` (testes de UI isolados), os componentes `m` renderizam sem animar e o
+  `AnimatePresence` desmonta na hora. Todos os testes de UI existentes passaram sem mudança.
+
+### M2: licença da Cabinet Grotesk (não baixada)
+
+Fonte: **ITF Free Font License (FFL), "Version 2.0 - 17 Aug 2026"**, publicada em
+https://www.fontshare.com/licenses/itf-ffl. A página é uma SPA: o texto foi lido do bundle
+`https://www.fontshare.com/js/main.1b75f4dc.js`, chave `itf_ffl`. Trechos:
+
+- **01 Grant of License:** "You may self-host the Font Software on your own servers or
+  infrastructure for use on your own websites and applications, including through standard webfont
+  technologies such as CSS @font-face. Self-hosting by end users is permitted and recommended…"
+- **02 Limitations of Usage:** "The Font Software may not … be distributed … or otherwise made
+  available to any other person or entity … This includes distributing the Font Software through
+  another font website, font library, marketplace, **repository**, download service … or by …
+  **publicly accessible servers**…". Também proíbe "subsetting, format conversion".
+- **08 Termination:** em caso de "unauthorized … redistribution", o licenciador pode encerrar a
+  licença na hora.
+
+**Conclusão:** servir os WOFF2 do próprio site é permitido. O deploy da Vercel, porém, sai do
+repositório Git, e **o repositório do projeto é público**. Commitar os arquivos (`src/fonts/` ou
+`public/fonts/`) deixaria a fonte disponível para download num repositório público, que a seção
+02 proíbe expressamente. Por isso não baixei nada, e o `<link>` da Fontshare e a CSP seguem como
+estavam. Daqui também não foi possível acessar `api.fontshare.com` nem `cdn.fontshare.com`
+(timeout). No smoke local, a navegação ficou presa ~10 s nesse CSS bloqueante, o que reforça o
+ganho de M2.
+
+**Opções para o dono:**
+1. Tornar o repositório privado. Aí: baixar o kit oficial (WOFF2 500/700/800, sem converter nem
+   subsetar), `next/font/local` com `display: "swap"` e `variable: "--font-cabinet"`, trocar
+   `'Cabinet Grotesk'` por `var(--font-cabinet)` no `displayStack` do `tailwind.config.ts`, remover os 3
+   `<link>` do `layout.tsx` e tirar `https://api.fontshare.com`/`https://cdn.fontshare.com` de
+   `style-src`/`font-src` (e ajustar `tests/config/security-headers.test.ts`).
+2. Manter o repositório público e trocar a fonte de display por uma OFL (ex.: via `next/font/google`),
+   que pode ser redistribuída. É decisão de marca.
+3. Manter como está (o `display=swap` já evita texto invisível; o custo é o CSS bloqueante de terceiro).
+
+### M6: prazo total da OpenAI
+
+- `src/lib/ai/generate.ts`: `OPENAI_REQUEST_TIMEOUT_MS = 30_000` e `OPENAI_MAX_RETRIES = 1` (os mesmos
+  valores de antes), mais o novo `OPENAI_DEADLINE_MS = 45_000`, que vale para as 2 tentativas de
+  saída inválida e para os retries do SDK somados. Cada chamada recebe um `AbortSignal` compartilhado
+  e `timeout = min(30 s, tempo restante)`. Uma corrida com o prazo garante o retorno mesmo se o
+  cliente ignorar o signal. Sem sobra de tempo, a 2ª tentativa não é feita (`invalid_output`, como
+  antes).
+- Estourar o prazo é `openai_error`. O `run-analysis.ts` não mudou: esse caminho já chamava
+  `releaseDailyUsage` (libera a reserva sem gastar uma das 3 devoluções diárias) e responde 502 com
+  "esta tentativa não foi descontada". Nenhuma regra nova de devolução.
+- Orçamento: `maxDuration = 60` em `/api/analyze` e `/api/analyze/text`, 45 s de IA e ~15 s para
+  sessão, rate limit, plano, reserva e gravação.
+- Testes: `tests/lib/generate-deadline.test.ts` (fake timers: OpenAI travada com e sem respeitar o
+  signal, prazo somado entre tentativas, sem timer pendente) e `tests/api/analyze-deadline.test.ts`
+  (rota real + generate real, SDK travado: 502 honesto, `releaseDailyUsage` chamado, sem `refund`,
+  nada gravado).
+
+### M7: paginação do histórico
+
+- `GET /api/history?limit=<1..50>&cursor=<id>`. Ordem `createdAt desc, id desc` (usa o índice
+  `Conversation(userId, createdAt)`), `take = limit + 1` para saber se há próxima página e
+  `cursor` + `skip: 1`. Resposta: `{ conversations, nextCursor }`. Validação com zod em
+  `src/lib/validation/history.ts`: `limit` só aceita dígitos, e `cursor` usa o `idSchema`. Fora
+  disso, 400 sem tocar no banco. O filtro continua sendo o `userId` da sessão.
+- **Compatível:** sem `limit` e sem `cursor`, a consulta e a lista completa são as de antes (mais
+  `nextCursor: null`). Isso cobre o JS antigo em cache durante o rollout. Proposta para depois:
+  aplicar o limite padrão também nesse caso. `DELETE` não mudou.
+- `/history`: pede `?limit=20`. Quando há `nextCursor`, mostra o botão **"Carregar mais"**
+  (`loading` do `Button` com `aria-busy`, desabilitado e "Carregando…"), acrescenta sem duplicar e
+  mostra toast se falhar. Durante uma busca com páginas por carregar, avisa: "A busca considera só
+  as análises já carregadas. Use “Carregar mais” para incluir as anteriores."
+- Testes: `tests/api/history.test.ts` (16) e `tests/ui/history-page.test.tsx` (+4). O mock da 1ª
+  página no teste de UI passou de `/api/history` para `/api/history?limit=20`, porque é a nova URL
+  pedida pelo cliente.
+
+### M8: e-mail em massa do admin
+
+- `src/app/api/admin/email/route.ts` + `src/lib/email/bulk.ts`: envios em lotes de
+  `EMAIL_CONCURRENCY = 5`. Não começa um lote novo depois de `EMAIL_START_CUTOFF_MS = 30 s`, e os
+  envios em andamento têm prazo de `EMAIL_SEND_DEADLINE_MS = 45 s`. Um envio que passa do prazo conta
+  como falha e **não** é reenviado na próxima chamada, porque pode ter sido entregue.
+- Resposta: `{ sent, failed, total, processed, remaining, nextCursor }` (os 3 primeiros campos não
+  mudaram). Para continuar, o admin chama de novo com `cursor = nextCursor`. A ordem é estável por
+  id do usuário, então nada se repete.
+- Seleção de destinatários idêntica: mesmos `where`, só com `id` acrescentado no `select` para
+  ordenar. Checagens de origem (CSRF) e de admin continuam antes de tudo. E-mail nulo continua
+  pulado sem contar como falha. O envio para um usuário só não mudou.
+- `/admin`: painel `role="status"` "Progresso do envio" com "X enviados · Y falharam · Z restantes
+  (de N)" e o botão **"Continuar envio (Z restantes)"**, que repete o mesmo payload com o cursor.
+  Ao terminar: "Envio concluído: …". Os campos do e-mail personalizado só são limpos no fim.
+- Ritmo esperado: a ~1–2 s por e-mail, ~75–150 envios por chamada.
+- Testes: `tests/api/admin-email-batch.test.ts` (9) e `tests/ui/admin-page.test.tsx` (+2).
+
+### Itens pequenos
+
+- **B4:** 13 logs em `api/admin/users`, `api/analyze`, `api/analyze/text`, `api/payment`, `api/stats`,
+  `api/webhooks/abacatepay` (2), `lib/ai/generate`, `lib/ai/run-analysis` (3), `lib/auth` e
+  `lib/rate-limit` passaram para `errorMessage()`. Guarda: `tests/config/safe-logs.test.ts`. Os
+  `toast.error(e.message)` do cliente mostram mensagens da própria API e ficaram como estavam.
+- **B9:** `"engines": { "node": ">=20" }`. O `next build` local roda em Node 24.15. O `netlify.toml`
+  (obsoleto) usa 20. **Na Vercel, `engines` tem prioridade sobre o painel**, e `>=20` faz ela usar a
+  maior versão suportada (hoje 24.x), com um aviso no log de build. Conferir na Preview.
+- **B12:** `public/couple/` apagado (6 arquivos, 5,5 MB). O grep em `src`, `public`, `docs`,
+  `tests`, `next.config.js`, `tailwind.config.ts` e CSS só encontrou o `content-guard` (que proíbe o
+  uso) e menções em docs.
+- **B13:** `UPLOADTHING_SECRET/APP_ID/TOKEN`, `PRODUCT_PRICE_CENTS` e `NEXT_PUBLIC_APP_NAME` saíram
+  do `.env.example` (0 ocorrências no código) e a seção UploadThing saiu do README. `DIRECT_URL`
+  entrou só como comentário opcional (`DATABASE_URL=<direta> npx prisma migrate deploy`), e
+  `schema.prisma` ficou sem `directUrl`.
+- `fix.sql`: não tocado.
+
+### Checagens
+
+`npx vitest run` **763/763** (63 arquivos; antes 709) · `npx tsc --noEmit` ok · `npm run lint` ok ·
+`next build` ok.
+
+**Smoke** (`next start -p 3461`, env fictício só no processo): `/` 200 com CSP presente,
+`/api/health` 200, `/api/history?limit=20` sem sessão 401, `/dashboard` 307. A Inter vem da mesma
+origem (`/_next/static/media/*.woff2`). A Cabinet Grotesk **ainda** vem de `api.fontshare.com` (M2
+pendente). Console: sem violação de CSP nem erro do framer. Só aparecem o timeout da Fontshare e os
+404 de `/_vercel/*` (normais fora da Vercel).
+
+**QA numa Preview da Vercel:** animações de todas as telas (sheet, dialogs, gates, troca de passos
+do `/analyze`, stagger do dashboard/settings, cards de sugestão) com e sem prefers-reduced-motion;
+indicador do tom deslizando na landing e no `/analyze` (a 1ª troca pode não animar enquanto o chunk
+carrega); "Carregar mais" no `/history` com mais de 20 análises; envio em massa com lista real
+(conferir "Continuar envio"); versão do Node no log de build (B9); análise com a OpenAI lenta
+(502 honesto e cota intacta).
 
 ## O que o dono precisa fazer
 
