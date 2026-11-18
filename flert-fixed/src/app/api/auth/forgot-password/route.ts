@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import nodemailer from "nodemailer";
+import { createMailTransport } from "@/lib/email/transport";
 import crypto from "node:crypto";
 import { getIp, rateLimit } from "@/lib/rate-limit";
 import { errorMessage, parseJsonBody, tooMany } from "@/lib/http";
@@ -8,15 +8,7 @@ import { forgotPasswordSchema } from "@/lib/validation/auth";
 import { findUserByEmail } from "@/lib/users";
 import { escapeHtml } from "@/lib/email/escape";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+const transporter = createMailTransport();
 
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hora
 const RESEND_COOLDOWN_MS = 60 * 1000; // 1 e-mail por minuto por conta

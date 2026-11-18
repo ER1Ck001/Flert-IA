@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import crypto from "node:crypto";
 import { EXTERNAL_ID_PREFIX } from "@/lib/payments/abacatepay-webhook";
 import { rateLimit } from "@/lib/rate-limit";
-import { assertSameOrigin, tooMany } from "@/lib/http";
+import { assertSameOrigin, errorMessage, tooMany } from "@/lib/http";
 import {
   PLAN_CONFIG,
   getEffectivePlan,
@@ -13,6 +13,10 @@ import {
   planFromCheckoutKey,
   type PaidPlan,
 } from "@/lib/plans";
+
+// Chamada ao gateway com timeout próprio (abaixo) dentro do limite da função.
+export const maxDuration = 30;
+const GATEWAY_TIMEOUT_MS = 15_000;
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +39,7 @@ export async function GET(request: NextRequest) {
       expiresAt: subscription?.expiresAt,
     });
   } catch (error) {
-    console.error("Payment status error:", error);
+    console.error("Payment status error:", errorMessage(error));
     return NextResponse.json(
       { error: "Erro ao buscar status do pagamento" },
       { status: 500 }
@@ -106,6 +110,7 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(GATEWAY_TIMEOUT_MS),
     });
 
     if (!abacateResponse.ok) {

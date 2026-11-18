@@ -34,8 +34,14 @@ const nextConfig = {
   poweredByHeader: false,
   experimental: {
     serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
+    // src/instrumentation.ts valida as variáveis de ambiente na subida do servidor.
+    instrumentationHook: true,
   },
   images: {
+    // Image Optimizer (/_next/image) desligado: o Next 14.2.x tem CVEs nele sem patch na linha 14
+    // (ver docs/producao-performance.md) e só os avatares do /admin o usavam. Previews em data: já
+    // eram não otimizados. Reativar ao migrar para Next >= 15.5.x com patch.
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "lh3.googleusercontent.com" },

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import nodemailer from "nodemailer";
+import { createMailTransport } from "@/lib/email/transport";
 import { getEffectivePlan, isPlanExpired } from "@/lib/plans";
 import { assertSameOrigin, errorMessage, isPrismaError, parseJsonBody, tooMany } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
@@ -13,15 +13,7 @@ import { findUserByEmail } from "@/lib/users";
 import { emailFirstName, escapeHtml } from "@/lib/email/escape";
 import { isReservedAdminEmail } from "@/lib/admin";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+const transporter = createMailTransport();
 
 const bad = (error: string) => NextResponse.json({ error }, { status: 400 });
 

@@ -83,6 +83,18 @@ describe("POST /api/payment", () => {
     expect((await POST(r)).status).toBe(403);
   });
 
+  it("chamada ao gateway tem timeout (não segura a função até o limite da plataforma)", async () => {
+    await POST(req({ plan: "monthly" }));
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("500 (erro tratado) quando o gateway não responde a tempo", async () => {
+    fetchMock.mockRejectedValue(Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" }));
+    const res = await POST(req({ plan: "monthly" }));
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Erro ao criar pagamento" });
+  });
+
   it("502 quando o gateway falha", async () => {
     fetchMock.mockResolvedValue(new Response("boom", { status: 500 }));
     expect((await POST(req({ plan: "monthly" }))).status).toBe(502);

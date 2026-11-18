@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import nodemailer from "nodemailer";
+import { createMailTransport } from "@/lib/email/transport";
 import {
   authenticateWebhook,
   decideActivation,
@@ -13,15 +13,10 @@ import { PLAN_LABELS, getPlanBenefits, type PaidPlan } from "@/lib/plans";
 
 import { escapeHtml } from "@/lib/email/escape";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+// Transação + e-mail de boas-vindas (SMTP com timeouts em lib/email/transport; pior caso ~40 s).
+export const maxDuration = 60;
+
+const transporter = createMailTransport();
 
 async function sendWelcomeEmail(email: string, name: string, plan: PaidPlan) {
   const firstName = escapeHtml(name.split(" ")[0] || "você");

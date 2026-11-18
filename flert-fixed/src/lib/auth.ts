@@ -4,7 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import type { Adapter, AdapterUser } from "next-auth/adapters";
 import { prisma } from "@/lib/prisma";
-import nodemailer from "nodemailer";
+import { createMailTransport } from "@/lib/email/transport";
 import { authorizeCredentials } from "@/lib/auth-credentials";
 import { normalizeEmail } from "@/lib/validation/auth";
 import { emailFirstName, escapeHtml, subjectFirstName } from "@/lib/email/escape";
@@ -26,12 +26,7 @@ function normalizedEmailAdapter(): Adapter {
   };
 }
 
-const transporter = nodemailer.createTransport({
-  host:   process.env.SMTP_HOST,
-  port:   Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
-});
+const transporter = createMailTransport();
 
 const providers: NextAuthOptions["providers"] = [
   CredentialsProvider({

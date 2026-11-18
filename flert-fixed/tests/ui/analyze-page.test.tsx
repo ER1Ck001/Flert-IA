@@ -176,6 +176,24 @@ describe("Analyze page", () => {
     expect(bodies[1]).toBe(bodies[0]);
   });
 
+  it("resposta sem JSON (ex.: 413/504 da plataforma) mostra a mensagem padrão, não um erro de parse", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/api/stats") return { ok: true, status: 200, json: async () => PAID_STATS } as Response;
+        return {
+          ok: false,
+          status: 504,
+          json: async () => { throw new SyntaxError("Unexpected token 'A', \"An error o\"... is not valid JSON"); },
+        } as unknown as Response;
+      })
+    );
+    render(<AnalyzePage />);
+    await openSituation();
+    expect(await screen.findByText("Erro ao gerar", { exact: false }, T)).toBeInTheDocument();
+    expect(screen.queryByText(/not valid JSON|Unexpected token/)).not.toBeInTheDocument();
+  });
+
   it("falha ao copiar avisa o usuário e não mostra 'Copiado'", async () => {
     mockFetch({
       "/api/stats": { body: PAID_STATS },

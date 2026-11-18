@@ -7,6 +7,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
 import { FacebookPixel } from "@/components/consent/FacebookPixel";
 import { Toaster } from "@/components/ui/toaster";
+import { SITE_URL } from "@/lib/seo";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -15,7 +16,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://flertia.com.br"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Flert IA — Seu Assistente de Conversas",
     template: "%s · Flert IA",

@@ -19,6 +19,7 @@ import { UploadDropzone } from "@/components/analyze/UploadDropzone";
 import { UsageMeter } from "@/components/analyze/UsageMeter";
 import { TONES as TONES_ALL, TONES_NO_STORIES } from "@/components/analyze/tones";
 import { DUR, EASE } from "@/lib/motion";
+import { shrinkImageDataUrl } from "@/lib/image-compress";
 
 const MAX_CONTEXT_CHARS = 2000; // mesmo limite validado no servidor
 
@@ -91,7 +92,13 @@ export default function AnalyzePage() {
     if (!file.type.startsWith("image/")) { toast.error("Envie uma imagem válida"); return; }
     if (file.size > 10 * 1024 * 1024)   { toast.error("Máximo 10 MB");            return; }
     const reader = new FileReader();
-    reader.onloadend = () => { setImage(reader.result as string); setSuggestions([]); };
+    reader.onloadend = async () => {
+      // Prints grandes são reduzidos no navegador: a Vercel recusa corpos acima de 4,5 MB.
+      const raw = reader.result;
+      const dataUrl = typeof raw === "string" ? await shrinkImageDataUrl(raw) : null;
+      setImage(dataUrl);
+      setSuggestions([]);
+    };
     reader.readAsDataURL(file);
   };
 
@@ -143,7 +150,8 @@ export default function AnalyzePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: image, style: tone, context: context.trim() || undefined }),
       });
-      const data = await res.json();
+      // Resposta sem JSON (413/504 da plataforma) cai na mensagem padrão.
+      const data = await res.json().catch(() => ({}));
       if (res.status === 403) { handleForbidden(data); return; }
       if (res.status === 429 && data.limitReached) { limitReachedRef.current = true; setLimitReached(true); setTodayCount(data.todayCount ?? dailyLimit ?? 0); throw new Error(data.error); }
       if (!res.ok) throw new Error(data.error || "Erro ao analisar");
@@ -167,7 +175,8 @@ export default function AnalyzePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ context: context.trim(), style: tone, mode }),
       });
-      const data = await res.json();
+      // Resposta sem JSON (413/504 da plataforma) cai na mensagem padrão.
+      const data = await res.json().catch(() => ({}));
       if (res.status === 403) { handleForbidden(data); return; }
       if (res.status === 429 && data.limitReached) { limitReachedRef.current = true; setLimitReached(true); setTodayCount(data.todayCount ?? dailyLimit ?? 0); throw new Error(data.error); }
       if (!res.ok) throw new Error(data.error || "Erro ao gerar");

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import nodemailer from "nodemailer";
+import { createMailTransport } from "@/lib/email/transport";
 import { isAdminUser } from "@/lib/admin";
 import { assertSameOrigin, errorMessage, parseJsonBody } from "@/lib/http";
 import { adminEmailSchema } from "@/lib/validation/admin";
@@ -12,15 +12,7 @@ export const maxDuration = 60; // seconds — allows sending to large user lists
 
 const APP_URL = escapeHtml(process.env.NEXT_PUBLIC_APP_URL || "https://flertia.com.br");
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+const transporter = createMailTransport();
 
 function baseWrapper(content: string) {
   return `<!DOCTYPE html>
