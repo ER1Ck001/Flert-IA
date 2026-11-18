@@ -78,7 +78,15 @@ function onlyOpacity(target: unknown): unknown {
 export function reduced(v: Variants): Variants {
   const out: Variants = {};
   for (const [key, value] of Object.entries(v)) {
-    out[key] = (typeof value === "function" ? value : onlyOpacity(value)) as Variants[string];
+    const base = typeof value === "function" ? value : onlyOpacity(value);
+    // Variantes só de deslocamento (ex.: sheetUp) ficariam vazias: entra/sai sem transição.
+    // Garante um fade simples no lugar.
+    if (typeof base === "object" && base !== null && !("opacity" in base)) {
+      const fallback = key === "hidden" || key === "exit" ? 0 : 1;
+      out[key] = { ...base, opacity: fallback } as Variants[string];
+    } else {
+      out[key] = base as Variants[string];
+    }
   }
   return out;
 }

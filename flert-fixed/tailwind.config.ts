@@ -103,15 +103,16 @@ const config = {
           foreground: 'hsl(var(--card-foreground))',
         },
 
-        // Alias permanente (admin usa brand-*): escala violeta do Tailwind.
+        // Alias permanente (admin usa brand-*): escala violeta. 500 = #7C3AED (5,7:1 com texto
+        // branco — #8B5CF6 dava 4,2:1 e reprovava no AA em `bg-brand-500 text-white`).
         brand: {
           50: '#F5F3FF',
           100: '#EDE9FE',
           200: '#DDD6FE',
           300: '#C4B5FD',
           400: '#A78BFA',
-          500: '#8B5CF6',
-          600: '#7C3AED',
+          500: '#7C3AED',
+          600: '#6D28D9',
           700: '#6D28D9',
           800: '#5B21B6',
           900: '#4C1D95',

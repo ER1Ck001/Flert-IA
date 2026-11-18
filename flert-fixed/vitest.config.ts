@@ -10,7 +10,8 @@ export default defineConfig({
   test: {
     environment: "node",
     // Só os testes de UI rodam em jsdom; API/lib/config continuam em node.
-    environmentMatchGlobs: [["tests/ui/**", "jsdom"]],
+    // "**/" no início: casa tanto "C:/Users/…" (PowerShell) quanto "/c/Users/…" (Git Bash).
+    environmentMatchGlobs: [["**/tests/ui/**", "jsdom"]],
     include: ["src/**/*.test.ts", "tests/**/*.test.ts", "tests/**/*.test.tsx"],
     setupFiles: ["./tests/setup.ts", "./tests/ui/setup.ts"],
     clearMocks: true,

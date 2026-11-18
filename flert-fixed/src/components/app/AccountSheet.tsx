@@ -6,7 +6,8 @@ import type { Session } from "next-auth";
 import { ChevronRight, LifeBuoy, LogOut, Zap } from "lucide-react";
 import { Sheet } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ACCOUNT_NAV, PREMIUM_HREF, SUPPORT_EMAIL, SUPPORT_URL, initials } from "./nav-items";
+import { usePathname } from "next/navigation";
+import { ACCOUNT_NAV, PREMIUM_HREF, SUPPORT_EMAIL, SUPPORT_URL, initials, isActivePath } from "./nav-items";
 
 export interface AccountSheetProps {
   open: boolean;
@@ -21,6 +22,7 @@ const rowClass =
 /** Folha "Conta" (mobile): Perfil, Configurações, Suporte, Seja Premium e Sair. */
 export function AccountSheet({ open, onOpenChange, user }: AccountSheetProps) {
   const close = () => onOpenChange(false);
+  const pathname = usePathname();
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange} title="Conta" hideTitle>
@@ -41,7 +43,13 @@ export function AccountSheet({ open, onOpenChange, user }: AccountSheetProps) {
         {ACCOUNT_NAV.map((item) => {
           const Icon = item.icon;
           return (
-            <Link key={item.href} href={item.href} onClick={close} className={rowClass}>
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={close}
+              aria-current={isActivePath(pathname, item.href) ? "page" : undefined}
+              className={rowClass}
+            >
               <Icon className="h-5 w-5 text-text-2" aria-hidden />
               <span className="flex-1">{item.name}</span>
               <ChevronRight className="h-4 w-4 text-text-3" aria-hidden />

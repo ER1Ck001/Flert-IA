@@ -152,10 +152,17 @@ html:has([data-bottom-nav]) {
    COMPONENTES
 ══════════════════════════════════════ */
 @layer components {
+  /* Celular: fundo quase sólido, sem blur (barras fixas sobre conteúdo que rola pesam em
+     Android de entrada). Desktop (lg+): vidro com blur. */
   .glass {
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-    backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    background: rgb(var(--surface) / .95);
+  }
+  @media (min-width: 1024px) {
+    .glass {
+      background: var(--glass-bg);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+      backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+    }
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass {
@@ -185,25 +192,3 @@ html:has([data-bottom-nav]) {
     padding-bottom: calc(var(--bottom-ui) + 16px);
   }
 }
-
-/* ══════════════════════════════════════
-   LEGACY — landing antiga (remover na 4.2)
-══════════════════════════════════════ */
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.chat-bubble-ai   { border-radius: 18px 18px 18px 5px  !important; }
-.chat-bubble-user { border-radius: 18px 18px 5px  18px !important; }
-.chat-phone       { border-radius: 38px !important; }
-.chat-notch       { border-radius: 999px !important; }
-.chat-avatar      { border-radius: 999px !important; }
-.chat-pill        { border-radius: 999px !important; }
-.chat-card        { border-radius: 20px !important; }
-.chat-tag         { border-radius: 10px !important; }
