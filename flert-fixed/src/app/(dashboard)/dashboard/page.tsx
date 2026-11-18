@@ -14,7 +14,11 @@ import {
   CreditCard,
 } from "lucide-react";
 import Link from "next/link";
-import { MagicCard, HoverCard } from "@/components/ui/magic-card";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Spinner } from "@/components/ui/spinner";
+import { fadeUp, stagger, useMotionSafe } from "@/lib/motion";
 
 function getGreeting(name?: string | null) {
   const h = new Date().getHours();
@@ -36,21 +40,13 @@ const steps = [
   { n: "03", t: "Use a sugestão",   d: "3 opções prontas para copiar" },
 ];
 
-const container = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08 } },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 260, damping: 22 } },
-};
-
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [stats, setStats] = useState({ total: 0, thisWeek: 0 });
+  const container = useMotionSafe(stagger(0.06));
+  const item = useMotionSafe(fadeUp);
 
   useEffect(() => {
     setMounted(true);
@@ -68,15 +64,16 @@ export default function DashboardPage() {
 
   if (!mounted || status === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="h-7 w-7 rounded-full border-2 border-brand-500/20 border-t-brand-500 animate-spin" />
+      <div role="status" className="flex items-center justify-center min-h-[60vh] text-violet-400">
+        <Spinner size="lg" />
+        <span className="sr-only">Carregando…</span>
       </div>
     );
   }
 
   return (
     <motion.div
-      className="max-w-2xl space-y-10"
+      className="max-w-3xl space-y-8"
       variants={container}
       initial="hidden"
       animate="show"
@@ -84,124 +81,104 @@ export default function DashboardPage() {
 
       {/* ── Greeting ── */}
       <motion.div variants={item}>
-        <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
-          {getGreeting(session?.user?.name)}
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1.5">
-          Pronto para conquistar mais conversas hoje?
-        </p>
+        <PageHeader
+          className="mb-0"
+          eyebrow="Início"
+          title={getGreeting(session?.user?.name)}
+          description="Pronto para conquistar mais conversas hoje?"
+        />
       </motion.div>
 
       {/* ── Primary CTA ── */}
-      <motion.div variants={item} style={{ perspective: "1200px" }}>
-        <Link href="/analyze" className="block group">
-          <MagicCard className="rounded-2xl border border-brand-500/20 bg-brand-500/[0.04] p-6 hover:border-brand-500/35 hover:bg-brand-500/[0.07] transition-colors duration-200">
-            {/* ambient glow */}
-            <div className="absolute -top-20 -right-20 w-56 h-56 bg-brand-500/[0.08] rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative flex items-center gap-5">
-              <motion.div
-                whileHover={{ rotate: [0, -8, 8, 0] }}
-                transition={{ duration: 0.4 }}
-                className="h-12 w-12 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center flex-shrink-0"
+      <motion.div variants={item}>
+        <Link
+          href="/analyze"
+          className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        >
+          <Card className="border-signal border-transparent relative overflow-hidden p-5 shadow-glow-violet transition-shadow duration-200 group-hover:shadow-glow-pink sm:p-6">
+            {/* brilho ambiente (gradiente, sem blur) */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[radial-gradient(closest-side,rgb(var(--pink-500)/.18),transparent)]"
+            />
+            <div className="relative flex items-center gap-4">
+              <span
+                aria-hidden
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-cta text-white"
               >
-                <Sparkles className="h-5 w-5 text-brand-400" />
-              </motion.div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-brand-400/70 mb-0.5">
-                  Ação principal
-                </p>
-                <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
-                  Analisar conversa
-                </h2>
-                <p className="text-muted-foreground text-sm mt-0.5">
+                <Sparkles className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-caption uppercase text-violet-400">Ação principal</p>
+                <h2 className="font-display text-h3 text-text">Analisar conversa</h2>
+                <p className="mt-0.5 text-sm text-text-2">
                   Envie um print e receba sugestões personalizadas com IA
                 </p>
               </div>
-
-              <motion.div
-                className="flex-shrink-0"
-                whileHover={{ x: 4 }}
-                transition={{ type: "spring", stiffness: 400, damping: 22 }}
-              >
-                <ArrowRight className="h-5 w-5 text-brand-400/50 group-hover:text-brand-400 transition-colors" />
-              </motion.div>
+              <ArrowRight
+                aria-hidden
+                className="h-5 w-5 shrink-0 text-text-2 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-text motion-reduce:transition-none"
+              />
             </div>
-          </MagicCard>
+          </Card>
         </Link>
       </motion.div>
 
       {/* ── Stats ── */}
-      <motion.div variants={item}>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
+      <motion.section variants={item} aria-labelledby="dash-stats">
+        <h2 id="dash-stats" className="mb-3 text-caption uppercase text-text-2">
           Seus números
-        </p>
-        <div className="grid grid-cols-3 gap-3">
+        </h2>
+        <ul className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
             { label: "Análises",           value: stats.total,         icon: MessageCircle },
             { label: "Esta semana",        value: stats.thisWeek,      icon: Clock },
             { label: "Sugestões geradas",  value: stats.total * 3,     icon: TrendingUp },
           ].map((stat) => (
-            <HoverCard
-              key={stat.label}
-              className="rounded-xl border border-border/50 bg-card/40 px-4 py-4 hover:border-border/80 transition-colors"
-            >
-              <div className="font-display text-2xl font-bold tracking-tight text-foreground">
-                {stat.value}
-              </div>
-              <div className="text-xs text-muted-foreground mt-0.5 leading-tight">
-                {stat.label}
-              </div>
-            </HoverCard>
+            <li key={stat.label} className="min-w-0">
+              <Card className="flex h-full flex-col gap-1 px-3 py-4 sm:px-4">
+                <stat.icon className="h-4 w-4 text-violet-400" aria-hidden />
+                <p className="font-display text-h2 tabular-nums text-text">{stat.value}</p>
+                <p className="text-xs leading-tight text-text-2 sm:text-sm">{stat.label}</p>
+              </Card>
+            </li>
           ))}
-        </div>
-      </motion.div>
+        </ul>
+      </motion.section>
 
       {/* ── Quick links ── */}
-      <motion.div variants={item}>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
+      <motion.section variants={item} aria-labelledby="dash-links">
+        <h2 id="dash-links" className="mb-3 text-caption uppercase text-text-2">
           Acesso rápido
-        </p>
+        </h2>
         <div className="flex flex-wrap gap-2">
           {quickLinks.map((link) => (
-            <motion.div
-              key={link.href}
-              whileHover={{ y: -2, scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            >
-              <Link href={link.href}>
-                <div className="flex items-center gap-2 px-3.5 py-2 rounded-full border text-sm font-medium border-border/50 bg-card/30 text-muted-foreground hover:text-foreground hover:border-border hover:bg-accent/40 transition-colors">
-                  <link.icon className="h-3.5 w-3.5" />
-                  {link.label}
-                </div>
-              </Link>
-            </motion.div>
+            <Button key={link.href} asChild variant="secondary" leftIcon={<link.icon className="h-4 w-4" aria-hidden />}>
+              <Link href={link.href}>{link.label}</Link>
+            </Button>
           ))}
         </div>
-      </motion.div>
+      </motion.section>
 
       {/* ── How it works ── */}
-      <motion.div variants={item} className="rounded-2xl border border-border/40 bg-card/20 p-5">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
-          Como funciona
-        </p>
-        <div className="grid grid-cols-3 gap-4">
-          {steps.map((step, i) => (
-            <motion.div
-              key={step.n}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 + i * 0.07, type: "spring", stiffness: 260, damping: 22 }}
-            >
-              <span className="text-xs font-bold text-brand-500/50">{step.n}</span>
-              <p className="text-sm font-semibold text-foreground mt-0.5">{step.t}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{step.d}</p>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
+      <motion.section variants={item} aria-labelledby="dash-how">
+        <Card variant="outline" className="p-5">
+          <h2 id="dash-how" className="mb-4 text-caption uppercase text-text-2">
+            Como funciona
+          </h2>
+          <ol className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {steps.map((step) => (
+              <li key={step.n} className="flex gap-3 sm:flex-col sm:gap-1">
+                <span className="text-sm font-bold text-violet-400" aria-hidden>{step.n}</span>
+                <div>
+                  <p className="text-sm font-semibold text-text">{step.t}</p>
+                  <p className="mt-0.5 text-sm leading-relaxed text-text-2">{step.d}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      </motion.section>
 
     </motion.div>
   );

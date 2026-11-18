@@ -1,25 +1,24 @@
 // Dados ESTÁTICOS e ilustrativos da demonstração da landing. Nada aqui vem da IA nem de usuários reais.
-import { Camera, Coffee, Flame, Heart, Laugh, MessageSquareText, Zap, type LucideIcon } from "lucide-react";
+import { TONES, type Tone, type ToneValue } from "@/components/analyze/tones";
 
-/** Values imutáveis — são as chaves de tom aceitas pela API. */
-export type DemoToneValue = "flirty" | "funny" | "casual" | "witty" | "serious" | "pickup" | "stories";
+/** Values imutáveis — são as chaves de tom aceitas pela API (fonte: analyze/tones.ts). */
+export type DemoToneValue = ToneValue;
 
-export interface DemoTone {
-  value: DemoToneValue;
-  label: string;
-  icon: LucideIcon;
+export interface DemoTone extends Tone {
   description: string;
 }
 
-export const DEMO_TONES: readonly DemoTone[] = [
-  { value: "flirty", label: "Flertando", icon: Heart, description: "Leve, com interesse claro e sem pressão." },
-  { value: "funny", label: "Engraçado", icon: Laugh, description: "Humor a partir do que foi dito." },
-  { value: "casual", label: "Casual", icon: Coffee, description: "Natural, como uma mensagem qualquer do dia." },
-  { value: "witty", label: "Afiado", icon: Zap, description: "Uma virada inteligente e inesperada." },
-  { value: "serious", label: "Sério", icon: MessageSquareText, description: "Direto, maduro e honesto." },
-  { value: "pickup", label: "Cantada", icon: Flame, description: "Ousada, mas específica e respeitosa." },
-  { value: "stories", label: "Stories", icon: Camera, description: "Uma frase curta para responder a um story." },
-];
+const TONE_DESCRIPTIONS: Record<ToneValue, string> = {
+  flirty: "Leve, com interesse claro e sem pressão.",
+  funny: "Humor a partir do que foi dito.",
+  casual: "Natural, como uma mensagem qualquer do dia.",
+  witty: "Uma virada inteligente e inesperada.",
+  serious: "Direto, maduro e honesto.",
+  pickup: "Ousada, mas específica e respeitosa.",
+  stories: "Uma frase curta para responder a um story.",
+};
+
+export const DEMO_TONES: readonly DemoTone[] = TONES.map((t) => ({ ...t, description: TONE_DESCRIPTIONS[t.value] }));
 
 export type DemoScenarioId = "conversa" | "story";
 

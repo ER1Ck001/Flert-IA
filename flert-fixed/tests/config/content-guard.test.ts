@@ -95,3 +95,56 @@ describe("content guard — auth (4.3)", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("content guard — analyze + dashboard (4.4)", () => {
+  const walk = (dir: string): string[] =>
+    existsSync(dir)
+      ? readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+          const full = path.join(dir, e.name);
+          if (e.isDirectory()) return walk(full);
+          return /\.(tsx?|css)$/.test(e.name) ? [path.relative(root, full)] : [];
+        })
+      : [];
+  const pages = [
+    ...walk(path.join(root, "src/app/(dashboard)/analyze")),
+    ...walk(path.join(root, "src/app/(dashboard)/dashboard")),
+  ];
+  const components = walk(path.join(root, "src/components/analyze"));
+  const files = [...pages, ...components];
+
+  it("encontra as páginas de analyze e dashboard e os componentes de analyze", () => {
+    expect(pages.length).toBeGreaterThanOrEqual(2);
+    expect(components.map((f) => path.basename(f)).sort()).toEqual(
+      expect.arrayContaining([
+        "AnalyzeGate.tsx",
+        "ModeCard.tsx",
+        "ResultsPanel.tsx",
+        "StickyActionBar.tsx",
+        "SuggestionCard.tsx",
+        "UploadDropzone.tsx",
+        "UsageMeter.tsx",
+        "tones.ts",
+      ])
+    );
+  });
+
+  it.each(["az-", "AZ_CSS", "MAIS USADO", "dangerouslySetInnerHTML"])(
+    "nenhum arquivo de analyze/dashboard contém \"%s\"",
+    (needle) => {
+      const offenders = files.filter((f) => read(f).includes(needle));
+      expect(offenders).toEqual([]);
+    }
+  );
+
+  it("magic-card foi removido e ninguém o importa", () => {
+    expect(existsSync(path.join(root, "src/components/ui/magic-card.tsx"))).toBe(false);
+    const offenders = walk(path.join(root, "src")).filter((f) => /magic-card|MagicCard/.test(read(f)));
+    expect(offenders).toEqual([]);
+  });
+
+  it("tones.ts declara os 7 values fixos da API, na ordem", () => {
+    const src = read("src/components/analyze/tones.ts");
+    const values = [...src.matchAll(/value:\s*"([a-z]+)"/g)].map((m) => m[1]);
+    expect(values).toEqual(["flirty", "funny", "casual", "witty", "serious", "pickup", "stories"]);
+  });
+});
