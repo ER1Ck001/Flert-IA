@@ -8,7 +8,8 @@ import { assertSameOrigin, errorMessage, isPrismaError, parseJsonBody } from "@/
 import { idSchema } from "@/lib/validation/common";
 import { adminPatchUserSchema } from "@/lib/validation/admin";
 
-type Ctx = { params: { id: string } };
+// Next 15: `params` dos route handlers é uma Promise.
+type Ctx = { params: Promise<{ id: string }> };
 
 const forbidden = () => NextResponse.json({ error: "Acesso negado" }, { status: 403 });
 const notFound = () => NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
@@ -20,7 +21,7 @@ export async function DELETE(req: NextRequest, { params }: Ctx) {
     const session = await getServerSession(authOptions);
     if (!(await isAdminUser(session?.user?.id))) return forbidden();
 
-    const id = idSchema.safeParse(params.id);
+    const id = idSchema.safeParse((await params).id);
     if (!id.success) return NextResponse.json({ error: "ID inválido" }, { status: 400 });
 
     if (id.data === session?.user?.id) {
@@ -47,7 +48,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     const session = await getServerSession(authOptions);
     if (!(await isAdminUser(session?.user?.id))) return forbidden();
 
-    const id = idSchema.safeParse(params.id);
+    const id = idSchema.safeParse((await params).id);
     if (!id.success) return NextResponse.json({ error: "ID inválido" }, { status: 400 });
 
     const parsed = await parseJsonBody(req, adminPatchUserSchema);

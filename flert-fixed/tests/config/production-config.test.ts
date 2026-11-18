@@ -47,11 +47,16 @@ describe("índices do banco", () => {
 });
 
 describe("next.config.js", () => {
-  it("Image Optimizer desligado (CVEs do 14.x sem patch; só avatares do admin usavam)", () => {
+  it("Image Optimizer desligado (só avatares do admin usavam; menor superfície de ataque)", () => {
     expect(nextConfig.images.unoptimized).toBe(true);
   });
-  it("instrumentation habilitado para validar o ambiente na subida do servidor", () => {
-    expect(nextConfig.experimental.instrumentationHook).toBe(true);
+  it("instrumentation estável no Next 15: sem a flag experimental (que só gera aviso no 15)", () => {
+    expect(nextConfig.experimental?.instrumentationHook).toBeUndefined();
+    expect(existsSync(path.join(root, "src/instrumentation.ts"))).toBe(true);
+  });
+  it("pacotes externos do servidor com a chave estável do Next 15", () => {
+    expect(nextConfig.serverExternalPackages).toEqual(expect.arrayContaining(["@prisma/client", "bcryptjs"]));
+    expect(nextConfig.experimental?.serverComponentsExternalPackages).toBeUndefined();
   });
 });
 

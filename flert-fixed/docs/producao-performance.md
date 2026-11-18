@@ -68,7 +68,7 @@ CSS: um arquivo, 51,6 kB (11,2 kB gzip). Fonte Inter via `next/font` (só o subs
 
 ## Alta
 
-### A1. Next 14.2.35 com CVEs críticas sem patch na linha 14 — [proposto: upgrade] + [corrigido: mitigação]
+### A1. Next 14.2.35 com CVEs críticas sem patch na linha 14 — [corrigido: upgrade para 15.5.29 na Tarefa 6b] + mitigação mantida
 - **Local:** `package.json:39` (`"next": "^14.2.35"`), `next.config.js` (`images`).
 - **Evidência:** `npm audit --omit=dev` → `next` **crítica** (direta). 25 avisos de `>=13 <15.5.x`,
   entre eles RCE no Image Optimization API com SVG/AVIF (GHSA-2464-fhr4-w9xw, ≤15.5.27;
@@ -305,6 +305,66 @@ de A1 (faixas `<15.5.10` … `<=15.5.27`). **15.5.29 está fora de todas as faix
    next-auth v4 pelo Auth.js v5.
 3. **Até o upgrade:** a mitigação de A1 (`images.unoptimized`) fica ativa. Ela não cobre as CVEs de
    DoS em Server Components.
+
+### Upgrade feito (Tarefa 6b): Next 15.5.29 + React 19
+
+**Versões** (`npm view next dist-tags` → `backport` = 15.5.29, última da linha 15.5):
+
+| Pacote | Antes | Depois |
+|---|---|---|
+| `next` | 14.2.35 | **15.5.29** |
+| `react` / `react-dom` | 18.3.1 | **19.2.9** (última 19.2; o peer do Next 15.5.29 é `^18.2.0 \|\| ^19.0.0`) |
+| `@types/react` | 18.3.28 | **19.2.18** |
+| `@types/react-dom` | 18.3.7 | **19.2.3** |
+| `eslint-config-next` | 14.2.35 | **15.5.29** |
+| `next-themes` | 0.3.0 | **0.4.6** (peer inclui `^19`) |
+| `@testing-library/react` | 16.0.1 | **16.3.3** (a 16.0.1 só aceitava React 18; segue pinada exata) |
+
+Os demais pacotes (`next-auth`, adapter, `framer-motion`, `@radix-ui/*`, `react-hot-toast`,
+`lucide-react`, `@vercel/analytics`, `@vercel/speed-insights`) já aceitavam React 19 e não mudaram.
+O `.npmrc` do projeto tem `legacy-peer-deps=true` (B10); nenhum `--force`/`--legacy-peer-deps` extra
+foi passado. `npm ls` mostra um único conflito de peer, o que já existia: `next-auth` pede
+`nodemailer ^7.0.7` e o instalado é 10.x.
+
+**Código:**
+- `src/app/api/admin/users/[id]/route.ts`: `params` passa a ser `Promise<{ id }>` e é lido com
+  `await` no mesmo ponto de antes (depois da checagem de origem e de admin). Comportamento igual.
+  Testes em `tests/api/admin-routes.test.ts` passam `params: Promise.resolve({ id })`.
+- `next.config.js`: `experimental.serverComponentsExternalPackages` → `serverExternalPackages`;
+  `experimental.instrumentationHook` removido (instrumentation é estável no 15; o `[env]` do
+  `src/instrumentation.ts` aparece no `next start`). CSP e headers sem mudança.
+- `tests/config/production-config.test.ts`: o teste da flag passou a exigir a ausência dela e a
+  presença de `src/instrumentation.ts`; novo teste para `serverExternalPackages`.
+- Conferido sem mudança: 0 `cookies()`/`headers()`, 0 `searchParams` como prop, 0 Server Actions,
+  0 `useRef()` sem argumento, 0 uso do namespace global `JSX`. Os `forwardRef` seguem funcionando.
+  Cache de GET no 15 (sem cache por padrão): todas as APIs já eram `ƒ` e o único `fetch` é um POST.
+
+**Image Optimizer:** continua desligado (`images.unoptimized: true`). A 15.5.29 já tem o patch, mas
+só os avatares do `/admin` usavam o otimizador. Religar só traria mais superfície de ataque e custo
+de otimização na Vercel. Se um dia fizer falta, basta remover a chave.
+
+**Checagens:** `npx vitest run` 611/611 (54 arquivos) · `npx tsc --noEmit` ok · `npm run lint` ok
+(o `next lint` avisa que sai no Next 16) · `next build` ok, todas as APIs `ƒ`.
+**Smoke (`next start`, env fictício):** `/` 200, `/auth/login` 200, `/api/health` 200 `{"status":"ok"}`,
+`/robots.txt` 200, `/sitemap.xml` 200, URL inexistente 404, `/dashboard` 307 (middleware),
+`/api/stats` 401. CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy (`no-referrer` em
+`/auth/reset-password`), Permissions-Policy e COOP presentes; sem `X-Powered-By`.
+
+**`npm audit`:**
+
+| | Antes | Depois |
+|---|---|---|
+| `--omit=dev` | 3 (1 crítica `next`, 2 altas `postcss`/`zod`) | 3 (0 crítica; `next` moderada **só** pelo `postcss@8.4.31` que ele embute para o build, `postcss` alta, `zod` alta) |
+| total | 36 (3 críticas, 26 altas, 7 moderadas) | 36 (2 críticas `vitest`/`tinypool` de dev, 25 altas, 9 moderadas) |
+
+Nenhum aviso direto do `next` sobra. O `fixAvailable` do audit aponta para o Next 16 (major).
+`npm audit fix` não foi rodado.
+
+**QA manual numa Preview da Vercel antes de promover:** login com senha e com Google (cookie/JWT do
+next-auth v4 no Next 15), logout e revogar sessões; pagamento sandbox da AbacatePay + webhook;
+análise de print e de texto (cota); `/admin` (listar, mudar plano, excluir usuário: é a rota com
+`params` assíncrono); tema claro/escuro (next-themes 0.4.6) sem flash; animações (framer-motion com
+React 19); console sem violação de CSP nem erro de hidratação.
 
 ---
 

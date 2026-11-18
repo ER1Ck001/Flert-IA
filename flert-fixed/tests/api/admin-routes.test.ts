@@ -42,8 +42,8 @@ describe("autorização de admin", () => {
     m.isAdminUser.mockResolvedValue(false);
     expect((await listUsers()).status).toBe(403);
     expect((await sendEmail(json("/api/admin/email", "POST", { template: "free_upsell" }))).status).toBe(401);
-    expect((await patchUser(json(`/api/admin/users/${ID}`, "PATCH", { subscription: "FREE" }), { params: { id: ID } })).status).toBe(403);
-    expect((await deleteUser(json(`/api/admin/users/${ID}`, "DELETE", {}), { params: { id: ID } })).status).toBe(403);
+    expect((await patchUser(json(`/api/admin/users/${ID}`, "PATCH", { subscription: "FREE" }), { params: Promise.resolve({ id: ID }) })).status).toBe(403);
+    expect((await deleteUser(json(`/api/admin/users/${ID}`, "DELETE", {}), { params: Promise.resolve({ id: ID }) })).status).toBe(403);
     expect(m.isAdminUser).toHaveBeenCalledWith("admin");
     expect(m.prisma.subscriptionStatus.upsert).not.toHaveBeenCalled();
     expect(m.prisma.user.delete).not.toHaveBeenCalled();
@@ -75,19 +75,19 @@ describe("POST /api/admin/email", () => {
 
 describe("PATCH/DELETE /api/admin/users/[id]", () => {
   it("400 com id ou plano inválidos e JSON quebrado", async () => {
-    expect((await patchUser(json("/api/admin/users/x", "PATCH", { subscription: "FREE" }), { params: { id: "../x" } })).status).toBe(400);
-    expect((await patchUser(json(`/api/admin/users/${ID}`, "PATCH", { subscription: "GOD" }), { params: { id: ID } })).status).toBe(400);
-    expect((await patchUser(json(`/api/admin/users/${ID}`, "PATCH", "{x"), { params: { id: ID } })).status).toBe(400);
+    expect((await patchUser(json("/api/admin/users/x", "PATCH", { subscription: "FREE" }), { params: Promise.resolve({ id: "../x" }) })).status).toBe(400);
+    expect((await patchUser(json(`/api/admin/users/${ID}`, "PATCH", { subscription: "GOD" }), { params: Promise.resolve({ id: ID }) })).status).toBe(400);
+    expect((await patchUser(json(`/api/admin/users/${ID}`, "PATCH", "{x"), { params: Promise.resolve({ id: ID }) })).status).toBe(400);
   });
 
   it("404 ao alterar plano de usuário inexistente (antes: 500 de FK)", async () => {
     m.prisma.user.findUnique.mockResolvedValue(null);
-    expect((await patchUser(json(`/api/admin/users/${ID}`, "PATCH", { subscription: "ANNUAL" }), { params: { id: ID } })).status).toBe(404);
+    expect((await patchUser(json(`/api/admin/users/${ID}`, "PATCH", { subscription: "ANNUAL" }), { params: Promise.resolve({ id: ID }) })).status).toBe(404);
     expect(m.prisma.subscriptionStatus.upsert).not.toHaveBeenCalled();
   });
 
   it("404 ao excluir usuário inexistente (antes: 500 P2025)", async () => {
     m.prisma.user.delete.mockRejectedValue(Object.assign(new Error("nf"), { code: "P2025" }));
-    expect((await deleteUser(json(`/api/admin/users/${ID}`, "DELETE", {}), { params: { id: ID } })).status).toBe(404);
+    expect((await deleteUser(json(`/api/admin/users/${ID}`, "DELETE", {}), { params: Promise.resolve({ id: ID }) })).status).toBe(404);
   });
 });

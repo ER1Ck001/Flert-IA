@@ -4,7 +4,7 @@
 
 ## Stack
 
-- **Frontend**: Next.js 14+ (App Router) + TypeScript
+- **Frontend**: Next.js 15.5 (App Router) + React 19 + TypeScript
 - **Banco de dados**: PostgreSQL + Prisma ORM
 - **Autenticação**: NextAuth.js (Email/Senha + Google OAuth)
 - **IA**: OpenAI GPT-4o Vision

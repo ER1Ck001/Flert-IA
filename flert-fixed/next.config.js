@@ -2,7 +2,7 @@
 
 const isDev = process.env.NODE_ENV !== "production";
 
-// 'unsafe-inline' ainda é necessário: scripts inline do Next 14, next-themes e o snippet do
+// 'unsafe-inline' ainda é necessário: scripts inline do Next 15, next-themes e o snippet do
 // Pixel; estilos inline do framer-motion e <style> das páginas. CSP com nonce fica para depois.
 const csp = [
   "default-src 'self'",
@@ -32,15 +32,15 @@ const securityHeaders = [
 
 const nextConfig = {
   poweredByHeader: false,
-  experimental: {
-    serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
-    // src/instrumentation.ts valida as variáveis de ambiente na subida do servidor.
-    instrumentationHook: true,
-  },
+  // Next 15: era experimental.serverComponentsExternalPackages.
+  serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  // src/instrumentation.ts (validação do ambiente na subida) é estável no Next 15 e não precisa
+  // mais de experimental.instrumentationHook.
   images: {
-    // Image Optimizer (/_next/image) desligado: o Next 14.2.x tem CVEs nele sem patch na linha 14
-    // (ver docs/producao-performance.md) e só os avatares do /admin o usavam. Previews em data: já
-    // eram não otimizados. Reativar ao migrar para Next >= 15.5.x com patch.
+    // Image Optimizer (/_next/image) segue desligado. O Next 15.5.29 já tem o patch das CVEs dele,
+    // mas só os avatares do /admin o usavam (previews em data: já eram não otimizados): religar só
+    // aumentaria a superfície de ataque e o custo de otimização na Vercel, sem ganho real.
+    // Ver docs/producao-performance.md (A1 e "Upgrade do Next").
     unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
