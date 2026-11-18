@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { CircleCheck, TriangleAlert } from "lucide-react";
 import { PASSWORD_RULES_HINT, resetPasswordFormSchema, resetTokenSchema } from "@/lib/validation/auth";
+import { focusFirstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { AuthFallback, AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,6 +28,9 @@ function ResetForm() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const doneHeadingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { if (done) doneHeadingRef.current?.focus(); }, [done]);
 
   if (!resetTokenSchema.safeParse(token).success) {
     return (
@@ -50,7 +54,13 @@ function ResetForm() {
     e.preventDefault();
     // Mesmas regras do servidor (src/lib/validation/auth.ts).
     const parsed = resetPasswordFormSchema.safeParse({ token, password, confirm });
-    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    if (!parsed.success) {
+      const fieldErrors = toFieldErrors(parsed.error.issues);
+      setErrors(fieldErrors);
+      focusFirstError(fieldErrors, ["password", "confirm"]);
+      return;
+    }
+    setErrors({});
     setLoading(true);
     try {
       const res = await fetch("/api/auth/reset-password", {
@@ -80,28 +90,31 @@ function ResetForm() {
             <CircleCheck className="h-5 w-5" aria-hidden />
           </span>
           <div>
-            <h2 className="font-display text-h3 text-text">Tudo certo.</h2>
+            <h2 ref={doneHeadingRef} tabIndex={-1} className="font-display text-h3 text-text focus:outline-none">Tudo certo.</h2>
             <p className="mt-1 text-sm text-text-2">Sua senha foi atualizada. Redirecionando para o login...</p>
           </div>
+          <Button asChild variant="secondary" size="lg" className="w-full">
+            <Link href="/auth/login">Ir para o login agora</Link>
+          </Button>
         </Card>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <Field id="password" label="Nova senha" hint={PASSWORD_RULES_HINT}>
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+          <Field id="password" label="Nova senha" hint={PASSWORD_RULES_HINT} error={errors.password}>
             {(control) => (
               <PasswordInput
                 {...control}
                 maxLength={72}
-                value={password} onChange={e => setPassword(e.target.value)} required
+                value={password} onChange={e => { setPassword(e.target.value); if (errors.password) setErrors(x => ({ ...x, password: undefined })); }} required
                 autoComplete="new-password"
               />
             )}
           </Field>
-          <Field id="confirm" label="Confirmar senha">
+          <Field id="confirm" label="Confirmar senha" error={errors.confirm}>
             {(control) => (
               <PasswordInput
                 {...control}
                 placeholder="Repita a senha"
-                value={confirm} onChange={e => setConfirm(e.target.value)} required
+                value={confirm} onChange={e => { setConfirm(e.target.value); if (errors.confirm) setErrors(x => ({ ...x, confirm: undefined })); }} required
                 autoComplete="new-password"
               />
             )}

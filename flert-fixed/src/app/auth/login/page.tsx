@@ -13,6 +13,25 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Spinner } from "@/components/ui/spinner";
+import { AlertTriangle } from "lucide-react";
+
+/**
+ * Erros que o NextAuth devolve em /auth/login?error=… (pages.error aponta para cá),
+ * principalmente no login com Google. Só texto: o fluxo de login não muda.
+ */
+function authErrorMessage(code: string | null): string | null {
+  if (!code) return null;
+  switch (code) {
+    case "OAuthAccountNotLinked":
+      return "Este e-mail já está cadastrado com outro método de login. Entre com e-mail e senha.";
+    case "AccessDenied":
+      return "O acesso foi negado. Se você cancelou o login com o Google, é só tentar de novo.";
+    case "SessionRequired":
+      return "Entre na sua conta para continuar.";
+    default:
+      return "Não foi possível entrar agora. Tente novamente ou use e-mail e senha.";
+  }
+}
 
 function LoginForm() {
   const router = useRouter();
@@ -21,6 +40,7 @@ function LoginForm() {
   const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
   const { status } = useSession();
   const [loading, setLoading] = useState(false);
+  const authError = authErrorMessage(searchParams.get("error"));
 
   // Se já estiver logado, redireciona direto para o callbackUrl
   useEffect(() => {
@@ -73,6 +93,13 @@ function LoginForm() {
         </>
       }
     >
+      {authError && (
+        <div role="alert" className="mb-6 flex items-start gap-3 rounded-md border border-danger/30 bg-danger/10 p-4 text-sm text-text">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-hidden />
+          <p>{authError}</p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <Field id="email" label="Email">
           {(control) => (

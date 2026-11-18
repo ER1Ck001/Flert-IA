@@ -72,6 +72,13 @@ describe("Pricing page", () => {
     );
     await waitFor(() => expect(window.location.hash).toBe("#checkout"));
     expect(mocks.toastSuccess).toHaveBeenCalledWith("Redirecionando...");
+    // Enquanto o navegador troca de página, o botão continua ocupado (evita 2 checkouts).
+    const btn = screen.getByRole("button", { name: /Redirecionando/ });
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute("aria-busy", "true");
+    for (const other of screen.getAllByRole("button", { name: /Assinar|Comprar/ })) {
+      expect(other).toBeDisabled();
+    }
   });
 
   it("esconde planos inferiores ao vigente e bloqueia o Vitalício ativo", async () => {

@@ -59,7 +59,7 @@ export function AppSidebar({ user }: { user?: Session["user"] | null }) {
           href={SUPPORT_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-md border border-border px-3 py-2.5 transition-colors hover:border-border-strong hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+          className="flex min-h-11 items-center gap-3 rounded-md border border-border px-3 py-2.5 transition-colors hover:border-border-strong hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
         >
           <LifeBuoy className="h-4 w-4 text-text-2" aria-hidden />
           <span className="min-w-0">
@@ -71,12 +71,12 @@ export function AppSidebar({ user }: { user?: Session["user"] | null }) {
 
         <Link
           href={PREMIUM_HREF}
-          className="border-signal flex items-center gap-3 rounded-md px-3 py-2.5 transition-shadow hover:shadow-glow-pink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+          className="border-signal flex min-h-11 items-center gap-3 rounded-md px-3 py-2.5 transition-shadow hover:shadow-glow-pink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
         >
           <Zap className="h-4 w-4 text-pink-400" aria-hidden />
           <span className="min-w-0">
             <span className="block text-sm font-semibold leading-tight text-text">Seja Premium</span>
-            <span className="block text-xs leading-tight text-text-2">Recursos ilimitados</span>
+            <span className="block text-xs leading-tight text-text-2">Compare planos e limites</span>
           </span>
         </Link>
       </div>

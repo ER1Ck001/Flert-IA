@@ -20,6 +20,8 @@ describe("AccountSheet", () => {
       "https://mail.google.com/mail/?view=cm&to=erickdev@flertia.com.br&su=Suporte%20Flert%20IA"
     );
     expect(screen.getByRole("link", { name: /Seja Premium/ })).toHaveAttribute("href", "/pricing");
+    // Todos os planos têm os mesmos recursos; só o Vitalício tem análises ilimitadas.
+    expect(screen.queryByText(/Recursos ilimitados/)).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Sair" }));
     expect(signOut).toHaveBeenCalledWith({ callbackUrl: "/" });

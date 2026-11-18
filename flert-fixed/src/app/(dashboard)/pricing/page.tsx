@@ -37,6 +37,16 @@ export default function PricingPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  // Após receber a URL do checkout o navegador ainda leva um instante para sair da página:
+  // mantém o botão ocupado e os demais desativados para não criar um segundo checkout.
+  const [redirecting, setRedirecting] = useState<string | null>(null);
+
+  // Voltou do checkout pelo botão "voltar" (página restaurada do bfcache): libera os botões.
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) setRedirecting(null); };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
   const [userStatus, setUserStatus] = useState<string>("FREE");
 
   useEffect(() => {
@@ -66,6 +76,7 @@ export default function PricingPage() {
       if (!res.ok)  { toast.error(data.error || "Erro ao processar");       return; }
       if (!data.url){ toast.error("URL de pagamento não recebida");         return; }
       toast.success("Redirecionando...");
+      setRedirecting(plan);
       window.location.href = data.url;
     } catch {
       toast.error("Erro ao processar. Tente novamente.");
@@ -91,7 +102,8 @@ export default function PricingPage() {
         )}
       >
         {visiblePlans.map((plan) => {
-          const isLoading = loading === plan.id;
+          const isRedirecting = redirecting === plan.id;
+          const isLoading = loading === plan.id || isRedirecting;
           const blocked = isBlocked(plan);
 
           return (
@@ -105,12 +117,14 @@ export default function PricingPage() {
                   size="lg"
                   className="w-full"
                   loading={isLoading}
-                  disabled={blocked}
+                  disabled={blocked || (redirecting !== null && !isRedirecting)}
                   leftIcon={blocked ? <Check className="h-4 w-4" aria-hidden /> : undefined}
                   onClick={() => !isBlocked(plan) && handleSubscribe(plan.id)}
                 >
                   {blocked
                     ? "Plano ativo"
+                    : isRedirecting
+                    ? "Redirecionando..."
                     : isLoading
                     ? "Processando..."
                     : isActivePlan(plan.planId)

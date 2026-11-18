@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Shield, Trash2, LogOut, AlertTriangle, Cookie } from "lucide-react";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { PageHeader } from "@/components/ui/page-header";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import toast from "react-hot-toast";
 import { OPEN_CONSENT_EVENT } from "@/components/consent/ConsentBanner";
 import { DELETE_CONFIRMATION } from "@/lib/validation/auth";
@@ -48,6 +49,10 @@ export default function SettingsPage() {
   // null = ainda carregando (não bloquear contas Google nem pedir senha à toa).
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
   const [revoking, setRevoking] = useState(false);
+  const [revokeOpen, setRevokeOpen] = useState(false);
+  const deleteTriggerRef = useRef<HTMLButtonElement>(null);
+  const confirmInputRef = useRef<HTMLInputElement>(null);
+  const returnFocusToTrigger = useRef(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -98,7 +103,18 @@ export default function SettingsPage() {
     setDeleteOpen(false);
     setConfirmText("");
     setPassword("");
+    returnFocusToTrigger.current = true;
   };
+
+  // Foco: abrir o painel leva à confirmação; cancelar devolve ao botão "Excluir conta".
+  useEffect(() => {
+    if (deleteOpen) {
+      confirmInputRef.current?.focus();
+    } else if (returnFocusToTrigger.current) {
+      returnFocusToTrigger.current = false;
+      deleteTriggerRef.current?.focus();
+    }
+  }, [deleteOpen]);
 
   return (
     <motion.div className="mx-auto w-full max-w-2xl space-y-6" variants={container} initial="hidden" animate="show">
@@ -186,7 +202,7 @@ export default function SettingsPage() {
             <Button
               variant="outline"
               className="shrink-0"
-              onClick={handleRevokeAll}
+              onClick={() => setRevokeOpen(true)}
               loading={revoking}
               leftIcon={<LogOut className="h-4 w-4" aria-hidden />}
             >
@@ -202,6 +218,7 @@ export default function SettingsPage() {
               </div>
               {!deleteOpen && (
                 <Button
+                  ref={deleteTriggerRef}
                   variant="danger"
                   className="shrink-0"
                   onClick={() => setDeleteOpen(true)}
@@ -234,6 +251,7 @@ export default function SettingsPage() {
                         Digite <strong>{DELETE_CONFIRMATION}</strong> para confirmar
                       </Label>
                       <Input
+                        ref={confirmInputRef}
                         id="confirm-delete"
                         value={confirmText}
                         onChange={(e) => setConfirmText(e.target.value)}
@@ -272,6 +290,17 @@ export default function SettingsPage() {
           </div>
         </div>
       </motion.section>
+
+      <ConfirmDialog
+        open={revokeOpen}
+        onOpenChange={(open) => { if (!revoking) setRevokeOpen(open); }}
+        title="Sair de todos os dispositivos?"
+        description="Todas as sessões abertas serão encerradas, inclusive esta. Você precisará entrar de novo."
+        confirmLabel="Sair de todos os dispositivos"
+        tone="primary"
+        loading={revoking}
+        onConfirm={handleRevokeAll}
+      />
     </motion.div>
   );
 }

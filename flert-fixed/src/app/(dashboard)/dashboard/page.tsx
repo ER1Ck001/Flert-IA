@@ -12,6 +12,8 @@ import {
   MessageCircle,
   Clock,
   CreditCard,
+  CircleCheck,
+  Hourglass,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -35,16 +37,53 @@ const quickLinks = [
 ];
 
 const steps = [
-  { n: "01", t: "Upload do print",  d: "Envie a screenshot da conversa" },
-  { n: "02", t: "Escolha o tom",    d: "Flertando, engraçado, casual, afiado, cantada, stories e mais." },
-  { n: "03", t: "Use a sugestão",   d: "3 opções prontas para copiar" },
+  { n: "01", t: "Envie o print",   d: "Mande o print da conversa ou descreva a situação." },
+  { n: "02", t: "Escolha o tom",   d: "Flertando, engraçado, casual, afiado, cantada, stories e mais." },
+  { n: "03", t: "Use a sugestão",  d: "3 opções para copiar, editar ou descartar." },
 ];
+
+type StatsState = "loading" | "ok" | "error";
+
+/** Aviso ao voltar do checkout (?payment=success). A URL de retorno é a mesma com ou sem pagamento
+ *  concluído, então o texto se baseia no plano que /api/stats informa agora. */
+function PaymentNotice({ isPaid }: { isPaid: boolean | null }) {
+  if (isPaid === null) return null;
+  return isPaid ? (
+    <div role="status" className="flex items-start gap-3 rounded-lg border border-success/30 bg-success/10 p-4">
+      <CircleCheck className="mt-0.5 h-5 w-5 shrink-0 text-success" aria-hidden />
+      <div className="min-w-0 text-sm">
+        <p className="font-semibold text-text">Seu plano está ativo.</p>
+        <p className="mt-0.5 text-text-2">Você já pode usar as análises.</p>
+      </div>
+    </div>
+  ) : (
+    <div role="status" className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-4">
+      <Hourglass className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden />
+      <div className="min-w-0 text-sm">
+        <p className="font-semibold text-text">Ainda não recebemos a confirmação do pagamento.</p>
+        <p className="mt-0.5 text-text-2">
+          Se você concluiu o pagamento, a ativação pode levar alguns minutos — recarregue esta página daqui a
+          pouco. Se não concluiu, você pode tentar de novo em{" "}
+          <Link href="/pricing" className="font-medium text-violet-400 underline underline-offset-4">Planos</Link>.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [stats, setStats] = useState({ total: 0, thisWeek: 0 });
+  const [statsState, setStatsState] = useState<StatsState>("loading");
+  const [isPaid, setIsPaid] = useState<boolean | null>(null);
+  const [fromCheckout, setFromCheckout] = useState(false);
+
+  // Retorno do checkout: lido do window (evita exigir Suspense para useSearchParams).
+  useEffect(() => {
+    setFromCheckout(new URLSearchParams(window.location.search).get("payment") === "success");
+  }, []);
   const container = useMotionSafe(stagger(0.06));
   const item = useMotionSafe(fadeUp);
 
@@ -56,9 +95,13 @@ export default function DashboardPage() {
   useEffect(() => {
     if (status === "authenticated") {
       fetch("/api/stats")
-        .then((r) => r.json())
-        .then((d) => setStats({ total: d.total ?? 0, thisWeek: d.thisWeek ?? 0 }))
-        .catch(() => {});
+        .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+        .then((d) => {
+          setStats({ total: d.total ?? 0, thisWeek: d.thisWeek ?? 0 });
+          setIsPaid(Boolean(d.isPaid));
+          setStatsState("ok");
+        })
+        .catch(() => setStatsState("error"));
     }
   }, [status]);
 
@@ -85,9 +128,15 @@ export default function DashboardPage() {
           className="mb-0"
           eyebrow="Início"
           title={getGreeting(session?.user?.name)}
-          description="Pronto para conquistar mais conversas hoje?"
+          description="O que você quer responder hoje?"
         />
       </motion.div>
+
+      {fromCheckout && (
+        <motion.div variants={item}>
+          <PaymentNotice isPaid={isPaid} />
+        </motion.div>
+      )}
 
       {/* ── Primary CTA ── */}
       <motion.div variants={item}>
@@ -112,7 +161,7 @@ export default function DashboardPage() {
                 <p className="text-caption uppercase text-violet-400">Ação principal</p>
                 <h2 className="font-display text-h3 text-text">Analisar conversa</h2>
                 <p className="mt-0.5 text-sm text-text-2">
-                  Envie um print e receba sugestões personalizadas com IA
+                  Envie um print ou descreva a situação e receba 3 sugestões
                 </p>
               </div>
               <ArrowRight
@@ -129,7 +178,10 @@ export default function DashboardPage() {
         <h2 id="dash-stats" className="mb-3 text-caption uppercase text-text-2">
           Seus números
         </h2>
-        <ul className="grid grid-cols-3 gap-2 sm:gap-3">
+        {statsState === "error" && (
+          <p className="mb-3 text-sm text-text-2">Não foi possível carregar seus números agora.</p>
+        )}
+        <ul className="grid grid-cols-3 gap-2 sm:gap-3" aria-busy={statsState === "loading" || undefined}>
           {[
             { label: "Análises",           value: stats.total,         icon: MessageCircle },
             { label: "Esta semana",        value: stats.thisWeek,      icon: Clock },
@@ -138,7 +190,9 @@ export default function DashboardPage() {
             <li key={stat.label} className="min-w-0">
               <Card className="flex h-full flex-col gap-1 px-3 py-4 sm:px-4">
                 <stat.icon className="h-4 w-4 text-violet-400" aria-hidden />
-                <p className="font-display text-h2 tabular-nums text-text">{stat.value}</p>
+                <p className="font-display text-h2 tabular-nums text-text">
+                  {statsState === "ok" ? stat.value : <><span aria-hidden>—</span><span className="sr-only">{statsState === "loading" ? "carregando" : "indisponível"}</span></>}
+                </p>
                 <p className="text-xs leading-tight text-text-2 sm:text-sm">{stat.label}</p>
               </Card>
             </li>

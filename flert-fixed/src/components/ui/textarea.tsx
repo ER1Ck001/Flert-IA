@@ -40,18 +40,23 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     if (!withCount) return field;
 
     const near = length >= maxLength! * 0.9;
+    const remaining = Math.max(0, maxLength! - length);
     return (
       <div className="relative w-full">
         {field}
+        {/* Contador visível (lido via aria-describedby ao focar); não é região viva para não anunciar cada tecla. */}
         <span
           id={counterId}
-          aria-live="polite"
           className={cn(
             "pointer-events-none mt-1.5 block text-right text-xs tabular-nums",
             near ? "text-warning" : "text-text-2"
           )}
         >
           {length}/{maxLength}
+        </span>
+        {/* Só perto do limite: anuncia quantos caracteres restam. */}
+        <span data-testid="textarea-count-live" aria-live="polite" className="sr-only">
+          {near ? (remaining === 1 ? "Resta 1 caractere" : `Restam ${remaining} caracteres`) : null}
         </span>
       </div>
     );

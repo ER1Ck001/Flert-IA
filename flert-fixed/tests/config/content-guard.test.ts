@@ -91,7 +91,10 @@ describe("content guard — auth (4.3)", () => {
   );
 
   it("páginas de auth usam o AuthShell e não usam classes au-*", () => {
-    const offenders = files.filter((f) => /className="au[-"\s]/.test(read(f)) || !read(f).includes("AuthShell"));
+    // layout.tsx de cada rota só exporta metadata (Tarefa 5); a regra vale para as páginas.
+    const pages = files.filter((f) => /page\.tsx$/.test(f));
+    expect(pages.length).toBeGreaterThanOrEqual(4);
+    const offenders = pages.filter((f) => /className="au[-"\s]/.test(read(f)) || !read(f).includes("AuthShell"));
     expect(offenders).toEqual([]);
   });
 });

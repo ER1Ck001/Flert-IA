@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import toast from "react-hot-toast";
 import { Sparkles } from "lucide-react";
 import { PASSWORD_RULES_HINT, registerSchema } from "@/lib/validation/auth";
+import { focusFirstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { AuthDivider, AuthFallback, AuthShell, authLinkClass } from "@/components/auth/AuthShell";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Badge } from "@/components/ui/badge";
@@ -22,12 +23,24 @@ function RegisterForm() {
   const plan = searchParams.get("plan");
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const setField = (key: keyof typeof formData, value: string) => {
+    setFormData((d) => ({ ...d, [key]: value }));
+    if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Mesmas regras do servidor (src/lib/validation/auth.ts).
     const parsed = registerSchema.safeParse(formData);
-    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    if (!parsed.success) {
+      // Erro no próprio campo (role=alert + aria-invalid) e foco nele.
+      const fieldErrors = toFieldErrors(parsed.error.issues);
+      setErrors(fieldErrors);
+      focusFirstError(fieldErrors, ["name", "email", "password"]);
+      return;
+    }
+    setErrors({});
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
@@ -77,37 +90,37 @@ function RegisterForm() {
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <Field id="name" label="Nome completo">
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+        <Field id="name" label="Nome completo" error={errors.name}>
           {(control) => (
             <Input
               {...control}
               type="text"
               placeholder="Seu nome"
               value={formData.name}
-              onChange={e => setFormData({ ...formData, name: e.target.value })}
+              onChange={e => setField("name", e.target.value)}
               required maxLength={60} autoComplete="name"
             />
           )}
         </Field>
-        <Field id="email" label="Email">
+        <Field id="email" label="Email" error={errors.email}>
           {(control) => (
             <Input
               {...control}
               type="email"
               placeholder="seu@email.com"
               value={formData.email}
-              onChange={e => setFormData({ ...formData, email: e.target.value })}
+              onChange={e => setField("email", e.target.value)}
               required maxLength={254} autoComplete="email"
             />
           )}
         </Field>
-        <Field id="password" label="Senha" hint={PASSWORD_RULES_HINT}>
+        <Field id="password" label="Senha" hint={PASSWORD_RULES_HINT} error={errors.password}>
           {(control) => (
             <PasswordInput
               {...control}
               value={formData.password}
-              onChange={e => setFormData({ ...formData, password: e.target.value })}
+              onChange={e => setField("password", e.target.value)}
               required minLength={8} maxLength={72} autoComplete="new-password"
             />
           )}

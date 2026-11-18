@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { ArrowLeft, MailCheck } from "lucide-react";
@@ -14,6 +14,9 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  // O formulário some ao enviar: o foco vai para a confirmação (senão cai no <body>).
+  const sentHeadingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { if (sent) sentHeadingRef.current?.focus(); }, [sent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +52,7 @@ export default function ForgotPasswordPage() {
             <MailCheck className="h-5 w-5" aria-hidden />
           </span>
           <div>
-            <h2 className="font-display text-h3 text-text">Email enviado.</h2>
+            <h2 ref={sentHeadingRef} tabIndex={-1} className="font-display text-h3 text-text focus:outline-none">Email enviado.</h2>
             <p className="mt-1 text-sm text-text-2">
               Se esse email estiver cadastrado, você receberá as instruções em breve.
               Verifique também a pasta de spam.

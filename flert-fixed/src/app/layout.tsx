@@ -16,13 +16,17 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://flertia.com.br"),
-  title: "Flert IA — Seu Assistente de Conversas",
-  description: "Transforme suas conversas com o poder da Inteligência Artificial. Respostas inteligentes, envolventes e conexões reais.",
+  title: {
+    default: "Flert IA — Seu Assistente de Conversas",
+    template: "%s · Flert IA",
+  },
+  description:
+    "Envie o print da conversa ou descreva a situação. A IA sugere 3 respostas em 7 tons — você escolhe e copia.",
   keywords: ["flert", "IA", "conversas", "inteligência artificial", "chat"],
   authors: [{ name: "Flert IA" }],
   openGraph: {
     title: "Flert IA — Seu Assistente de Conversas",
-    description: "Transforme suas conversas com o poder da Inteligência Artificial.",
+    description: "A IA sugere 3 respostas em 7 tons para a sua conversa — você escolhe e copia.",
     url: "https://flertia.com.br",
     siteName: "Flert IA",
     type: "website",

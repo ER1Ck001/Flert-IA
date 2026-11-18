@@ -1,19 +1,22 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Fragment, useState, useEffect, useMemo, useCallback } from "react";
+import { motion } from "framer-motion";
 import {
-  Users, Search, Trash2, Crown, Zap, Star, Heart,
-  Copy, Check, RefreshCw, Shield, Activity, BarChart3,
+  Users, Search, Trash2, Crown, Zap, Star,
+  Copy, Check, RefreshCw, Shield, Activity,
   ChevronDown, ChevronUp, LogOut, Mail, Download,
-  TrendingUp, UserPlus, DollarSign, X, ChevronRight,
-  Calendar, Clock, Sparkles, Send, AlertCircle,
+  UserPlus, DollarSign, X, ChevronRight,
+  Clock, LayoutDashboard, Send, AlertCircle,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/brand/Logo";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 type Plan = "FREE" | "PREMIUM" | "ANNUAL" | "LIFETIME";
 
@@ -40,10 +43,10 @@ type Stats = {
 };
 
 const planConfig: Record<Plan, { label: string; color: string; bg: string; border: string; icon: React.ElementType }> = {
-  FREE:     { label: "Grátis",    color: "text-muted-foreground", bg: "bg-muted/40",        border: "border-border/40",        icon: Shield },
-  PREMIUM:  { label: "Mensal",    color: "text-brand-400",        bg: "bg-brand-500/15",    border: "border-brand-500/30",     icon: Zap    },
-  ANNUAL:   { label: "Anual",     color: "text-violet-400",       bg: "bg-violet-500/15",   border: "border-violet-500/30",    icon: Star   },
-  LIFETIME: { label: "Vitalício", color: "text-warning",        bg: "bg-warning/15",    border: "border-warning/30",     icon: Crown  },
+  FREE:     { label: "Grátis",    color: "text-text-2",     bg: "bg-surface-2",      border: "border-border",         icon: Shield },
+  PREMIUM:  { label: "Mensal",    color: "text-brand-400",  bg: "bg-brand-500/15",   border: "border-brand-500/30",   icon: Zap    },
+  ANNUAL:   { label: "Anual",     color: "text-violet-400", bg: "bg-violet-500/15",  border: "border-violet-500/30",  icon: Star   },
+  LIFETIME: { label: "Vitalício", color: "text-warning",    bg: "bg-warning/15",     border: "border-warning/30",     icon: Crown  },
 };
 
 const PLAN_PRICES = { FREE: 0, PREMIUM: 29.9, ANNUAL: 147 / 12, LIFETIME: 0 };
@@ -57,21 +60,36 @@ function daysUntil(dateStr: string | null) {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
 }
 
+/** Nome para rótulos acessíveis ("Excluir usuário Ana"). */
+function who(user: AdminUser) {
+  return user.name ?? user.email ?? "sem nome";
+}
+
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+const fieldClass =
+  "w-full rounded-md border border-border bg-surface-2 px-3 text-base text-text placeholder:text-text-3 transition-colors " +
+  "focus-visible:outline-none focus-visible:border-violet-400 focus-visible:ring-2 focus-visible:ring-violet-400/40";
+const labelClass = "mb-2 block text-sm font-medium text-text";
+const iconBtn =
+  "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-text-2 transition-colors hover:bg-surface-2 hover:text-text " +
+  focusRing;
+
 function UserAvatar({ user }: { user: AdminUser }) {
   const letter = (user.name ?? user.email ?? "?")[0].toUpperCase();
   if (user.image) {
     return <Image src={user.image} alt="" width={32} height={32} className="rounded-full object-cover flex-shrink-0" />;
   }
   return (
-    <div className="h-8 w-8 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400 text-xs font-bold flex-shrink-0">
+    <div aria-hidden className="h-8 w-8 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400 text-xs font-bold flex-shrink-0">
       {letter}
     </div>
   );
 }
 
 function SortIcon({ field, current, asc }: { field: string; current: string; asc: boolean }) {
-  if (field !== current) return <ChevronDown className="h-3 w-3 opacity-20" />;
-  return asc ? <ChevronUp className="h-3 w-3 text-brand-400" /> : <ChevronDown className="h-3 w-3 text-brand-400" />;
+  if (field !== current) return <ChevronDown className="h-3.5 w-3.5 opacity-30" aria-hidden />;
+  return asc ? <ChevronUp className="h-3.5 w-3.5 text-brand-400" aria-hidden /> : <ChevronDown className="h-3.5 w-3.5 text-brand-400" aria-hidden />;
 }
 
 export default function AdminPage() {
@@ -88,7 +106,6 @@ export default function AdminPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   // Email campaigns state
   const [activeTab, setActiveTab]             = useState<"users" | "email">("users");
@@ -118,14 +135,21 @@ export default function AdminPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Fecha o seletor de plano ao clicar fora dele ou com Esc. Usa data-plan-menu (o controle
+  // existe tanto no cartão mobile quanto na tabela md+, então um único ref não serve).
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (!(e.target as Element | null)?.closest?.("[data-plan-menu]")) {
         setPlanMenuId(null);
       }
     };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setPlanMenuId(null); };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   // Derived stats
@@ -294,9 +318,9 @@ export default function AdminPage() {
   };
 
   const statCards = [
-    { label: "Total de usuários",  value: stats?.total ?? 0,      icon: Users,       color: "text-foreground",         sub: `${paidUsers} pagantes` },
+    { label: "Total de usuários",  value: stats?.total ?? 0,      icon: Users,       color: "text-text",         sub: `${paidUsers} pagantes` },
     { label: "Novos esta semana",  value: newThisWeek,            icon: UserPlus,    color: "text-success",           sub: "últimos 7 dias" },
-    { label: "Grátis",             value: stats?.free ?? 0,       icon: Shield,      color: "text-muted-foreground",    sub: `${stats ? Math.round((stats.free / (stats.total || 1)) * 100) : 0}% do total` },
+    { label: "Grátis",             value: stats?.free ?? 0,       icon: Shield,      color: "text-text-2",    sub: `${stats ? Math.round((stats.free / (stats.total || 1)) * 100) : 0}% do total` },
     { label: "Mensal",             value: stats?.premium ?? 0,    icon: Zap,         color: "text-brand-400",           sub: "R$29,90/mês" },
     { label: "Anual",              value: stats?.annual ?? 0,     icon: Star,        color: "text-violet-400",          sub: "R$147,00/ano" },
     { label: "Vitalício",          value: stats?.lifetime ?? 0,   icon: Crown,       color: "text-warning",           sub: "pagamento único" },
@@ -304,83 +328,251 @@ export default function AdminPage() {
     { label: "Total de análises",  value: stats?.totalAnalyses ?? 0, icon: Activity, color: "text-brand-400",          sub: "desde o início" },
   ];
 
+  const visibleCount = filtered.length;
+  const planCount = (p: Plan) =>
+    stats ? (p === "FREE" ? stats.free : p === "PREMIUM" ? stats.premium : p === "ANNUAL" ? stats.annual : stats.lifetime) : 0;
+
+  // ── Peças compartilhadas entre a tabela (md+) e os cartões (mobile) ──
+
+  // inline=true na tabela: o seletor abre no fluxo (um menu absoluto seria cortado pelo overflow-x-auto).
+  const renderPlanControl = (user: AdminUser, inline = false) => {
+    const plan = planConfig[user.subscription];
+    const PlanIcon = plan.icon;
+    const isUpdating = updatingId === user.id;
+    const isPlanMenu = planMenuId === user.id;
+    return (
+      <div className="relative" data-plan-menu>
+        <button
+          type="button"
+          disabled={isUpdating}
+          aria-expanded={isPlanMenu}
+          aria-label={`Plano de ${who(user)}: ${plan.label}. Alterar plano`}
+          onClick={() => setPlanMenuId(isPlanMenu ? null : user.id)}
+          className={cn(
+            "inline-flex min-h-11 items-center gap-1.5 rounded-md border px-3 text-sm font-semibold transition-opacity hover:opacity-80",
+            plan.bg, plan.border, plan.color, focusRing,
+            isUpdating && "cursor-wait opacity-50"
+          )}
+        >
+          <PlanIcon className="h-3.5 w-3.5" aria-hidden />
+          {plan.label}
+          <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden />
+        </button>
+
+        {isPlanMenu && (
+          <div
+            role="group"
+            aria-label={`Escolher plano de ${who(user)}`}
+            className={cn(
+              "mt-1.5 w-44 overflow-hidden rounded-md border border-border-strong bg-surface-2 shadow-2",
+              !inline && "absolute left-0 top-full z-50"
+            )}
+          >
+            {(["FREE", "PREMIUM", "ANNUAL", "LIFETIME"] as Plan[]).map(p => {
+              const pc = planConfig[p];
+              const PI = pc.icon;
+              const current = user.subscription === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  aria-pressed={current}
+                  onClick={() => changePlan(user.id, p)}
+                  className={cn(
+                    "flex min-h-11 w-full items-center gap-2.5 px-3 text-left text-sm font-semibold transition-colors",
+                    "focus-visible:outline-none focus-visible:bg-surface-3",
+                    current ? cn(pc.bg, pc.color) : "text-text-2 hover:bg-surface-3 hover:text-text"
+                  )}
+                >
+                  <PI className={cn("h-4 w-4 flex-shrink-0", current ? pc.color : "")} aria-hidden />
+                  <span>{pc.label}</span>
+                  {current && <Check className="ml-auto h-4 w-4" aria-hidden />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderExpiry = (user: AdminUser) => {
+    const days = daysUntil(user.expiresAt);
+    if (user.subscription === "FREE") return <span className="text-sm text-text-2">—</span>;
+    if (user.subscription === "LIFETIME") return <span className="text-sm font-medium text-warning">Sem expiração</span>;
+    if (days === null) return <span className="text-sm text-text-2">—</span>;
+    if (days < 0) return <span className="text-sm font-semibold text-danger">Expirado</span>;
+    if (days <= 7) return <span className="text-sm font-semibold text-warning">em {days} dia{days !== 1 ? "s" : ""}</span>;
+    return <span className="text-sm text-text-2">{fmt(user.expiresAt!)}</span>;
+  };
+
+  const renderActions = (user: AdminUser) => {
+    const isConfirm  = confirmDeleteId === user.id;
+    const isDeleting = deletingId === user.id;
+    if (isConfirm) {
+      return (
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" className="h-11" onClick={() => setConfirmDeleteId(null)} disabled={isDeleting}>
+            Cancelar
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            className="h-11"
+            loading={isDeleting}
+            aria-label={`Confirmar exclusão de ${who(user)}`}
+            onClick={() => deleteUser(user.id)}
+          >
+            Excluir
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-1">
+        {user.email && (
+          <button
+            type="button"
+            onClick={() => openEmailModal(user)}
+            className={cn(iconBtn, "hover:bg-brand-500/10 hover:text-brand-400")}
+            title="Enviar email"
+            aria-label={`Enviar email para ${who(user)}`}
+          >
+            <Mail className="h-4 w-4" aria-hidden />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setConfirmDeleteId(user.id)}
+          className={cn(iconBtn, "hover:bg-danger/10 hover:text-danger")}
+          title="Excluir usuário"
+          aria-label={`Excluir usuário ${who(user)}`}
+        >
+          <Trash2 className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
+    );
+  };
+
+  const renderCopyEmail = (user: AdminUser) =>
+    user.email ? (
+      <button
+        type="button"
+        onClick={() => copyEmail(user.email!, user.id)}
+        aria-label={copiedId === user.id ? `Email de ${who(user)} copiado` : `Copiar email de ${who(user)}`}
+        className={cn(iconBtn, "hover:text-brand-400")}
+      >
+        {copiedId === user.id ? <Check className="h-4 w-4 text-success" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
+      </button>
+    ) : null;
+
+  const detailItems = (user: AdminUser) => [
+    { label: "ID da conta", value: <span className="font-mono">{user.id}</span> },
+    { label: "Email completo", value: user.email ?? "—" },
+    { label: "Plano ativado em", value: user.activatedAt ? fmt(user.activatedAt) : "—" },
+    { label: "Expira em", value: user.subscription === "LIFETIME" ? "Nunca (vitalício)" : user.expiresAt ? fmt(user.expiresAt) : "—" },
+  ];
+
+  const COLUMNS = [
+    { key: "name",     label: "Usuário"  },
+    { key: "email",    label: "Email"    },
+    { key: "plan",     label: "Plano"    },
+    { key: null,       label: "Login"    },
+    { key: "analyses", label: "Análises" },
+    { key: "joined",   label: "Cadastro" },
+    { key: null,       label: "Expira"   },
+    { key: null,       label: "Ações"    },
+  ] as const;
+
+  const ariaSort = (key: string | null): "ascending" | "descending" | "none" | undefined => {
+    if (!key) return undefined;
+    if (sortBy !== key) return "none";
+    return sortAsc ? "ascending" : "descending";
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-bg text-text">
 
       {/* ── Header ── */}
-      <header className="h-14 border-b border-border/40 bg-background/95 backdrop-blur-xl sticky top-0 z-40 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-1.5">
-            <span className="text-brand-500 text-base leading-none">♥</span>
-            <span className="font-display text-lg font-bold tracking-tight text-foreground">
-              Flert<span className="text-brand-500">.</span>IA
+      <header className="glass sticky top-0 z-40 border-b border-border pt-[env(safe-area-inset-top)]">
+        <div className="mx-auto flex h-topbar max-w-[1400px] items-center justify-between gap-2 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href="/" aria-label="Flert IA — página inicial" className={cn("inline-flex min-h-11 items-center rounded-md", focusRing)}>
+              <Logo size={26} />
+            </Link>
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-brand-500/25 bg-brand-500/10 px-2 py-1 text-caption font-semibold uppercase text-brand-400">
+              <Shield className="h-3.5 w-3.5" aria-hidden />
+              Admin
             </span>
-          </Link>
-          <div className="h-3 w-px bg-border/40" />
-          <div className="flex items-center gap-1.5 px-2.5 py-1 border border-brand-500/25 bg-brand-500/10">
-            <Shield className="h-3 w-3 text-brand-400" />
-            <span className="text-[9.5px] font-bold uppercase tracking-[.2em] text-brand-400">Admin</span>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={exportCSV} disabled={loading || filtered.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-border/40 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border/70 transition-colors disabled:opacity-30">
-            <Download className="h-3 w-3" /> Exportar CSV
-          </button>
-          <button onClick={load} disabled={loading}
-            className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground" title="Recarregar" aria-label="Recarregar">
-            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-          </button>
-          <Link href="/dashboard" className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground" title="Dashboard" aria-label="Ir para o dashboard">
-            <Sparkles className="h-3.5 w-3.5" />
-          </Link>
-          <button onClick={() => signOut({ callbackUrl: "/" })}
-            className="p-1.5 hover:bg-accent/50 transition-colors text-muted-foreground hover:text-danger" title="Sair" aria-label="Sair">
-            <LogOut className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-11 px-3"
+              onClick={exportCSV}
+              disabled={loading || filtered.length === 0}
+              leftIcon={<Download className="h-4 w-4" aria-hidden />}
+            >
+              <span className="sr-only sm:not-sr-only">Exportar CSV</span>
+            </Button>
+            <button type="button" onClick={load} disabled={loading} className={cn(iconBtn, "disabled:opacity-50")} title="Recarregar" aria-label="Recarregar">
+              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin motion-reduce:animate-none")} aria-hidden />
+            </button>
+            <Link href="/dashboard" className={iconBtn} title="Ir para o painel" aria-label="Ir para o painel">
+              <LayoutDashboard className="h-4 w-4" aria-hidden />
+            </Link>
+            <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className={cn(iconBtn, "hover:text-danger")} title="Sair" aria-label="Sair">
+              <LogOut className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
         </div>
       </header>
 
-      <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-8">
+      <main id="main" tabIndex={-1} className="mx-auto max-w-[1400px] space-y-8 px-4 py-6 focus:outline-none sm:px-6 sm:py-8">
 
         {/* ── Title ── */}
         <div>
-          <p className="text-[9.5px] font-bold uppercase tracking-[.28em] text-brand-500/70 mb-2">— Painel Administrativo —</p>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">Controle <span className="text-signal">Total</span></h1>
-          <p className="text-muted-foreground text-sm mt-1.5 font-light">Gerencie usuários, planos e monitore o crescimento do Flert IA</p>
+          <p className="mb-1 text-caption uppercase text-violet-400">Painel administrativo</p>
+          <h1 className="font-display text-h1 text-text">Usuários e campanhas</h1>
+          <p className="mt-2 text-sm text-text-2">Gerencie usuários, planos e envios de email do Flert IA.</p>
         </div>
 
         {/* ── Stats grid ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+        <ul aria-label="Resumo" aria-busy={loading || undefined} className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
           {statCards.map((s, i) => (
-            <motion.div key={s.label}
+            <motion.li key={s.label}
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
-              className="border border-border/30 bg-card/10 px-4 py-4 hover:border-brand-500/20 hover:bg-brand-500/[0.02] transition-colors group">
-              <s.icon className={cn("h-3.5 w-3.5 mb-2.5 transition-transform group-hover:scale-110", s.color)} />
-              <div className={cn("font-display text-xl font-bold tracking-tight leading-none", s.color)}>
+              className="min-w-0 rounded-lg border border-border bg-surface px-4 py-4">
+              <s.icon className={cn("mb-2.5 h-4 w-4", s.color)} aria-hidden />
+              <div className={cn("font-display text-xl font-bold leading-none tracking-tight", s.color)}>
                 {(s as { raw?: boolean }).raw ? s.value : Number(s.value).toLocaleString("pt-BR")}
               </div>
-              <div className="text-[9.5px] font-bold uppercase tracking-[.14em] text-muted-foreground/70 mt-1.5 leading-tight">{s.label}</div>
-              <div className="text-[10px] text-muted-foreground/40 mt-0.5 leading-tight font-light">{s.sub}</div>
-            </motion.div>
+              <div className="mt-1.5 text-caption font-semibold uppercase leading-tight text-text-2">{s.label}</div>
+              <div className="mt-0.5 text-caption leading-tight text-text-2">{s.sub}</div>
+            </motion.li>
           ))}
-        </div>
+        </ul>
 
         {/* ── Tabs ── */}
-        <div className="flex border-b border-border/30 -mb-4">
+        <div role="tablist" aria-label="Seções do painel" className="-mb-4 flex overflow-x-auto border-b border-border">
           {([
             { id: "users", label: "Usuários",           icon: Users },
-            { id: "email", label: "Campanhas de Email", icon: Mail  },
+            { id: "email", label: "Campanhas de email", icon: Mail  },
           ] as const).map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            <button key={tab.id} type="button" role="tab" id={`admin-tab-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              aria-controls={`admin-panel-${tab.id}`}
+              onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[.18em] border-b-2 -mb-px transition-all",
+                "-mb-px flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-4 text-sm font-semibold transition-colors",
+                focusRing,
                 activeTab === tab.id
                   ? "border-brand-500 text-brand-400"
-                  : "border-transparent text-muted-foreground/50 hover:text-foreground"
+                  : "border-transparent text-text-2 hover:text-text"
               )}>
-              <tab.icon className="h-3.5 w-3.5" />
+              <tab.icon className="h-4 w-4" aria-hidden />
               {tab.label}
             </button>
           ))}
@@ -388,69 +580,116 @@ export default function AdminPage() {
 
         {/* ══════════════════ USERS TAB ══════════════════ */}
         {activeTab === "users" && (
-          <>
+          <section role="tabpanel" id="admin-panel-users" aria-labelledby="admin-tab-users" className="space-y-4 pt-4">
             {/* ── Filters ── */}
-            <div className="flex flex-wrap gap-3 items-center">
-              <div className="relative flex-1 min-w-52">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <input type="text" placeholder="Buscar por nome ou email..."
+            <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+              <div className="relative min-w-0 flex-1 lg:min-w-[16rem]">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-2" aria-hidden />
+                <input type="search" placeholder="Buscar por nome ou email..."
+                  aria-label="Buscar usuários por nome ou email"
                   value={search} onChange={e => setSearch(e.target.value)}
-                  className="w-full h-9 pl-9 pr-8 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors" />
+                  className={cn(fieldClass, "h-11 pl-9 pr-12")} />
                 {search && (
-                  <button onClick={() => setSearch("")} aria-label="Limpar busca" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground">
-                    <X className="h-3 w-3" />
+                  <button type="button" onClick={() => setSearch("")} aria-label="Limpar busca"
+                    className={cn(iconBtn, "absolute right-0 top-1/2 -translate-y-1/2")}>
+                    <X className="h-4 w-4" aria-hidden />
                   </button>
                 )}
               </div>
 
-              <div className="flex gap-1.5 flex-wrap">
-                {(["ALL", "FREE", "PREMIUM", "ANNUAL", "LIFETIME"] as const).map(p => {
-                  const cfg = p !== "ALL" ? planConfig[p as Plan] : null;
-                  return (
-                    <button key={p} onClick={() => setFilterPlan(p)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
-                        filterPlan === p
-                          ? cn("border-brand-500/35 bg-brand-500/15 text-brand-300")
-                          : "border-border/40 text-muted-foreground hover:border-border hover:text-foreground"
-                      )}>
-                      {p === "ALL" ? `Todos (${users.length})` : `${cfg!.label} (${stats ? (p === "FREE" ? stats.free : p === "PREMIUM" ? stats.premium : p === "ANNUAL" ? stats.annual : stats.lifetime) : 0})`}
-                    </button>
-                  );
-                })}
+              <div role="group" aria-label="Filtrar por plano" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0 lg:pb-0">
+                {(["ALL", "FREE", "PREMIUM", "ANNUAL", "LIFETIME"] as const).map(p => (
+                  <button key={p} type="button" onClick={() => setFilterPlan(p)}
+                    aria-pressed={filterPlan === p}
+                    className={cn(
+                      "min-h-11 shrink-0 rounded-md border px-3 text-sm font-semibold transition-colors",
+                      focusRing,
+                      filterPlan === p
+                        ? "border-brand-500/35 bg-brand-500/15 text-brand-300"
+                        : "border-border text-text-2 hover:border-border-strong hover:text-text"
+                    )}>
+                    {p === "ALL" ? `Todos (${users.length})` : `${planConfig[p].label} (${planCount(p)})`}
+                  </button>
+                ))}
               </div>
 
-              <span className="text-xs text-muted-foreground/60 ml-auto whitespace-nowrap">
-                {filtered.length} de {users.length} usuário{users.length !== 1 ? "s" : ""}
-              </span>
+              <p aria-live="polite" className="text-sm text-text-2 lg:ml-auto lg:whitespace-nowrap">
+                {visibleCount} de {users.length} usuário{users.length !== 1 ? "s" : ""}
+              </p>
             </div>
 
-            {/* ── Table ── */}
-            <div className="rounded-2xl border border-border/40 bg-card/10 overflow-hidden">
+            {/* ── Mobile: cartões empilhados ── */}
+            <div className="md:hidden">
+              {loading ? (
+                <div aria-hidden className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="h-40 animate-pulse rounded-lg border border-border bg-surface motion-reduce:animate-none" />
+                  ))}
+                </div>
+              ) : filtered.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-text-2">Nenhum usuário encontrado</p>
+              ) : (
+                <ul aria-label="Usuários" className="space-y-3">
+                  {filtered.map(user => (
+                    <li key={user.id}
+                      className={cn("rounded-lg border bg-surface p-4", confirmDeleteId === user.id ? "border-danger/40" : "border-border")}>
+                      <div className="flex items-start gap-3">
+                        <UserAvatar user={user} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-text">{user.name ?? "—"}</p>
+                          <p className="break-all text-sm text-text-2">{user.email ?? "—"}</p>
+                        </div>
+                        {renderCopyEmail(user)}
+                      </div>
+
+                      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                        <div><dt className="text-caption text-text-2">Login</dt><dd className="text-text">{user.loginMethod === "google" ? "Google" : "Email"}</dd></div>
+                        <div><dt className="text-caption text-text-2">Análises</dt><dd className="text-text tabular-nums">{user.analysisCount}</dd></div>
+                        <div><dt className="text-caption text-text-2">Cadastro</dt><dd className="text-text">{fmt(user.createdAt)}</dd></div>
+                        <div><dt className="text-caption text-text-2">Expira</dt><dd>{renderExpiry(user)}</dd></div>
+                      </dl>
+
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+                        {renderPlanControl(user)}
+                        {renderActions(user)}
+                      </div>
+
+                      <details className="group mt-2">
+                        <summary className={cn("flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-md text-sm font-medium text-text-2 hover:text-text [&::-webkit-details-marker]:hidden", focusRing)}>
+                          <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
+                          Mais detalhes
+                        </summary>
+                        <dl className="space-y-2 pb-1 text-sm">
+                          {detailItems(user).map(d => (
+                            <div key={d.label}><dt className="text-caption text-text-2">{d.label}</dt><dd className="break-all text-text">{d.value}</dd></div>
+                          ))}
+                        </dl>
+                      </details>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* ── md+: tabela com rolagem horizontal ── */}
+            <div className="hidden overflow-hidden rounded-lg border border-border bg-surface md:block">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[900px] text-sm">
+                  <caption className="sr-only">Usuários cadastrados</caption>
                   <thead>
-                    <tr className="border-b border-border/40 bg-card/40">
-                      {[
-                        { key: "name",     label: "Usuário"  },
-                        { key: "email",    label: "Email"    },
-                        { key: "plan",     label: "Plano"    },
-                        { key: null,       label: "Login"    },
-                        { key: "analyses", label: "Análises" },
-                        { key: "joined",   label: "Cadastro" },
-                        { key: null,       label: "Expira"   },
-                        { key: null,       label: "Ações"    },
-                      ].map((col, i) => (
-                        <th key={i}
-                          onClick={() => col.key && toggleSort(col.key)}
-                          className={cn(
-                            "text-left px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground select-none",
-                            col.key && "cursor-pointer hover:text-foreground transition-colors"
-                          )}>
-                          <span className="flex items-center gap-1">
-                            {col.label}
-                            {col.key && <SortIcon field={col.key} current={sortBy} asc={sortAsc} />}
-                          </span>
+                    <tr className="border-b border-border bg-surface-2">
+                      {COLUMNS.map((col) => (
+                        <th key={col.label} scope="col" aria-sort={ariaSort(col.key)}
+                          className="px-4 py-2 text-left text-caption font-semibold uppercase text-text-2">
+                          {col.key ? (
+                            <button type="button" onClick={() => toggleSort(col.key)}
+                              className={cn("-mx-2 inline-flex min-h-11 items-center gap-1 rounded-md px-2 uppercase hover:text-text", focusRing)}>
+                              {col.label}
+                              <SortIcon field={col.key} current={sortBy} asc={sortAsc} />
+                            </button>
+                          ) : (
+                            col.label
+                          )}
                         </th>
                       ))}
                     </tr>
@@ -458,391 +697,232 @@ export default function AdminPage() {
                   <tbody>
                     {loading ? (
                       Array.from({ length: 5 }).map((_, i) => (
-                        <tr key={i} className="border-b border-border/20">
+                        <tr key={i} className="border-b border-border/60">
                           {Array.from({ length: 8 }).map((_, j) => (
                             <td key={j} className="px-4 py-3.5">
-                              <div className="h-3.5 rounded bg-muted/30 animate-pulse" style={{ width: `${50 + Math.random() * 40}%` }} />
+                              <div className="h-3.5 w-3/4 rounded bg-surface-2 animate-pulse motion-reduce:animate-none" />
                             </td>
                           ))}
                         </tr>
                       ))
                     ) : filtered.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-16 text-center text-muted-foreground text-sm">
+                        <td colSpan={8} className="px-4 py-16 text-center text-sm text-text-2">
                           Nenhum usuário encontrado
                         </td>
                       </tr>
                     ) : (
-                      <AnimatePresence initial={false}>
-                        {filtered.map(user => {
-                          const plan       = planConfig[user.subscription];
-                          const PlanIcon   = plan.icon;
-                          const isExpanded = expandedId === user.id;
-                          const isConfirm  = confirmDeleteId === user.id;
-                          const isDeleting = deletingId === user.id;
-                          const isUpdating = updatingId === user.id;
-                          const isPlanMenu = planMenuId === user.id;
-                          const days       = daysUntil(user.expiresAt);
-
-                          return (
-                            <>
-                              <motion.tr key={user.id}
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className={cn(
-                                  "border-b border-border/20 transition-colors group",
-                                  isExpanded ? "bg-card/40" : "hover:bg-card/25",
-                                  isConfirm && "bg-danger/5"
-                                )}>
-
-                                <td className="px-4 py-3 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : user.id)}>
-                                  <div className="flex items-center gap-2.5">
-                                    <UserAvatar user={user} />
-                                    <div className="min-w-0">
-                                      <p className="font-medium text-foreground truncate max-w-[110px] text-sm leading-tight">
-                                        {user.name ?? "—"}
-                                      </p>
-                                      {user.analysisCount > 0 && (
-                                        <p className="text-[10px] text-muted-foreground/50 leading-tight">{user.analysisCount} análises</p>
-                                      )}
-                                    </div>
-                                    <ChevronRight className={cn("h-3 w-3 text-muted-foreground/30 transition-transform ml-1 flex-shrink-0", isExpanded && "rotate-90")} />
-                                  </div>
-                                </td>
-
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-muted-foreground truncate max-w-[160px] text-xs">{user.email ?? "—"}</span>
-                                    {user.email && (
-                                      <button onClick={() => copyEmail(user.email!, user.id)} aria-label="Copiar email"
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/40 hover:text-brand-400 flex-shrink-0">
-                                        {copiedId === user.id ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
-                                      </button>
+                      filtered.map(user => {
+                        const isExpanded = expandedId === user.id;
+                        const isConfirm  = confirmDeleteId === user.id;
+                        return (
+                          <Fragment key={user.id}>
+                            <tr className={cn(
+                                "border-b border-border/60 transition-colors",
+                                isExpanded ? "bg-surface-2" : "hover:bg-surface-2/60",
+                                isConfirm && "bg-danger/5"
+                              )}>
+                              <td className="px-4 py-2">
+                                <button type="button"
+                                  aria-expanded={isExpanded}
+                                  aria-controls={`admin-details-${user.id}`}
+                                  aria-label={`Detalhes de ${who(user)}`}
+                                  onClick={() => setExpandedId(isExpanded ? null : user.id)}
+                                  className={cn("-mx-2 flex min-h-11 items-center gap-2.5 rounded-md px-2 text-left", focusRing)}>
+                                  <UserAvatar user={user} />
+                                  <span className="min-w-0">
+                                    <span className="block max-w-[140px] truncate text-sm font-medium leading-tight text-text">{user.name ?? "—"}</span>
+                                    {user.analysisCount > 0 && (
+                                      <span className="block text-caption leading-tight text-text-2">{user.analysisCount} análises</span>
                                     )}
-                                  </div>
-                                </td>
-
-                                <td className="px-4 py-3">
-                                  <div className="relative" ref={isPlanMenu ? menuRef : undefined}>
-                                    <button
-                                      disabled={isUpdating}
-                                      onClick={() => setPlanMenuId(isPlanMenu ? null : user.id)}
-                                      className={cn(
-                                        "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all",
-                                        plan.bg, plan.border, plan.color,
-                                        isUpdating && "opacity-50 cursor-wait",
-                                        "hover:opacity-80"
-                                      )}>
-                                      <PlanIcon className="h-3 w-3" />
-                                      {plan.label}
-                                      <ChevronDown className="h-2.5 w-2.5 opacity-60" />
-                                    </button>
-
-                                    <AnimatePresence>
-                                      {isPlanMenu && (
-                                        <motion.div
-                                          initial={{ opacity: 0, y: -6, scale: 0.96 }}
-                                          animate={{ opacity: 1, y: 0,  scale: 1    }}
-                                          exit={{  opacity: 0, y: -6, scale: 0.96 }}
-                                          transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                                          className="absolute top-full mt-1.5 left-0 z-50 w-40 rounded-xl border border-border/50 bg-background/95 backdrop-blur-xl shadow-xl overflow-hidden">
-                                          {(["FREE", "PREMIUM", "ANNUAL", "LIFETIME"] as Plan[]).map(p => {
-                                            const pc = planConfig[p];
-                                            const PI = pc.icon;
-                                            return (
-                                              <button key={p}
-                                                onClick={() => changePlan(user.id, p)}
-                                                className={cn(
-                                                  "w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold transition-colors text-left",
-                                                  user.subscription === p
-                                                    ? cn(pc.bg, pc.color)
-                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                                                )}>
-                                                <PI className={cn("h-3.5 w-3.5 flex-shrink-0", user.subscription === p ? pc.color : "")} />
-                                                <span>{pc.label}</span>
-                                                {user.subscription === p && <Check className="h-3 w-3 ml-auto" />}
-                                              </button>
-                                            );
-                                          })}
-                                        </motion.div>
-                                      )}
-                                    </AnimatePresence>
-                                  </div>
-                                </td>
-
-                                <td className="px-4 py-3">
-                                  <span className={cn(
-                                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border",
-                                    user.loginMethod === "google"
-                                      ? "bg-violet-500/10 border-violet-500/20 text-violet-400"
-                                      : "bg-muted/40 border-border/30 text-muted-foreground"
-                                  )}>
-                                    {user.loginMethod === "google" ? "Google" : "Email"}
                                   </span>
-                                </td>
+                                  <ChevronRight className={cn("ml-1 h-4 w-4 flex-shrink-0 text-text-2 transition-transform motion-reduce:transition-none", isExpanded && "rotate-90")} aria-hidden />
+                                </button>
+                              </td>
 
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-1.5">
-                                    <div className={cn(
-                                      "h-1.5 w-1.5 rounded-full flex-shrink-0",
-                                      user.analysisCount > 10 ? "bg-success" : user.analysisCount > 0 ? "bg-warning" : "bg-muted-foreground/30"
-                                    )} />
-                                    <span className="text-foreground/80 text-sm">{user.analysisCount}</span>
-                                  </div>
-                                </td>
+                              <td className="px-4 py-2">
+                                <div className="flex items-center gap-1">
+                                  <span className="max-w-[180px] truncate text-sm text-text-2">{user.email ?? "—"}</span>
+                                  {renderCopyEmail(user)}
+                                </div>
+                              </td>
 
-                                <td className="px-4 py-3 text-muted-foreground text-xs">{fmt(user.createdAt)}</td>
+                              <td className="px-4 py-2 align-top">{renderPlanControl(user, true)}</td>
 
-                                <td className="px-4 py-3">
-                                  {user.subscription === "FREE" ? (
-                                    <span className="text-muted-foreground/40 text-xs">—</span>
-                                  ) : user.subscription === "LIFETIME" ? (
-                                    <span className="text-warning/70 text-xs font-medium">Eterno</span>
-                                  ) : days === null ? (
-                                    <span className="text-muted-foreground/40 text-xs">—</span>
-                                  ) : days < 0 ? (
-                                    <span className="text-danger text-xs font-semibold">Expirado</span>
-                                  ) : days <= 7 ? (
-                                    <span className="text-warning text-xs font-semibold">{days}d</span>
-                                  ) : (
-                                    <span className="text-muted-foreground text-xs">{fmt(user.expiresAt!)}</span>
-                                  )}
-                                </td>
+                              <td className="px-4 py-2">
+                                <span className={cn(
+                                  "inline-flex items-center rounded-md border px-2 py-0.5 text-caption font-semibold",
+                                  user.loginMethod === "google"
+                                    ? "border-violet-500/20 bg-violet-500/10 text-violet-400"
+                                    : "border-border bg-surface-2 text-text-2"
+                                )}>
+                                  {user.loginMethod === "google" ? "Google" : "Email"}
+                                </span>
+                              </td>
 
-                                <td className="px-4 py-3">
-                                  <AnimatePresence mode="wait" initial={false}>
-                                    {isConfirm ? (
-                                      <motion.div key="confirm"
-                                        initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}
-                                        className="flex items-center gap-1">
-                                        <button onClick={() => setConfirmDeleteId(null)} disabled={isDeleting}
-                                          className="px-2 py-1 rounded-lg text-xs border border-border/40 text-muted-foreground hover:text-foreground transition-colors">
-                                          Cancelar
-                                        </button>
-                                        <button onClick={() => deleteUser(user.id)} disabled={isDeleting}
-                                          className="px-2 py-1 rounded-lg text-xs bg-danger/10 border border-danger/30 text-danger hover:bg-danger/20 transition-colors disabled:opacity-50">
-                                          {isDeleting ? "..." : "Excluir"}
-                                        </button>
-                                      </motion.div>
-                                    ) : (
-                                      <motion.div key="actions"
-                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {user.email && (
-                                          <button onClick={() => openEmailModal(user)}
-                                            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-brand-400 hover:bg-brand-500/10 transition-colors"
-                                            title="Enviar email" aria-label="Enviar email">
-                                            <Mail className="h-3.5 w-3.5" />
-                                          </button>
-                                        )}
-                                        <button onClick={() => setConfirmDeleteId(user.id)}
-                                          className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-danger hover:bg-danger/10 transition-colors"
-                                          title="Excluir usuário" aria-label="Excluir usuário">
-                                          <Trash2 className="h-3.5 w-3.5" />
-                                        </button>
-                                      </motion.div>
-                                    )}
-                                  </AnimatePresence>
-                                </td>
-                              </motion.tr>
+                              <td className="px-4 py-2 tabular-nums text-text">{user.analysisCount}</td>
 
-                              <AnimatePresence>
-                                {isExpanded && (
-                                  <motion.tr key={`${user.id}-expanded`}
-                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                    <td colSpan={8} className="px-6 pb-4 pt-0 bg-card/30 border-b border-border/20">
-                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3">
-                                        <div className="p-3 rounded-xl bg-background/50 border border-border/30">
-                                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">ID da conta</p>
-                                          <p className="text-xs font-mono text-foreground/60 break-all">{user.id}</p>
-                                        </div>
-                                        <div className="p-3 rounded-xl bg-background/50 border border-border/30">
-                                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Email completo</p>
-                                          <p className="text-xs text-foreground break-all">{user.email ?? "—"}</p>
-                                        </div>
-                                        <div className="p-3 rounded-xl bg-background/50 border border-border/30">
-                                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Plano ativado em</p>
-                                          <p className="text-xs text-foreground">{user.activatedAt ? fmt(user.activatedAt) : "—"}</p>
-                                        </div>
-                                        <div className="p-3 rounded-xl bg-background/50 border border-border/30">
-                                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Expira em</p>
-                                          <p className="text-xs text-foreground">
-                                            {user.subscription === "LIFETIME" ? "Nunca (vitalício)" : user.expiresAt ? fmt(user.expiresAt) : "—"}
-                                          </p>
-                                        </div>
+                              <td className="px-4 py-2 text-sm text-text-2">{fmt(user.createdAt)}</td>
+
+                              <td className="px-4 py-2">{renderExpiry(user)}</td>
+
+                              <td className="px-4 py-2">{renderActions(user)}</td>
+                            </tr>
+
+                            {isExpanded && (
+                              <tr id={`admin-details-${user.id}`}>
+                                <td colSpan={8} className="border-b border-border/60 bg-surface-2 px-6 pb-4 pt-0">
+                                  <dl className="grid grid-cols-2 gap-3 pt-3 lg:grid-cols-4">
+                                    {detailItems(user).map(d => (
+                                      <div key={d.label} className="rounded-md border border-border bg-surface p-3">
+                                        <dt className="mb-1 text-caption font-semibold uppercase text-text-2">{d.label}</dt>
+                                        <dd className="break-all text-sm text-text">{d.value}</dd>
                                       </div>
-                                    </td>
-                                  </motion.tr>
-                                )}
-                              </AnimatePresence>
-                            </>
-                          );
-                        })}
-                      </AnimatePresence>
+                                    ))}
+                                  </dl>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
               </div>
             </div>
-          </>
+          </section>
         )}
 
         {/* ══════════════════ EMAIL TAB ══════════════════ */}
         {activeTab === "email" && (
-          <div className="space-y-6 pt-4">
+          <section role="tabpanel" id="admin-panel-email" aria-labelledby="admin-tab-email" className="space-y-6 pt-4">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Campanhas</p>
-              <h2 className="font-display text-lg font-bold tracking-tight text-foreground">Envio de Emails</h2>
-              <p className="text-muted-foreground text-sm mt-1">Envie emails em massa para segmentos específicos de usuários.</p>
+              <h2 className="font-display text-h3 text-text">Envio de emails</h2>
+              <p className="mt-1 text-sm text-text-2">Envie emails em massa para segmentos específicos de usuários.</p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
 
               {/* ── Template: Free Upsell ── */}
-              <div className="rounded-2xl border border-border/40 bg-card/20 p-6 flex flex-col">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-brand-500/10 flex items-center justify-center flex-shrink-0">
-                      <Zap className="h-5 w-5 text-brand-400" />
+              <div className="flex flex-col rounded-lg border border-border bg-surface p-4 sm:p-6">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-brand-500/10">
+                      <Zap className="h-5 w-5 text-brand-400" aria-hidden />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground text-sm">Ainda não escolheu um plano?</h3>
-                      <p className="text-xs text-muted-foreground">Usuários grátis</p>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-text">Ainda não escolheu um plano?</h3>
+                      <p className="text-sm text-text-2">Usuários grátis</p>
                     </div>
                   </div>
                   <span className={cn(
-                    "px-2.5 py-1 rounded-lg text-xs font-bold border flex-shrink-0",
-                    freeCount === 0
-                      ? "bg-muted/30 border-border/30 text-muted-foreground/50"
-                      : "bg-brand-500/10 border-brand-500/20 text-brand-400"
+                    "flex-shrink-0 rounded-md border px-2.5 py-1 text-caption font-bold",
+                    freeCount === 0 ? "border-border bg-surface-2 text-text-2" : "border-brand-500/20 bg-brand-500/10 text-brand-400"
                   )}>
                     {freeCount} usuário{freeCount !== 1 ? "s" : ""}
                   </span>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-3 leading-relaxed flex-1">
+                <p className="mb-3 flex-1 text-sm leading-relaxed text-text-2">
                   Envia um email para todos os usuários no plano grátis lembrando de escolher um plano e destravar o acesso completo.
                 </p>
 
-                <p className="text-[11px] text-muted-foreground/50 font-mono mb-4 p-2.5 rounded-lg bg-muted/20 border border-border/20 leading-relaxed">
+                <p className="mb-4 rounded-md border border-border bg-surface-2 p-2.5 font-mono text-caption leading-relaxed text-text-2">
                   Assunto: &ldquo;Não acha que está na hora de destravar suas conversas? 💘&rdquo;
                 </p>
 
-                <AnimatePresence mode="wait" initial={false}>
-                  {confirmTemplate === "free_upsell" ? (
-                    <motion.div key="confirm"
-                      initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                      className="flex gap-2">
-                      <button onClick={() => setConfirmTemplate(null)}
-                        className="flex-1 py-2 rounded-xl text-xs border border-border/40 text-muted-foreground hover:text-foreground transition-colors">
-                        Cancelar
-                      </button>
-                      <button onClick={() => sendCampaign("free_upsell")}
-                        disabled={sendingTemplate === "free_upsell" || freeCount === 0}
-                        className="flex-1 py-2 rounded-xl text-xs bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
-                        {sendingTemplate === "free_upsell" ? (
-                          <><span className="h-3 w-3 rounded-full border-[1.5px] border-white border-t-transparent animate-spin" /> Enviando...</>
-                        ) : (
-                          <><Check className="h-3 w-3" /> Confirmar envio</>
-                        )}
-                      </button>
-                    </motion.div>
-                  ) : (
-                    <motion.button key="send"
-                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      onClick={() => setConfirmTemplate("free_upsell")}
+                {confirmTemplate === "free_upsell" ? (
+                  <div className="flex gap-2">
+                    <Button variant="secondary" className="flex-1" onClick={() => setConfirmTemplate(null)}>
+                      Cancelar
+                    </Button>
+                    <Button className="flex-1" onClick={() => sendCampaign("free_upsell")}
+                      loading={sendingTemplate === "free_upsell"}
                       disabled={freeCount === 0}
-                      className="w-full py-2.5 rounded-xl text-xs border border-brand-500/30 text-brand-400 hover:bg-brand-500/10 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
-                      <Send className="h-3.5 w-3.5" />
-                      Enviar para {freeCount} usuário{freeCount !== 1 ? "s" : ""}
-                    </motion.button>
-                  )}
-                </AnimatePresence>
+                      leftIcon={<Check className="h-4 w-4" aria-hidden />}>
+                      {sendingTemplate === "free_upsell" ? "Enviando..." : "Confirmar envio"}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="outline" className="w-full" onClick={() => setConfirmTemplate("free_upsell")}
+                    disabled={freeCount === 0}
+                    leftIcon={<Send className="h-4 w-4" aria-hidden />}>
+                    Enviar para {freeCount} usuário{freeCount !== 1 ? "s" : ""}
+                  </Button>
+                )}
               </div>
 
               {/* ── Template: Expiring Soon ── */}
-              <div className="rounded-2xl border border-border/40 bg-card/20 p-6 flex flex-col">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
-                      <Clock className="h-5 w-5 text-warning" />
+              <div className="flex flex-col rounded-lg border border-border bg-surface p-4 sm:p-6">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-warning/10">
+                      <Clock className="h-5 w-5 text-warning" aria-hidden />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground text-sm">Plano expirando em breve</h3>
-                      <p className="text-xs text-muted-foreground">Planos expirando em até 7 dias</p>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-text">Plano expirando em breve</h3>
+                      <p className="text-sm text-text-2">Planos expirando em até 7 dias</p>
                     </div>
                   </div>
                   <span className={cn(
-                    "px-2.5 py-1 rounded-lg text-xs font-bold border flex-shrink-0",
-                    expiringCount === 0
-                      ? "bg-muted/30 border-border/30 text-muted-foreground/50"
-                      : "bg-warning/10 border-warning/20 text-warning"
+                    "flex-shrink-0 rounded-md border px-2.5 py-1 text-caption font-bold",
+                    expiringCount === 0 ? "border-border bg-surface-2 text-text-2" : "border-warning/20 bg-warning/10 text-warning"
                   )}>
                     {expiringCount} usuário{expiringCount !== 1 ? "s" : ""}
                   </span>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-3 leading-relaxed flex-1">
+                <p className="mb-3 flex-1 text-sm leading-relaxed text-text-2">
                   Avisa quem tem plano Mensal ou Anual expirando nos próximos 7 dias para renovar antes de perder o acesso.
                 </p>
 
-                <p className="text-[11px] text-muted-foreground/50 font-mono mb-4 p-2.5 rounded-lg bg-muted/20 border border-border/20 leading-relaxed">
+                <p className="mb-4 rounded-md border border-border bg-surface-2 p-2.5 font-mono text-caption leading-relaxed text-text-2">
                   Assunto: &ldquo;Seu plano expira em X dia(s) ⚡&rdquo;
                 </p>
 
-                <AnimatePresence mode="wait" initial={false}>
-                  {confirmTemplate === "expiring" ? (
-                    <motion.div key="confirm"
-                      initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                      className="flex gap-2">
-                      <button onClick={() => setConfirmTemplate(null)}
-                        className="flex-1 py-2 rounded-xl text-xs border border-border/40 text-muted-foreground hover:text-foreground transition-colors">
-                        Cancelar
-                      </button>
-                      <button onClick={() => sendCampaign("expiring")}
-                        disabled={sendingTemplate === "expiring" || expiringCount === 0}
-                        className="flex-1 py-2 rounded-xl text-xs bg-warning hover:bg-warning/90 text-bg font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
-                        {sendingTemplate === "expiring" ? (
-                          <><span className="h-3 w-3 rounded-full border-[1.5px] border-white border-t-transparent animate-spin" /> Enviando...</>
-                        ) : (
-                          <><Check className="h-3 w-3" /> Confirmar envio</>
-                        )}
-                      </button>
-                    </motion.div>
-                  ) : (
-                    <motion.button key="send"
-                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      onClick={() => setConfirmTemplate("expiring")}
+                {confirmTemplate === "expiring" ? (
+                  <div className="flex gap-2">
+                    <Button variant="secondary" className="flex-1" onClick={() => setConfirmTemplate(null)}>
+                      Cancelar
+                    </Button>
+                    <Button className="flex-1" onClick={() => sendCampaign("expiring")}
+                      loading={sendingTemplate === "expiring"}
                       disabled={expiringCount === 0}
-                      className="w-full py-2.5 rounded-xl text-xs border border-warning/30 text-warning hover:bg-warning/10 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5">
-                      <Send className="h-3.5 w-3.5" />
-                      {expiringCount === 0 ? "Nenhum plano expirando" : `Enviar para ${expiringCount} usuário${expiringCount !== 1 ? "s" : ""}`}
-                    </motion.button>
-                  )}
-                </AnimatePresence>
+                      leftIcon={<Check className="h-4 w-4" aria-hidden />}>
+                      {sendingTemplate === "expiring" ? "Enviando..." : "Confirmar envio"}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="outline" className="w-full" onClick={() => setConfirmTemplate("expiring")}
+                    disabled={expiringCount === 0}
+                    leftIcon={<Send className="h-4 w-4" aria-hidden />}>
+                    {expiringCount === 0 ? "Nenhum plano expirando" : `Enviar para ${expiringCount} usuário${expiringCount !== 1 ? "s" : ""}`}
+                  </Button>
+                )}
               </div>
             </div>
 
             {/* ── Template: Custom ── */}
-            <div className="rounded-2xl border border-border/40 bg-card/20 p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center flex-shrink-0">
-                  <Mail className="h-5 w-5 text-violet-400" />
+            <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-violet-500/10">
+                  <Mail className="h-5 w-5 text-violet-400" aria-hidden />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-foreground text-sm">Email personalizado</h3>
-                  <p className="text-xs text-muted-foreground">Escreva sua própria mensagem para o público que escolher</p>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-text">Email personalizado</h3>
+                  <p className="text-sm text-text-2">Escreva sua própria mensagem para o público que escolher</p>
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-4 mb-4">
+              <div className="mb-4 grid gap-4 md:grid-cols-3">
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-2">
-                    Destinatários
-                  </label>
+                  <label htmlFor="custom-target" className={labelClass}>Destinatários</label>
                   <select
+                    id="custom-target"
                     value={customTarget}
                     onChange={e => setCustomTarget(e.target.value)}
-                    className="w-full h-9 px-3 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground focus:outline-none focus:border-brand-500/40 transition-colors">
+                    className={cn(fieldClass, "h-11")}>
                     <option value="FREE">Grátis ({stats?.free ?? 0})</option>
                     <option value="ALL">Todos os usuários ({users.length})</option>
                     <option value="PREMIUM">Mensal ({stats?.premium ?? 0})</option>
@@ -852,169 +932,140 @@ export default function AdminPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-2">
-                    Assunto
-                  </label>
+                  <label htmlFor="custom-subject" className={labelClass}>Assunto</label>
                   <input
+                    id="custom-subject"
                     type="text"
                     placeholder="Ex: Novidades no Flert IA 🚀"
                     value={customSubject}
                     onChange={e => setCustomSubject(e.target.value)}
-                    className="w-full h-9 px-3 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors" />
+                    className={cn(fieldClass, "h-11")} />
                 </div>
               </div>
 
               <div className="mb-5">
-                <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-2">
-                  Mensagem <span className="normal-case tracking-normal font-normal opacity-50">(texto simples, uma linha por parágrafo)</span>
+                <label htmlFor="custom-body" className={labelClass}>
+                  Mensagem <span className="font-normal text-text-2">(texto simples, uma linha por parágrafo)</span>
                 </label>
                 <textarea
+                  id="custom-body"
                   rows={5}
+                  aria-describedby="custom-body-hint"
                   placeholder={"Olá! Passando para avisar sobre..."}
                   value={customBody}
                   onChange={e => setCustomBody(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors resize-none leading-relaxed" />
-                <p className="text-[11px] text-muted-foreground/40 mt-1.5">
+                  className={cn(fieldClass, "resize-y py-2.5 leading-relaxed")} />
+                <p id="custom-body-hint" className="mt-1.5 text-sm text-text-2">
                   O email incluirá automaticamente a saudação com o nome do usuário e um botão &ldquo;Acessar Flert IA&rdquo;.
                 </p>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-border/30">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="flex items-center gap-2 text-sm text-text-2">
                   {(!customSubject.trim() || !customBody.trim()) && (
-                    <><AlertCircle className="h-3.5 w-3.5 text-warning/70" /> Preencha assunto e mensagem</>
+                    <><AlertCircle className="h-4 w-4 text-warning" aria-hidden /> Preencha assunto e mensagem</>
                   )}
-                </div>
+                </p>
 
-                <AnimatePresence mode="wait" initial={false}>
-                  {confirmTemplate === "custom" ? (
-                    <motion.div key="confirm"
-                      initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}
-                      className="flex gap-2">
-                      <button onClick={() => setConfirmTemplate(null)}
-                        className="px-4 py-2 rounded-xl text-xs border border-border/40 text-muted-foreground hover:text-foreground transition-colors">
-                        Cancelar
-                      </button>
-                      <button onClick={() => sendCampaign("custom")}
-                        disabled={sendingTemplate === "custom"}
-                        className="px-4 py-2 rounded-xl text-xs bg-violet-500 hover:bg-violet-600 text-white font-semibold transition-colors disabled:opacity-50 flex items-center gap-1.5">
-                        {sendingTemplate === "custom" ? (
-                          <><span className="h-3 w-3 rounded-full border-[1.5px] border-white border-t-transparent animate-spin" /> Enviando...</>
-                        ) : (
-                          <><Check className="h-3 w-3" /> Confirmar — {customCount} usuário{customCount !== 1 ? "s" : ""}</>
-                        )}
-                      </button>
-                    </motion.div>
-                  ) : (
-                    <motion.button key="send"
-                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      onClick={() => setConfirmTemplate("custom")}
-                      disabled={!customSubject.trim() || !customBody.trim() || customCount === 0}
-                      className="px-4 py-2 rounded-xl text-xs border border-violet-500/30 text-violet-400 hover:bg-violet-500/10 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5">
-                      <Send className="h-3.5 w-3.5" />
-                      Enviar para {customCount} usuário{customCount !== 1 ? "s" : ""}
-                    </motion.button>
-                  )}
-                </AnimatePresence>
+                {confirmTemplate === "custom" ? (
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button variant="secondary" onClick={() => setConfirmTemplate(null)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={() => sendCampaign("custom")}
+                      loading={sendingTemplate === "custom"}
+                      leftIcon={<Check className="h-4 w-4" aria-hidden />}>
+                      {sendingTemplate === "custom" ? "Enviando..." : `Confirmar — ${customCount} usuário${customCount !== 1 ? "s" : ""}`}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="outline" onClick={() => setConfirmTemplate("custom")}
+                    disabled={!customSubject.trim() || !customBody.trim() || customCount === 0}
+                    leftIcon={<Send className="h-4 w-4" aria-hidden />}>
+                    Enviar para {customCount} usuário{customCount !== 1 ? "s" : ""}
+                  </Button>
+                )}
               </div>
             </div>
-          </div>
+          </section>
         )}
 
-        <p className="text-xs text-muted-foreground/30 text-center pb-4">
-          Flert IA · Painel Restrito · {new Date().getFullYear()}
+        <p className="pb-4 text-center text-caption text-text-2">
+          Flert IA · Painel restrito · {new Date().getFullYear()}
         </p>
-      </div>
+      </main>
 
-      {/* ── Single-user email modal ── */}
-      <AnimatePresence>
+      {/* ── Single-user email modal (Radix Dialog: role=dialog, prende o foco, Esc fecha) ── */}
+      <Dialog open={emailModal !== null} onOpenChange={(open) => { if (!open) setEmailModal(null); }}>
         {emailModal && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={e => { if (e.target === e.currentTarget) setEmailModal(null); }}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 12 }}
-              animate={{ opacity: 1, scale: 1,    y: 0  }}
-              exit={{    opacity: 0, scale: 0.95, y: 12 }}
-              transition={{ type: "spring", stiffness: 380, damping: 30 }}
-              className="w-full max-w-md rounded-2xl border border-border/50 bg-background shadow-2xl overflow-hidden">
-
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
-                <div className="flex items-center gap-3">
-                  <UserAvatar user={emailModal} />
-                  <div>
-                    <p className="font-semibold text-foreground text-sm leading-tight">{emailModal.name ?? "—"}</p>
-                    <p className="text-xs text-muted-foreground leading-tight">{emailModal.email}</p>
-                  </div>
-                </div>
-                <button onClick={() => setEmailModal(null)} aria-label="Fechar"
-                  className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="h-4 w-4" />
-                </button>
+          <DialogContent className="gap-0 overflow-hidden p-0">
+            {/* Header */}
+            <div className="flex items-center gap-3 border-b border-border px-5 py-4 pr-14">
+              <UserAvatar user={emailModal} />
+              <div className="min-w-0">
+                <DialogTitle className="truncate text-sm font-semibold leading-tight">
+                  Enviar email para {emailModal.name ?? "—"}
+                </DialogTitle>
+                <DialogDescription className="break-all text-sm leading-tight">{emailModal.email}</DialogDescription>
               </div>
+            </div>
 
-              {/* Template selector */}
-              <div className="px-5 py-4 space-y-2">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Escolha o email</p>
+            {/* Template selector */}
+            <div className="max-h-[60dvh] space-y-2 overflow-y-auto px-5 py-4">
+              <p className="mb-3 text-caption font-semibold uppercase text-text-2" id="modal-template-label">Escolha o email</p>
 
+              <div role="group" aria-labelledby="modal-template-label" className="space-y-2">
                 {([
                   { id: "free_upsell", label: "Convide para escolher um plano", desc: "\"Não acha que está na hora de destravar suas conversas?\"", icon: Zap,   color: "text-brand-400"  },
                   { id: "expiring",    label: "Plano expirando em breve",        desc: "Lembra de renovar antes de perder o acesso",                icon: Clock, color: "text-warning"  },
                   { id: "custom",      label: "Mensagem personalizada",           desc: "Escreva sua própria mensagem",                               icon: Mail,  color: "text-violet-400" },
                 ] as const).map(t => (
-                  <button key={t.id} onClick={() => setModalTemplate(t.id)}
+                  <button key={t.id} type="button" onClick={() => setModalTemplate(t.id)}
+                    aria-pressed={modalTemplate === t.id}
                     className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all",
+                      "flex min-h-11 w-full items-center gap-3 rounded-md border p-3 text-left transition-colors",
+                      focusRing,
                       modalTemplate === t.id
                         ? "border-brand-500/40 bg-brand-500/10"
-                        : "border-border/30 hover:border-border/60 hover:bg-accent/30"
+                        : "border-border hover:border-border-strong hover:bg-surface-2"
                     )}>
-                    <t.icon className={cn("h-4 w-4 flex-shrink-0", t.color)} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground leading-tight">{t.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{t.desc}</p>
-                    </div>
-                    {modalTemplate === t.id && <Check className="h-3.5 w-3.5 text-brand-400 flex-shrink-0" />}
+                    <t.icon className={cn("h-4 w-4 flex-shrink-0", t.color)} aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium leading-tight text-text">{t.label}</span>
+                      <span className="mt-0.5 block text-sm leading-snug text-text-2">{t.desc}</span>
+                    </span>
+                    {modalTemplate === t.id && <Check className="h-4 w-4 flex-shrink-0 text-brand-400" aria-hidden />}
                   </button>
                 ))}
-
-                <AnimatePresence>
-                  {modalTemplate === "custom" && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden pt-1">
-                      <input type="text" placeholder="Assunto do email"
-                        value={modalSubject} onChange={e => setModalSubject(e.target.value)}
-                        className="w-full h-9 px-3 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors" />
-                      <textarea rows={4} placeholder="Mensagem..."
-                        value={modalBody} onChange={e => setModalBody(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-lg border border-border/40 bg-card/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-brand-500/40 transition-colors resize-none leading-relaxed" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
 
-              {/* Footer */}
-              <div className="flex items-center gap-2 px-5 py-4 border-t border-border/40 bg-card/20">
-                <a href={`https://mail.google.com/mail/?view=cm&to=${emailModal.email}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="px-3 py-2 rounded-xl text-xs border border-border/40 text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
-                  Abrir Gmail
+              {modalTemplate === "custom" && (
+                <div className="space-y-2 pt-1">
+                  <input type="text" placeholder="Assunto do email" aria-label="Assunto do email"
+                    value={modalSubject} onChange={e => setModalSubject(e.target.value)}
+                    className={cn(fieldClass, "h-11")} />
+                  <textarea rows={4} placeholder="Mensagem..." aria-label="Mensagem do email"
+                    value={modalBody} onChange={e => setModalBody(e.target.value)}
+                    className={cn(fieldClass, "resize-y py-2.5 leading-relaxed")} />
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex flex-col-reverse gap-2 border-t border-border bg-surface-2 px-5 py-4 sm:flex-row sm:items-center">
+              <Button asChild variant="secondary">
+                <a href={`https://mail.google.com/mail/?view=cm&to=${emailModal.email}`} target="_blank" rel="noopener noreferrer">
+                  Abrir Gmail<span className="sr-only"> (abre em nova aba)</span>
                 </a>
-                <button onClick={sendToUser} disabled={sendingModal}
-                  className="flex-1 py-2 rounded-xl text-xs bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
-                  {sendingModal
-                    ? <><span className="h-3 w-3 rounded-full border-[1.5px] border-white border-t-transparent animate-spin" /> Enviando...</>
-                    : <><Send className="h-3.5 w-3.5" /> Enviar email</>
-                  }
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+              </Button>
+              <Button className="sm:flex-1" onClick={sendToUser} loading={sendingModal}
+                leftIcon={<Send className="h-4 w-4" aria-hidden />}>
+                {sendingModal ? "Enviando..." : "Enviar email"}
+              </Button>
+            </div>
+          </DialogContent>
         )}
-      </AnimatePresence>
+      </Dialog>
     </div>
   );
 }

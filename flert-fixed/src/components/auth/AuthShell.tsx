@@ -49,7 +49,7 @@ function BrandPanel() {
           ))}
         </ul>
       </div>
-      <p className="text-caption text-text-3">© {new Date().getFullYear()} Flert IA</p>
+      <p className="text-caption text-text-2">© {new Date().getFullYear()} Flert IA</p>
     </aside>
   );
 }
@@ -74,7 +74,7 @@ export function AuthShell({ title, description, eyebrow, footer, children }: Aut
   return (
     <div className="min-h-dvh bg-bg lg:grid lg:grid-cols-2">
       <BrandPanel />
-      <main id="main" className="flex min-h-dvh flex-col bg-aurora lg:bg-none">
+      <main id="main" tabIndex={-1} className="flex min-h-dvh flex-col bg-aurora focus:outline-none lg:bg-none">
         <div className="flex items-center justify-between gap-4 px-4 pt-4 sm:px-6 sm:pt-6">
           <HomeLogo className="lg:invisible" />
           <Link
@@ -103,7 +103,7 @@ export function AuthShell({ title, description, eyebrow, footer, children }: Aut
 /** Separador "ou" entre o formulário e o login social. */
 export function AuthDivider({ label = "ou" }: { label?: string }) {
   return (
-    <div className="my-6 flex items-center gap-3 text-caption text-text-3">
+    <div className="my-6 flex items-center gap-3 text-caption text-text-2">
       <span aria-hidden className="h-px flex-1 bg-border" />
       <span>{label}</span>
       <span aria-hidden className="h-px flex-1 bg-border" />

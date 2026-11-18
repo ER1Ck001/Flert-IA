@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { AlertTriangle, RotateCcw, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { stagger, useMotionSafe } from "@/lib/motion";
 import { FaiscaLoader } from "@/components/ui/faisca-loader";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { SuggestionCard } from "./SuggestionCard";
 
 export interface ResultsPanelProps {
@@ -14,20 +15,24 @@ export interface ResultsPanelProps {
   suggestions: string[];
   copiedIndex: number | null;
   onCopy: (text: string, index: number) => void;
+  /** Mensagem de erro da última geração (ex.: falha da IA — já diz se a cota foi descontada). */
+  error?: string | null;
+  /** Repete a última geração com os mesmos dados. */
+  onRetry?: () => void;
   className?: string;
 }
 
 /** Área de resultado: loader enquanto gera, depois as 3 sugestões. Região aria-live sempre montada. */
-export function ResultsPanel({ loading, suggestions, copiedIndex, onCopy, className }: ResultsPanelProps) {
+export function ResultsPanel({ loading, suggestions, copiedIndex, onCopy, error, onRetry, className }: ResultsPanelProps) {
   const ref = React.useRef<HTMLElement>(null);
   const prefersReduced = useReducedMotion();
   const listVariants = useMotionSafe(stagger(0.06));
   const hasResults = suggestions.length > 0;
 
   React.useEffect(() => {
-    if (!loading && !hasResults) return;
+    if (!loading && !hasResults && !error) return;
     ref.current?.scrollIntoView?.({ behavior: prefersReduced ? "auto" : "smooth", block: "start" });
-  }, [loading, hasResults, prefersReduced]);
+  }, [loading, hasResults, error, prefersReduced]);
 
   return (
     <section
@@ -35,8 +40,27 @@ export function ResultsPanel({ loading, suggestions, copiedIndex, onCopy, classN
       aria-live="polite"
       aria-busy={loading || undefined}
       aria-label="Resultado"
-      className={cn("scroll-mt-24", (loading || hasResults) && "border-t border-border pt-6", className)}
+      className={cn("scroll-mt-24", (loading || hasResults || error) && "border-t border-border pt-6", className)}
     >
+      {!loading && error && (
+        <div role="alert" className="flex flex-col gap-3 rounded-lg border border-danger/30 bg-danger/10 p-4 sm:flex-row sm:items-start">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-danger" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-text">Não foi possível gerar as sugestões</p>
+            <p className="mt-1 text-sm text-text-2">{error}</p>
+          </div>
+          {onRetry && (
+            <Button
+              variant="secondary"
+              className="shrink-0"
+              leftIcon={<RotateCcw className="h-4 w-4" aria-hidden />}
+              onClick={onRetry}
+            >
+              Tentar novamente
+            </Button>
+          )}
+        </div>
+      )}
       {loading ? (
         <div className="space-y-3">
           <FaiscaLoader />

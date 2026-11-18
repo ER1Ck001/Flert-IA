@@ -15,7 +15,7 @@ export function LandingFooter() {
           <li>
             <a
               href={`mailto:${SUPPORT_EMAIL}`}
-              className="break-all rounded-sm text-sm text-text-2 underline-offset-4 hover:text-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+              className="inline-flex min-h-11 items-center break-all rounded-sm text-sm text-text-2 underline-offset-4 hover:text-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
             >
               Suporte: {SUPPORT_EMAIL}
             </a>

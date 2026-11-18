@@ -152,6 +152,63 @@ describe("Analyze page", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("erro da IA (502) fica visível no resultado com 'Tentar novamente' que reenvia o mesmo pedido", async () => {
+    let fail = true;
+    const msg = "A IA não conseguiu gerar sugestões agora. Tente novamente — esta tentativa não foi descontada do seu limite.";
+    const fetchMock = mockFetch({
+      "/api/stats": { body: PAID_STATS },
+      "/api/analyze/text": () => (fail ? { status: 502, body: { error: msg, retryable: true } } : { body: { suggestions: SUGGESTIONS } }),
+    });
+    render(<AnalyzePage />);
+    const user = await openSituation();
+
+    const alert = await screen.findByRole("alert", undefined, T);
+    expect(alert).toHaveTextContent(msg);
+    // Contador não muda quando a IA falha.
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+
+    fail = false;
+    await user.click(within(alert).getByRole("button", { name: "Tentar novamente" }));
+    expect(await screen.findByRole("list", { name: /Sugestões/ }, T)).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    const bodies = fetchMock.mock.calls.filter((c) => c[0] === "/api/analyze/text").map((c) => c[1]!.body);
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]).toBe(bodies[0]);
+  });
+
+  it("falha ao copiar avisa o usuário e não mostra 'Copiado'", async () => {
+    mockFetch({
+      "/api/stats": { body: PAID_STATS },
+      "/api/analyze/text": { body: { suggestions: SUGGESTIONS } },
+    });
+    render(<AnalyzePage />);
+    const user = await openSituation();
+    const list = await screen.findByRole("list", { name: /Sugestões/ }, T);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+    });
+    await user.click(within(list).getByRole("button", { name: "Copiar sugestão 1" }));
+    await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith(expect.stringMatching(/Não foi possível copiar/)));
+    expect(mocks.toastSuccess).not.toHaveBeenCalledWith("Copiado!");
+    expect(within(list).queryByRole("button", { name: /Copiado/ })).not.toBeInTheDocument();
+  });
+
+  it("ao trocar de view o foco vai para o título da nova tela", async () => {
+    mockFetch({ "/api/stats": { body: PAID_STATS } });
+    render(<AnalyzePage />);
+    await userEvent.setup().click(await screen.findByRole("button", { name: /Sugestões de respostas/ }, T));
+    const h1 = await screen.findByRole("heading", { level: 1, name: /Analisar print/ }, T);
+    await waitFor(() => expect(h1).toHaveFocus());
+  });
+
+  it("copy sem promessa de resultado ('perfeita', 'certeiras')", async () => {
+    mockFetch({ "/api/stats": { body: PAID_STATS } });
+    const { container } = render(<AnalyzePage />);
+    await screen.findByRole("heading", { name: /Analisar conversa/ }, T);
+    expect(container.textContent).not.toMatch(/perfeita|certeira/i);
+  });
+
   it("view 'start' > foto mostra o tom Stories; 'analyze' não", async () => {
     mockFetch({ "/api/stats": { body: PAID_STATS } });
     render(<AnalyzePage />);

@@ -26,7 +26,7 @@ export function LandingHeader() {
               <li key={item.href}>
                 <a
                   href={item.href}
-                  className="rounded-sm px-3 py-2 text-sm text-text-2 transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                  className="inline-flex min-h-11 items-center rounded-sm px-3 text-sm text-text-2 transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
                 >
                   {item.label}
                 </a>
@@ -35,10 +35,11 @@ export function LandingHeader() {
           </ul>
         </nav>
         <div className="flex items-center gap-1 sm:gap-2">
-          <Button asChild variant="ghost" size="sm">
+          {/* size sm (visual compacto) com altura mínima de 44px para toque. */}
+          <Button asChild variant="ghost" size="sm" className="h-11">
             <Link href="/auth/login">Entrar</Link>
           </Button>
-          <Button asChild variant="primary" size="sm">
+          <Button asChild variant="primary" size="sm" className="h-11">
             <Link href="/auth/register">Criar conta</Link>
           </Button>
         </div>

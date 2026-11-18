@@ -20,6 +20,16 @@ export interface UploadDropzoneProps {
 export function UploadDropzone({ image, dragOver, onDragOverChange, onFile, onRemove, className }: UploadDropzoneProps) {
   const inputId = React.useId();
   const hintId = `${inputId}-hint`;
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const removedRef = React.useRef(false);
+
+  // Depois de "Remover imagem" o botão some: o foco volta para o seletor de arquivo.
+  React.useEffect(() => {
+    if (!image && removedRef.current) {
+      removedRef.current = false;
+      inputRef.current?.focus();
+    }
+  }, [image]);
 
   return (
     <div
@@ -47,7 +57,7 @@ export function UploadDropzone({ image, dragOver, onDragOverChange, onFile, onRe
           </div>
           <button
             type="button"
-            onClick={onRemove}
+            onClick={() => { removedRef.current = true; onRemove(); }}
             aria-label="Remover imagem"
             className="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-bg/80 text-text-2 transition-colors hover:border-danger/50 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           >
@@ -73,6 +83,7 @@ export function UploadDropzone({ image, dragOver, onDragOverChange, onFile, onRe
             ou <span className="font-medium text-violet-400 underline-offset-4">toque para selecionar</span> · PNG, JPG até 10 MB
           </span>
           <input
+            ref={inputRef}
             id={inputId}
             type="file"
             accept="image/*"

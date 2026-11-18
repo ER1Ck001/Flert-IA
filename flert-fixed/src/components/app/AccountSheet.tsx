@@ -74,7 +74,7 @@ export function AccountSheet({ open, onOpenChange, user }: AccountSheetProps) {
           <Zap className="h-5 w-5 text-pink-400" aria-hidden />
           <span className="flex-1">
             Seja Premium
-            <span className="block text-xs font-normal text-text-2">Recursos ilimitados</span>
+            <span className="block text-xs font-normal text-text-2">Compare planos e limites</span>
           </span>
         </Link>
 

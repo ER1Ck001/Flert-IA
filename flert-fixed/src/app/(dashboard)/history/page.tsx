@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { History as HistoryIcon, Search, Trash2, Copy, Check, Clock, Sparkles } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { AlertTriangle, History as HistoryIcon, Search, Trash2, Copy, Check, Clock, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { TONES, getToneLabel } from "@/components/analyze/tones";
 import toast from "react-hot-toast";
@@ -58,9 +60,12 @@ export default function HistoryPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<HistoryItem | null>(null);
 
-  useEffect(() => {
-    const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
+      setLoading(true);
+      setLoadError(false);
       try {
         const res = await fetch("/api/history");
         if (!res.ok) throw new Error("Falha ao buscar histórico");
@@ -85,24 +90,43 @@ export default function HistoryPage() {
 
         setHistory(mapped);
       } catch {
-        toast.error("Erro ao carregar histórico");
+        // Estado de erro visível na página (não confundir com "nenhuma análise").
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchHistory();
   }, []);
 
-  const filteredHistory = history.filter((item) =>
-    item.title.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
+  // Busca pelo título exibido, pelo rótulo do tom e pelo texto das sugestões.
+  const q = search.trim().toLowerCase();
+  const filteredHistory = history.filter((item) => {
+    if (!q) return true;
+    const key = toneKeyFromTitle(item.title);
+    const haystack = [item.title, displayTitle(item.title), key ? getToneLabel(key) : "", ...item.suggestions];
+    return haystack.some((t) => t.toLowerCase().includes(q));
+  });
+
+  const handleCopy = async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      toast.error("Não foi possível copiar. Selecione o texto e copie manualmente.");
+      return;
+    }
     setCopiedId(id);
     toast.success("Copiado!");
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setPendingDelete(null);
+    handleDelete(id);
   };
 
   const handleDelete = async (id: string) => {
@@ -143,18 +167,33 @@ export default function HistoryPage() {
         }
       />
 
+      {q && !loading && !loadError && (
+        <p aria-live="polite" className="mb-4 text-sm text-text-2">
+          {filteredHistory.length === 1 ? "1 análise encontrada" : `${filteredHistory.length} análises encontradas`}
+        </p>
+      )}
+
       {loading ? (
         <div className="grid gap-4" aria-busy="true" aria-label="Carregando histórico">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
         </div>
+      ) : loadError ? (
+        <div role="alert" className="flex flex-col items-center gap-3 rounded-lg border border-danger/30 bg-danger/10 px-6 py-10 text-center">
+          <AlertTriangle className="h-6 w-6 text-danger" aria-hidden />
+          <p className="font-display text-h3 text-text">Não foi possível carregar o histórico</p>
+          <p className="max-w-sm text-sm text-text-2">Verifique sua conexão e tente novamente. Suas análises continuam salvas.</p>
+          <Button variant="secondary" leftIcon={<RotateCcw className="h-4 w-4" aria-hidden />} onClick={fetchHistory}>
+            Tentar novamente
+          </Button>
+        </div>
       ) : filteredHistory.length === 0 ? (
         search ? (
           <EmptyState
             icon={Search}
             title="Nenhuma análise encontrada"
-            description="Tente buscar com outros termos"
+            description="Tente buscar pelo tom (ex.: Engraçado) ou por uma palavra da sugestão."
           />
         ) : (
           <EmptyState
@@ -162,12 +201,8 @@ export default function HistoryPage() {
             title="Nenhuma análise ainda"
             description="Comece analisando sua primeira conversa"
             action={
-              <Button
-                variant="signal"
-                leftIcon={<Sparkles className="h-4 w-4" aria-hidden />}
-                onClick={() => (window.location.href = "/analyze")}
-              >
-                Fazer análise
+              <Button asChild variant="signal" leftIcon={<Sparkles className="h-4 w-4" aria-hidden />}>
+                <Link href="/analyze">Fazer análise</Link>
               </Button>
             }
           />
@@ -200,7 +235,7 @@ export default function HistoryPage() {
                       variant="ghost"
                       size="icon"
                       aria-label="Remover análise"
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => setPendingDelete(item)}
                       className="-mr-2 -mt-2 hover:bg-danger/10 hover:text-danger"
                     >
                       <Trash2 className="h-5 w-5" aria-hidden />
@@ -223,7 +258,7 @@ export default function HistoryPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              aria-label={copied ? "Sugestão copiada" : "Copiar sugestão"}
+                              aria-label={copied ? `Sugestão ${index + 1} copiada` : `Copiar sugestão ${index + 1}`}
                               onClick={() => handleCopy(suggestion, copyKey)}
                             >
                               {copied ? (
@@ -243,6 +278,15 @@ export default function HistoryPage() {
           })}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => { if (!open) setPendingDelete(null); }}
+        title="Remover esta análise?"
+        description="A análise e as sugestões salvas serão apagadas do seu histórico. Não dá para desfazer."
+        confirmLabel="Remover"
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

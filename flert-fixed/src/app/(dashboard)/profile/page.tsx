@@ -15,6 +15,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import toast from "react-hot-toast";
 import { PLAN_LABELS } from "@/lib/plans";
 import { PASSWORD_RULES_HINT, normalizeEmail, profileUpdateSchema } from "@/lib/validation/auth";
+import { focusFirstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
+
+const FIELD_ORDER = ["name", "email", "currentPassword", "newPassword"] as const;
 
 function getInitials(name: string | null | undefined) {
   if (!name) return "U";
@@ -34,6 +37,8 @@ export default function ProfilePage() {
   const [isExpired, setIsExpired] = useState(false);
   const [hasPassword, setHasPassword] = useState(true);
   const [savedEmail, setSavedEmail] = useState("");
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const clearError = (key: string) => { if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined })); };
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -70,12 +75,21 @@ export default function ProfilePage() {
 
     // Mesmas regras do servidor (src/lib/validation/auth.ts).
     const parsed = profileUpdateSchema.safeParse({ ...formData, ...passwordData });
-    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
-    const emailChanged = parsed.data.email !== normalizeEmail(savedEmail);
-    if (emailChanged && !parsed.data.currentPassword) {
-      toast.error("Informe a senha atual para alterar o e-mail.");
+    // Erros de validação aparecem no próprio campo (role=alert + aria-invalid) e o foco vai até ele.
+    if (!parsed.success) {
+      const fieldErrors = toFieldErrors(parsed.error.issues);
+      setErrors(fieldErrors);
+      focusFirstError(fieldErrors, FIELD_ORDER);
       return;
     }
+    const emailChanged = parsed.data.email !== normalizeEmail(savedEmail);
+    if (emailChanged && !parsed.data.currentPassword) {
+      const fieldErrors = { currentPassword: "Informe a senha atual para alterar o e-mail." };
+      setErrors(fieldErrors);
+      focusFirstError(fieldErrors, FIELD_ORDER);
+      return;
+    }
+    setErrors({});
 
     setLoading(true);
     try {
@@ -134,15 +148,15 @@ export default function ProfilePage() {
           <CardDescription>Atualize seus dados de perfil</CardDescription>
         </CardHeader>
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <Field label="Nome" id="name">
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
+            <Field label="Nome" id="name" error={errors.name}>
               {(control) => (
                 <div className="relative">
                   <User className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-text-3" aria-hidden />
                   <Input
                     {...control}
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, name: e.target.value }); clearError("name"); }}
                     className="pl-11"
                     autoComplete="name"
                     required
@@ -155,6 +169,7 @@ export default function ProfilePage() {
             <Field
               label="E-mail"
               id="email"
+              error={errors.email}
               hint={
                 hasPassword
                   ? "Para trocar o e-mail, informe também a senha atual abaixo."
@@ -168,7 +183,7 @@ export default function ProfilePage() {
                     {...control}
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); clearError("email"); }}
                     className="pl-11"
                     autoComplete="email"
                     required
@@ -184,23 +199,23 @@ export default function ProfilePage() {
                 <p id="password-group-title" className="text-sm font-medium text-text-2">
                   Senha atual (obrigatória para trocar e-mail ou senha)
                 </p>
-                <Field label="Senha atual" id="currentPassword">
+                <Field label="Senha atual" id="currentPassword" error={errors.currentPassword}>
                   {(control) => (
                     <PasswordInput
                       {...control}
                       value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                      onChange={(e) => { setPasswordData({ ...passwordData, currentPassword: e.target.value }); clearError("currentPassword"); }}
                       autoComplete="current-password"
                       placeholder="••••••••"
                     />
                   )}
                 </Field>
-                <Field label="Nova senha" id="newPassword" hint={PASSWORD_RULES_HINT}>
+                <Field label="Nova senha" id="newPassword" hint={PASSWORD_RULES_HINT} error={errors.newPassword}>
                   {(control) => (
                     <PasswordInput
                       {...control}
                       value={passwordData.newPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                      onChange={(e) => { setPasswordData({ ...passwordData, newPassword: e.target.value }); clearError("newPassword"); }}
                       autoComplete="new-password"
                       minLength={8}
                       maxLength={72}

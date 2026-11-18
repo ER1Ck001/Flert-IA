@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -53,6 +53,11 @@ export default function AnalyzePage() {
   const [loading, setLoading]         = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  // Erro da última geração: fica visível no painel de resultado (o toast some em 4s).
+  const [genError, setGenError]       = useState<string | null>(null);
+  // Troca de tela sem trocar de rota: após a 1ª navegação, o título da nova tela recebe o foco.
+  const navigated = useRef(false);
+  const limitReachedRef = useRef(false);
 
   const loadStatus = () => {
     setLoadError(false);
@@ -98,15 +103,18 @@ export default function AnalyzePage() {
     setLoading(false);
     setCopiedIndex(null);
     setDragOver(false);
+    setGenError(null);
   };
 
   const goTo = (v: View) => {
+    navigated.current = true;
     resetForm();
     setView(v);
     if (v === "start") setStartStep("choose");
   };
 
   const goBack = () => {
+    navigated.current = true;
     if (view === "start" && startStep !== "choose") {
       resetForm();
       setStartStep("choose");
@@ -116,10 +124,19 @@ export default function AnalyzePage() {
     }
   };
 
+  // Limite diário: o gate substitui a tela, então o aviso vai por toast (como antes).
+  // Demais erros (inclusive falha da IA): mensagem do servidor fica no painel de resultado.
+  const showGenError = (err: unknown, fallback: string) => {
+    const message = err instanceof Error && err.message ? err.message : fallback;
+    if (limitReachedRef.current) { toast.error(message); return; }
+    setGenError(message);
+  };
+
   const handleAnalyzeWithImage = async () => {
     if (!image) { toast.error("Envie uma imagem primeiro"); return; }
     setLoading(true);
     setSuggestions([]);
+    setGenError(null);
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
@@ -128,12 +145,12 @@ export default function AnalyzePage() {
       });
       const data = await res.json();
       if (res.status === 403) { handleForbidden(data); return; }
-      if (res.status === 429 && data.limitReached) { setLimitReached(true); setTodayCount(data.todayCount ?? dailyLimit ?? 0); throw new Error(data.error); }
+      if (res.status === 429 && data.limitReached) { limitReachedRef.current = true; setLimitReached(true); setTodayCount(data.todayCount ?? dailyLimit ?? 0); throw new Error(data.error); }
       if (!res.ok) throw new Error(data.error || "Erro ao analisar");
       setSuggestions(data.suggestions);
       setTodayCount(p => p + 1);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao analisar. Tente novamente.");
+      showGenError(err, "Erro ao analisar. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -143,6 +160,7 @@ export default function AnalyzePage() {
     if (!context.trim()) { toast.error("Escreva o contexto primeiro"); return; }
     setLoading(true);
     setSuggestions([]);
+    setGenError(null);
     try {
       const res = await fetch("/api/analyze/text", {
         method: "POST",
@@ -151,19 +169,24 @@ export default function AnalyzePage() {
       });
       const data = await res.json();
       if (res.status === 403) { handleForbidden(data); return; }
-      if (res.status === 429 && data.limitReached) { setLimitReached(true); setTodayCount(data.todayCount ?? dailyLimit ?? 0); throw new Error(data.error); }
+      if (res.status === 429 && data.limitReached) { limitReachedRef.current = true; setLimitReached(true); setTodayCount(data.todayCount ?? dailyLimit ?? 0); throw new Error(data.error); }
       if (!res.ok) throw new Error(data.error || "Erro ao gerar");
       setSuggestions(data.suggestions);
       setTodayCount(p => p + 1);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao gerar. Tente novamente.");
+      showGenError(err, "Erro ao gerar. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCopy = (text: string, index: number) => {
-    navigator.clipboard.writeText(text.replace(/^[\d.\-*•]\s*/, "").trim());
+  const handleCopy = async (text: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(text.replace(/^[\d.\-*•]\s*/, "").trim());
+    } catch {
+      toast.error("Não foi possível copiar. Selecione o texto e copie manualmente.");
+      return;
+    }
     setCopiedIndex(index);
     toast.success("Copiado!");
     setTimeout(() => setCopiedIndex(null), 2000);
@@ -190,8 +213,9 @@ export default function AnalyzePage() {
   );
 
   // ── Render helpers (functions, not components — safe to define here)
-  const renderHeader = (eyebrow: string, title: ReactNode, description: string, withBack = true) => (
-    <div>
+  // focusTitle=false nas telas cujo textarea já recebe o foco (autoFocus).
+  const renderHeader = (eyebrow: string, title: ReactNode, description: string, withBack = true, focusTitle = true, key?: string) => (
+    <div key={key}>
       {withBack && (
         <Button
           variant="ghost"
@@ -208,6 +232,7 @@ export default function AnalyzePage() {
         eyebrow={eyebrow}
         title={title}
         description={description}
+        autoFocusTitle={navigated.current && focusTitle}
         actions={<UsageMeter todayCount={todayCount} dailyLimit={dailyLimit} isLifetime={isLifetime} />}
       />
     </div>
@@ -243,8 +268,15 @@ export default function AnalyzePage() {
 
   const optionalContext = <>Contexto <span className="font-normal text-text-2">(opcional)</span></>;
 
-  const renderSuggestions = () => (
-    <ResultsPanel loading={loading} suggestions={suggestions} copiedIndex={copiedIndex} onCopy={handleCopy} />
+  const renderSuggestions = (onRetry: () => void) => (
+    <ResultsPanel
+      loading={loading}
+      suggestions={suggestions}
+      copiedIndex={copiedIndex}
+      onCopy={handleCopy}
+      error={genError}
+      onRetry={onRetry}
+    />
   );
 
   const renderUploader = () => (
@@ -299,8 +331,8 @@ export default function AnalyzePage() {
           <div className="grid gap-3 md:grid-cols-3 md:gap-4">
             {([
               { id: "analyze" as View,   icon: ImageUp,           title: "Sugestões de respostas", desc: "Envie um print e receba 3 respostas no seu tom." },
-              { id: "start"   as View,   icon: MessageCirclePlus, title: "Inicie uma conversa",    desc: "Crie a abertura perfeita com texto ou uma foto." },
-              { id: "situation" as View, icon: LifeBuoy,          title: "Situação estranha",      desc: "Descreva o que está acontecendo e receba respostas certeiras." },
+              { id: "start"   as View,   icon: MessageCirclePlus, title: "Inicie uma conversa",    desc: "Receba ideias de primeira mensagem a partir de um texto ou de uma foto." },
+              { id: "situation" as View, icon: LifeBuoy,          title: "Situação estranha",      desc: "Descreva o que está acontecendo e receba 3 sugestões de resposta." },
             ] as const).map(card => (
               <ModeCard key={card.id} icon={card.icon} title={card.title} description={card.desc} onClick={() => goTo(card.id)} />
             ))}
@@ -313,14 +345,14 @@ export default function AnalyzePage() {
         <motion.div key="analyze" className="space-y-6 pb-24 lg:pb-0" {...slideIn} transition={transition}>
           {renderHeader("Sugestões de respostas", <>Analisar <span className="text-signal">print</span></>, "Envie o print e a IA gera 3 respostas no seu tom.")}
           {renderImageGrid(false, "Fale sobre a pessoa, o que você quer alcançar, o clima da conversa...", 5, "Gerar sugestões")}
-          {renderSuggestions()}
+          {renderSuggestions(handleAnalyzeWithImage)}
         </motion.div>
       )}
 
       {/* ══ CARD 2: Inicie uma conversa ══ */}
       {view === "start" && (
         <motion.div key="start" className="space-y-6" {...slideIn} transition={transition}>
-          {renderHeader("Inicie uma conversa", <>Abertura <span className="text-signal">perfeita</span></>, "Crie a primeira mensagem certeira.")}
+          {renderHeader("Inicie uma conversa", <>Primeira <span className="text-signal">mensagem</span></>, "A IA sugere 3 formas de começar a conversa.", true, startStep !== "text", startStep)}
 
           <AnimatePresence mode="wait">
 
@@ -332,7 +364,7 @@ export default function AnalyzePage() {
                   <ModeCard
                     icon={PenLine}
                     title="Gerar mensagem"
-                    description="Escreva um contexto e a IA cria a abertura perfeita."
+                    description="Escreva um contexto e a IA sugere 3 aberturas."
                     onClick={() => { resetForm(); setStartStep("text"); }}
                   />
                   <ModeCard
@@ -356,7 +388,7 @@ export default function AnalyzePage() {
                 )}
                 {renderTones()}
                 {renderBtn("Gerar abertura", !context.trim(), () => handleAnalyzeWithText("start"))}
-                {renderSuggestions()}
+                {renderSuggestions(() => handleAnalyzeWithText("start"))}
               </motion.div>
             )}
 
@@ -364,7 +396,7 @@ export default function AnalyzePage() {
             {startStep === "photo" && (
               <motion.div key="start-photo" className="space-y-6 pb-24 lg:pb-0" {...fadeStep} transition={transition}>
                 {renderImageGrid(true, "Ex: vi o story dela e quero comentar algo...", 4, "Gerar resposta")}
-                {renderSuggestions()}
+                {renderSuggestions(handleAnalyzeWithImage)}
               </motion.div>
             )}
           </AnimatePresence>
@@ -374,7 +406,7 @@ export default function AnalyzePage() {
       {/* ══ CARD 3: Situação estranha ══ */}
       {view === "situation" && (
         <motion.div key="situation" className="space-y-6 pb-24 lg:pb-0" {...slideIn} transition={transition}>
-          {renderHeader("Situação estranha", <>Situação <span className="text-signal">difícil</span></>, "Descreva o que está acontecendo e receba 3 respostas certeiras.")}
+          {renderHeader("Situação estranha", <>Situação <span className="text-signal">estranha</span></>, "Descreva o que está acontecendo e receba 3 sugestões de resposta.", true, false)}
 
           <div className="max-w-2xl space-y-6">
             {renderContext(
@@ -385,7 +417,7 @@ export default function AnalyzePage() {
             )}
             {renderTones()}
             {renderBtn("Resolver situação", !context.trim(), () => handleAnalyzeWithText("situation"))}
-            {renderSuggestions()}
+            {renderSuggestions(() => handleAnalyzeWithText("situation"))}
           </div>
         </motion.div>
       )}
