@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { stagger, suggestionIn, useMotionSafe } from "@/lib/motion";
 import { ToneChipGroup, type ToneOption } from "@/components/ui/tone-chip";
 import { FaiscaLoader } from "@/components/ui/faisca-loader";
+import { StoryMock } from "./StoryMock";
 import {
   DEMO_LABEL,
   DEMO_LOADING_MS,
@@ -92,14 +93,7 @@ export function InteractiveDemo() {
       <div className="rounded-xl border border-border bg-surface p-4 shadow-1 sm:p-5">
         <p className="text-caption uppercase text-text-2">{scenario.context}</p>
         {scenario.id === "story" ? (
-          <div
-            aria-hidden
-            className="mt-4 flex aspect-[4/5] max-h-72 w-full items-end overflow-hidden rounded-lg bg-[linear-gradient(180deg,#2A1B4D_0%,#7C3AED_45%,#FF7A59_80%,#FFB37A_100%)] p-4"
-          >
-            <span className="rounded-full bg-black/45 px-3 py-1 text-sm font-medium text-white">
-              {scenario.messages[0]?.text}
-            </span>
-          </div>
+          <StoryMock caption={scenario.messages[0]?.text ?? ""} />
         ) : (
           <ul className="mt-4 space-y-2" aria-label="Mensagens recebidas no exemplo">
             {scenario.messages.map((msg) => (
