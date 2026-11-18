@@ -67,3 +67,31 @@ describe("content guard — landing (4.2)", () => {
     expect(read("src/app/globals.css")).not.toMatch(/\.chat-/);
   });
 });
+
+describe("content guard — auth (4.3)", () => {
+  const authDir = path.join(root, "src/app/auth");
+  const walk = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) return walk(full);
+      return /\.(tsx?|css)$/.test(e.name) ? [path.relative(root, full)] : [];
+    });
+  const files = existsSync(authDir) ? walk(authDir) : [];
+
+  it("encontra as 4 páginas de auth", () => {
+    expect(files.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it.each(["dangerouslySetInnerHTML", "AUTH_CSS", "burst"])(
+    "nenhum arquivo em src/app/auth contém \"%s\"",
+    (needle) => {
+      const offenders = files.filter((f) => read(f).includes(needle));
+      expect(offenders).toEqual([]);
+    }
+  );
+
+  it("páginas de auth usam o AuthShell e não usam classes au-*", () => {
+    const offenders = files.filter((f) => /className="au[-"\s]/.test(read(f)) || !read(f).includes("AuthShell"));
+    expect(offenders).toEqual([]);
+  });
+});
