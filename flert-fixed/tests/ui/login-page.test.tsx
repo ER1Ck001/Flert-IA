@@ -30,7 +30,7 @@ import LoginPage from "@/app/auth/login/page";
 
 async function fillAndSubmit() {
   const user = userEvent.setup();
-  await user.type(screen.getByLabelText("Email"), "ana@exemplo.com");
+  await user.type(screen.getByLabelText("E-mail"), "ana@exemplo.com");
   await user.type(screen.getByLabelText("Senha"), "SenhaForte1!");
   await user.click(screen.getByRole("button", { name: "Entrar" }));
 }
@@ -43,7 +43,7 @@ describe("Login page", () => {
   it("tem main#main, campos rotulados e botão Google", () => {
     const { container } = render(<LoginPage />);
     expect(container.querySelector("main#main")).not.toBeNull();
-    expect(screen.getByLabelText("Email")).toHaveAttribute("autocomplete", "email");
+    expect(screen.getByLabelText("E-mail")).toHaveAttribute("autocomplete", "email");
     expect(screen.getByLabelText("Senha")).toHaveAttribute("autocomplete", "current-password");
     expect(screen.getByRole("button", { name: "Mostrar senha" })).not.toHaveAttribute("tabindex", "-1");
     expect(screen.getByRole("button", { name: /Google/ })).toBeInTheDocument();
@@ -61,7 +61,7 @@ describe("Login page", () => {
       })
     );
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/dashboard"));
-    expect(mocks.toastSuccess).toHaveBeenCalledWith("Bem-vindo de volta.");
+    expect(mocks.toastSuccess).toHaveBeenCalledWith("Login feito.");
   });
 
   it("erro RATE_LIMITED mostra a mensagem de muitas tentativas", async () => {
@@ -78,7 +78,7 @@ describe("Login page", () => {
     mocks.signIn.mockResolvedValue({ ok: false, error: "CredentialsSignin" });
     render(<LoginPage />);
     await fillAndSubmit();
-    await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith("Email ou senha inválidos"));
+    await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith("E-mail ou senha inválidos"));
   });
 
   it("callbackUrl externo é ignorado — router.push recebe /dashboard", async () => {

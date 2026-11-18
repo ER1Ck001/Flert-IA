@@ -34,7 +34,7 @@ function ResetForm() {
 
   if (!resetTokenSchema.safeParse(token).success) {
     return (
-      <AuthShell title="Link inválido ou expirado." description="Peça um novo link de recuperação para continuar.">
+      <AuthShell title="Link inválido ou expirado" description="Peça um novo link de recuperação para continuar.">
         <Card role="alert" className="flex flex-col gap-5 p-6">
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-warning/15 text-warning">
             <TriangleAlert className="h-5 w-5" aria-hidden />
@@ -81,7 +81,7 @@ function ResetForm() {
 
   return (
     <AuthShell
-      title="Nova senha."
+      title="Nova senha"
       description={done ? "Senha atualizada com sucesso." : "Crie uma nova senha para sua conta."}
     >
       {done ? (

@@ -80,7 +80,7 @@ export function UploadDropzone({ image, dragOver, onDragOverChange, onFile, onRe
           </span>
           <span className="text-body font-semibold text-text">{dragOver ? "Solte aqui" : "Arraste o print aqui"}</span>
           <span id={hintId} className="text-sm text-text-2">
-            ou <span className="font-medium text-violet-400 underline-offset-4">toque para selecionar</span> · PNG, JPG até 10 MB
+            ou <span className="font-medium text-violet-400 underline-offset-4">toque para selecionar</span> · PNG, JPG, WEBP ou GIF até 10 MB
           </span>
           <input
             ref={inputRef}

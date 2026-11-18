@@ -19,7 +19,7 @@ const rowClass =
   "flex min-h-[48px] items-center gap-3 rounded-md px-3 text-sm font-medium text-text transition-colors hover:bg-surface-2 " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400";
 
-/** Folha "Conta" (mobile): Perfil, Configurações, Suporte, Seja Premium e Sair. */
+/** Folha "Conta" (mobile): Perfil, Configurações, Suporte, Ver planos e Sair. */
 export function AccountSheet({ open, onOpenChange, user }: AccountSheetProps) {
   const close = () => onOpenChange(false);
   const pathname = usePathname();
@@ -73,7 +73,7 @@ export function AccountSheet({ open, onOpenChange, user }: AccountSheetProps) {
         >
           <Zap className="h-5 w-5 text-pink-400" aria-hidden />
           <span className="flex-1">
-            Seja Premium
+            Ver planos
             <span className="block text-xs font-normal text-text-2">Compare planos e limites</span>
           </span>
         </Link>

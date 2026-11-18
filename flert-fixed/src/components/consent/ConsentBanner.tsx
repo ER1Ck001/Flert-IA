@@ -35,7 +35,7 @@ export function ConsentBanner() {
     >
       <p className="leading-relaxed text-text-2">
         Usamos cookies essenciais para o login funcionar. Com sua permissão, também usamos o Pixel da Meta
-        para medir nossos anúncios. Você pode mudar isso depois em Configurações.
+        para medir nossos anúncios. Você pode mudar isso depois em “Preferências de cookies”, no rodapé da página inicial.
       </p>
       <div className="mt-3 flex gap-2">
         <Button type="button" variant="secondary" onClick={() => choose(false)} className="flex-1">

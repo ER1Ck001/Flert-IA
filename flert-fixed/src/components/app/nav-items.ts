@@ -21,9 +21,9 @@ export const ACCOUNT_NAV: readonly NavItem[] = APP_NAV.filter((i) => i.href === 
 
 export const navItem = (href: string): NavItem => APP_NAV.find((i) => i.href === href)!;
 
-/** Link de suporte (mesma URL do layout anterior). */
+/** Link de suporte (mesma URL do layout anterior; trocar por mailto: é decisão do dono — auditoria P15). */
 export const SUPPORT_URL = "https://mail.google.com/mail/?view=cm&to=erickdev@flertia.com.br&su=Suporte%20Flert%20IA";
-export const SUPPORT_EMAIL = "erickdev@flertia.com.br";
+export { SUPPORT_EMAIL } from "@/lib/support";
 
 export const PREMIUM_HREF = "/pricing";
 

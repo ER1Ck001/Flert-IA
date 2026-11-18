@@ -90,7 +90,7 @@ export default function PricingPage() {
       <PageHeader
         eyebrow="Planos"
         title="Escolha seu plano"
-        description="Todos os planos incluem os mesmos recursos — muda só o limite diário de análises."
+        description="Todos os planos têm os mesmos recursos. Mudam o limite diário, a duração e as formas de pagamento."
         className="mb-0"
       />
 
@@ -163,7 +163,7 @@ export default function PricingPage() {
         <Info className="mt-0.5 h-5 w-5 shrink-0 text-violet-400" aria-hidden />
         <p className="text-sm leading-relaxed text-text-2">
           <span className="font-semibold text-text">Política de reembolso: </span>
-          O reembolso é disponível exclusivamente para usuários que realizaram <strong className="text-text">no máximo 1 análise</strong> e solicitaram dentro de <strong className="text-text">12 horas</strong> após a compra. Fora dessas condições, não haverá reembolso. Para solicitar, entre em contato pelo{" "}
+          o reembolso está disponível se você tiver feito <strong className="text-text">no máximo 1 análise</strong> e pedir em até <strong className="text-text">12 horas</strong> após a compra. Fora dessas condições, não há reembolso. Para pedir, fale com o{" "}
           <a
             href="https://mail.google.com/mail/?view=cm&to=erickdev@flertia.com.br&su=Solicita%C3%A7%C3%A3o%20de%20Reembolso"
             target="_blank"

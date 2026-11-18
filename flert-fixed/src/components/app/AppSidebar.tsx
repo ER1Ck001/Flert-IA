@@ -75,7 +75,7 @@ export function AppSidebar({ user }: { user?: Session["user"] | null }) {
         >
           <Zap className="h-4 w-4 text-pink-400" aria-hidden />
           <span className="min-w-0">
-            <span className="block text-sm font-semibold leading-tight text-text">Seja Premium</span>
+            <span className="block text-sm font-semibold leading-tight text-text">Ver planos</span>
             <span className="block text-xs leading-tight text-text-2">Compare planos e limites</span>
           </span>
         </Link>

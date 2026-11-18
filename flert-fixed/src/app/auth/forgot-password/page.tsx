@@ -28,10 +28,10 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error || "Erro ao enviar email"); return; }
+      if (!res.ok) { toast.error(data.error || "Não foi possível enviar o e-mail. Tente novamente."); return; }
       setSent(true);
     } catch {
-      toast.error("Erro ao enviar email. Tente novamente.");
+      toast.error("Não foi possível enviar o e-mail. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -39,11 +39,11 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      title="Recuperar senha."
+      title="Recuperar senha"
       description={
         sent
-          ? "Verifique seu email."
-          : "Informe seu email e enviaremos um link para criar uma nova senha."
+          ? "Verifique seu e-mail."
+          : "Informe seu e-mail e enviaremos um link para criar uma nova senha."
       }
     >
       {sent ? (
@@ -52,9 +52,9 @@ export default function ForgotPasswordPage() {
             <MailCheck className="h-5 w-5" aria-hidden />
           </span>
           <div>
-            <h2 ref={sentHeadingRef} tabIndex={-1} className="font-display text-h3 text-text focus:outline-none">Email enviado.</h2>
+            <h2 ref={sentHeadingRef} tabIndex={-1} className="font-display text-h3 text-text focus:outline-none">E-mail enviado</h2>
             <p className="mt-1 text-sm text-text-2">
-              Se esse email estiver cadastrado, você receberá as instruções em breve.
+              Se esse e-mail estiver cadastrado, você receberá as instruções em breve.
               Verifique também a pasta de spam.
             </p>
           </div>
@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
         </Card>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <Field id="email" label="Email">
+          <Field id="email" label="E-mail">
             {(control) => (
               <Input
                 {...control}

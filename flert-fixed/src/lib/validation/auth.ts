@@ -5,12 +5,12 @@ import { emptyToUndefined, utf8ByteLength } from "@/lib/validation/common";
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 export const emailSchema = z
-  .string({ required_error: "Email é obrigatório", invalid_type_error: "Email inválido" })
+  .string({ required_error: "E-mail é obrigatório", invalid_type_error: "E-mail inválido" })
   .trim()
   .toLowerCase()
-  .min(1, "Email é obrigatório")
-  .max(254, "Email muito longo")
-  .email("Email inválido");
+  .min(1, "E-mail é obrigatório")
+  .max(254, "E-mail muito longo")
+  .email("E-mail inválido");
 
 export const PASSWORD_RULES_HINT = "Mínimo de 8 caracteres, com letras e números.";
 

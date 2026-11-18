@@ -63,10 +63,10 @@ function LoginForm() {
         toast.error(
           result.error === "RATE_LIMITED"
             ? "Muitas tentativas. Aguarde alguns minutos e tente de novo."
-            : "Email ou senha inválidos"
+            : "E-mail ou senha inválidos"
         );
       } else {
-        toast.success("Bem-vindo de volta.");
+        toast.success("Login feito.");
         router.push(callbackUrl);
         router.refresh();
       }
@@ -84,7 +84,7 @@ function LoginForm() {
 
   return (
     <AuthShell
-      title="Bem-vindo de volta."
+      title="Que bom te ver de novo"
       description="Entre na sua conta para continuar."
       footer={
         <>
@@ -101,7 +101,7 @@ function LoginForm() {
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <Field id="email" label="Email">
+        <Field id="email" label="E-mail">
           {(control) => (
             <Input
               {...control}

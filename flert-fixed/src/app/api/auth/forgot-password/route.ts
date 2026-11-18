@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
             <p style="color:#aaa;margin:0 0 24px">Recuperação de senha</p>
             <p style="margin:0 0 24px">Clique no botão abaixo para criar uma nova senha. O link expira em <strong>1 hora</strong> e só pode ser usado uma vez.</p>
             <a href="${resetUrl}" style="display:inline-block;background:#ff2d95;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">Redefinir senha</a>
-            <p style="color:#666;font-size:12px;margin-top:32px">Se você não solicitou isso, ignore este email.</p>
+            <p style="color:#666;font-size:12px;margin-top:32px">Se você não pediu isso, ignore este e-mail.</p>
           </div>
         `,
       });

@@ -14,7 +14,7 @@ const TONE_DESCRIPTIONS: Record<ToneValue, string> = {
   casual: "Natural, como uma mensagem qualquer do dia.",
   witty: "Uma virada inteligente e inesperada.",
   serious: "Direto, maduro e honesto.",
-  pickup: "Ousada, mas específica e respeitosa.",
+  pickup: "Ousada, mas feita a partir da conversa.",
   stories: "Uma frase curta para responder a um story.",
 };
 

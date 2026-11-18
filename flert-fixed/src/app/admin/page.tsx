@@ -13,6 +13,8 @@ import { signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { FREE_UPSELL_SUBJECT } from "@/lib/email/templates";
+import { PLAN_CONFIG, formatBRL } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
@@ -49,7 +51,8 @@ const planConfig: Record<Plan, { label: string; color: string; bg: string; borde
   LIFETIME: { label: "Vitalício", color: "text-warning",    bg: "bg-warning/15",     border: "border-warning/30",     icon: Crown  },
 };
 
-const PLAN_PRICES = { FREE: 0, PREMIUM: 29.9, ANNUAL: 147 / 12, LIFETIME: 0 };
+// Receita mensal estimada por usuário (Vitalício é pagamento único: fora do MRR).
+const PLAN_PRICES = { FREE: 0, PREMIUM: PLAN_CONFIG.PREMIUM.priceCents / 100, ANNUAL: PLAN_CONFIG.ANNUAL.priceCents / 100 / 12, LIFETIME: 0 };
 
 function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
@@ -321,8 +324,8 @@ export default function AdminPage() {
     { label: "Total de usuários",  value: stats?.total ?? 0,      icon: Users,       color: "text-text",         sub: `${paidUsers} pagantes` },
     { label: "Novos esta semana",  value: newThisWeek,            icon: UserPlus,    color: "text-success",           sub: "últimos 7 dias" },
     { label: "Grátis",             value: stats?.free ?? 0,       icon: Shield,      color: "text-text-2",    sub: `${stats ? Math.round((stats.free / (stats.total || 1)) * 100) : 0}% do total` },
-    { label: "Mensal",             value: stats?.premium ?? 0,    icon: Zap,         color: "text-brand-400",           sub: "R$29,90/mês" },
-    { label: "Anual",              value: stats?.annual ?? 0,     icon: Star,        color: "text-violet-400",          sub: "R$147,00/ano" },
+    { label: "Mensal",             value: stats?.premium ?? 0,    icon: Zap,         color: "text-brand-400",           sub: `${formatBRL(PLAN_CONFIG.PREMIUM.priceCents)}${PLAN_CONFIG.PREMIUM.periodLabel}` },
+    { label: "Anual",              value: stats?.annual ?? 0,     icon: Star,        color: "text-violet-400",          sub: `${formatBRL(PLAN_CONFIG.ANNUAL.priceCents)}${PLAN_CONFIG.ANNUAL.periodLabel}` },
     { label: "Vitalício",          value: stats?.lifetime ?? 0,   icon: Crown,       color: "text-warning",           sub: "pagamento único" },
     { label: "MRR estimado",       value: `R$${mrr.toFixed(2).replace(".", ",")}`, icon: DollarSign, color: "text-success", sub: "receita mensal recorrente", raw: true },
     { label: "Total de análises",  value: stats?.totalAnalyses ?? 0, icon: Activity, color: "text-brand-400",          sub: "desde o início" },
@@ -825,11 +828,11 @@ export default function AdminPage() {
                 </div>
 
                 <p className="mb-3 flex-1 text-sm leading-relaxed text-text-2">
-                  Envia um email para todos os usuários no plano grátis lembrando de escolher um plano e destravar o acesso completo.
+                  Envia um e-mail para todos os usuários sem plano lembrando que as análises começam quando escolherem um plano.
                 </p>
 
                 <p className="mb-4 rounded-md border border-border bg-surface-2 p-2.5 font-mono text-caption leading-relaxed text-text-2">
-                  Assunto: &ldquo;Não acha que está na hora de destravar suas conversas? 💘&rdquo;
+                  Assunto: &ldquo;{FREE_UPSELL_SUBJECT}&rdquo;
                 </p>
 
                 {confirmTemplate === "free_upsell" ? (
@@ -878,7 +881,7 @@ export default function AdminPage() {
                 </p>
 
                 <p className="mb-4 rounded-md border border-border bg-surface-2 p-2.5 font-mono text-caption leading-relaxed text-text-2">
-                  Assunto: &ldquo;Seu plano expira em X dia(s) ⚡&rdquo;
+                  Assunto: &ldquo;Seu plano Flert IA vence em X dia(s)&rdquo;
                 </p>
 
                 {confirmTemplate === "expiring" ? (
@@ -936,7 +939,7 @@ export default function AdminPage() {
                   <input
                     id="custom-subject"
                     type="text"
-                    placeholder="Ex: Novidades no Flert IA 🚀"
+                    placeholder="Ex.: Novidades no Flert IA"
                     value={customSubject}
                     onChange={e => setCustomSubject(e.target.value)}
                     className={cn(fieldClass, "h-11")} />
@@ -1016,8 +1019,8 @@ export default function AdminPage() {
 
               <div role="group" aria-labelledby="modal-template-label" className="space-y-2">
                 {([
-                  { id: "free_upsell", label: "Convide para escolher um plano", desc: "\"Não acha que está na hora de destravar suas conversas?\"", icon: Zap,   color: "text-brand-400"  },
-                  { id: "expiring",    label: "Plano expirando em breve",        desc: "Lembra de renovar antes de perder o acesso",                icon: Clock, color: "text-warning"  },
+                  { id: "free_upsell", label: "Convide para escolher um plano", desc: `"${FREE_UPSELL_SUBJECT}"`, icon: Zap,   color: "text-brand-400"  },
+                  { id: "expiring",    label: "Plano expirando em breve",        desc: "Avisa que o plano vence em breve",                icon: Clock, color: "text-warning"  },
                   { id: "custom",      label: "Mensagem personalizada",           desc: "Escreva sua própria mensagem",                               icon: Mail,  color: "text-violet-400" },
                 ] as const).map(t => (
                   <button key={t.id} type="button" onClick={() => setModalTemplate(t.id)}

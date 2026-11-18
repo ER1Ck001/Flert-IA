@@ -8,7 +8,7 @@ export function PlansSection() {
       id="planos"
       eyebrow="Planos"
       title="Escolha seu plano"
-      description="Crie sua conta e escolha o plano que faz sentido para você. Valores em reais."
+      description="Crie sua conta e escolha o plano que faz sentido para você. Valores em reais, sem cobrança automática."
     >
       <ul className="grid gap-4 md:grid-cols-3">
         {PLANS_IN_ORDER.map((plan) => (

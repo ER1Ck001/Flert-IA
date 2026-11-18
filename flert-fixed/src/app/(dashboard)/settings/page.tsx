@@ -29,7 +29,7 @@ const item = {
 const PRIVACY_FACTS = [
   {
     title: "Conexão protegida",
-    desc: "Os dados trafegam por HTTPS e ficam em banco de dados com criptografia em repouso do provedor.",
+    desc: "Os dados trafegam por HTTPS e ficam num banco de dados gerenciado.",
   },
   {
     title: "Processamento por IA",
@@ -143,9 +143,9 @@ export default function SettingsPage() {
         </div>
         <div className="px-4 py-4 sm:px-5">
           <p className="text-sm leading-relaxed text-text-2">
-            Enviamos e-mails apenas sobre a sua conta: boas-vindas, confirmação de pagamento, redefinição de senha,
-            exclusão de conta e avisos sobre o seu plano. Preferências de notificação personalizáveis ainda não estão
-            disponíveis.
+            Enviamos e-mails sobre a sua conta (boas-vindas, confirmação de pagamento, redefinição de senha, exclusão
+            de conta e avisos sobre o seu plano) e, de vez em quando, novidades do Flert IA. Preferências de notificação
+            personalizáveis ainda não estão disponíveis.
           </p>
         </div>
       </motion.section>

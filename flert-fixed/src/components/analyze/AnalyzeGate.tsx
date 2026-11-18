@@ -21,7 +21,7 @@ export interface AnalyzeGateProps {
 
 const CONTENT: Record<AnalyzeGateKind, { icon: LucideIcon; title: string; action: string }> = {
   error: { icon: AlertTriangle, title: "Não foi possível carregar seu plano", action: "Tentar novamente" },
-  "no-plan": { icon: Lock, title: "Recurso exclusivo para assinantes", action: "Ver planos" },
+  "no-plan": { icon: Lock, title: "As análises fazem parte dos planos", action: "Ver planos" },
   expired: { icon: Hourglass, title: "Seu plano expirou", action: "Renovar plano" },
   limit: { icon: Timer, title: "Limite diário atingido", action: `Ver plano ${PLAN_LABELS.LIFETIME}` },
 };
@@ -33,7 +33,7 @@ function description(kind: AnalyzeGateKind, dailyLimit?: number | null) {
     case "expired":
       return "Renove seu plano para voltar a usar as análises. Seu histórico continua salvo.";
     case "no-plan":
-      return `As análises com IA estão disponíveis nos planos ${PAID_PLAN_NAMES}.`;
+      return `Escolha um dos planos (${PAID_PLAN_NAMES}) para começar.`;
     case "limit":
       return `Você já fez ${dailyLimit} análises hoje. O limite reinicia à meia-noite (horário de Brasília). No plano ${PLAN_LABELS.LIFETIME} as análises são ilimitadas.`;
   }

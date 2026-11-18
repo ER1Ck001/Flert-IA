@@ -30,6 +30,83 @@ consistência ou clareza que afeta a confiança. **Baixa** = estilo.
 
 ---
 
+## Status — Tarefa 8 (18/11/2026)
+
+**57 Feito · 7 Pendente (dono) · 2 Não aplicado** (66 itens, contando a proposta estrutural de e-mail e as
+4 linhas da seção 6). Regras automatizadas em `tests/config/content-guard.test.ts` (bloco "Tarefa 8"),
+`tests/lib/prompts.test.ts` e `tests/lib/email-templates.test.ts`.
+
+| # | Status | Observação |
+|---|---|---|
+| L1 | Pendente (dono) | Concordância corrigida ("O reembolso está disponível se…"); a regra 12 h / 1 análise foi mantida. Validar com advogado o art. 49 do CDC (7 dias). |
+| L2 | Feito | P: "O plano Vitalício expira?" R: "Não. … enquanto o Flert IA estiver no ar." |
+| L3 | Feito | Começa com "Não."; durações derivadas de `PLAN_CONFIG`. |
+| L4 | Feito | 4 perguntas novas (app de namoro, plano gratuito, print, falha da IA). "Grátis" trocado por "gratuito"/"não custa nada" (brand-voice). |
+| L5 | Pendente (dono) | Termos de uso e Política de privacidade não existem; links entram quando houver as páginas. |
+| L6 | Feito | "…Valores em reais, sem cobrança automática." |
+| L7 | Feito | "Ousada, mas feita a partir da conversa." (o prompt do tom pede "sem ser vulgar"). |
+| L8 | Feito | "…edite se quiser e copie." |
+| L9 | Feito | "Flert IA — Assistente de conversa com IA" (title e Open Graph). |
+| L10 | Feito | Keywords trocadas pela lista proposta. |
+| L11 | Não aplicado | Já estava de acordo com a voz; mantido. |
+| L12 | Feito | "…em “Preferências de cookies”, no rodapé da página inicial." (o botão só existe no rodapé da landing). |
+| L13 | Pendente (dono) | Vercel Analytics/Speed Insights: confirmar e citar na Política de privacidade. |
+| A1 | Feito | "Crie sua conta. As análises fazem parte dos planos, que você escolhe em seguida." |
+| A2 | Pendente (dono) | Aceite de termos e confirmação 18+ no cadastro. |
+| A3 | Feito | Título "Que bom te ver de novo"; toast "Login feito." |
+| A4 | Feito | Títulos de auth sem ponto final. |
+| A5 | Feito | "E-mail" nos rótulos, toasts e mensagens de validação dos formulários. Mensagens de erro da API ("Email já cadastrado") ficaram, por serem contrato testado. |
+| P1 | Feito | Texto honesto: conta + "de vez em quando, novidades do Flert IA". Opt-in e descadastro continuam **pendentes (dono/LGPD)** — ver E11. |
+| P2 | Pendente (dono) | Só tom/clareza ("está disponível se você tiver feito… e pedir em até 12 horas"); mesma regra do FAQ. Constante única não criada (o texto do pricing tem negrito em JSX). CDC como em L1. |
+| P3 | Feito | "…ficam num banco de dados gerenciado." (criptografia em repouso não verificável no código). |
+| P4 | Feito | "Ver planos" no menu lateral e na folha Conta. |
+| P5 | Feito | "Ex.: alguém que estudou comigo…" |
+| P6 | Feito | "Ex.: a conversa parou há 3 dias… de um jeito leve…" |
+| P7 | Feito | Botão "Gerar sugestões". |
+| P8 | Feito | "Mudam o limite diário, a duração e as formas de pagamento." |
+| P9 | Feito | "Conte o clima da conversa e o que você quer dizer…" |
+| P10 | Feito | "Ex.: vi o story da viagem e quero comentar algo…" |
+| P11 | Feito | "PNG, JPG, WEBP ou GIF até 10 MB". |
+| P12 | Feito | Título do gate "As análises fazem parte dos planos". |
+| P13 | Feito | "As análises fazem parte dos planos. Escolha um para começar." |
+| P14 | Feito | "…descontada do seu limite porque as 3 devoluções de hoje já foram usadas." |
+| P15 | Pendente (dono) | Links de suporte/reembolso continuam no Gmail web; trocar por `mailto:` é decisão do dono. |
+| E-template | Feito | Template único em `src/lib/email/templates.ts` (boas-vindas, pagamento, campanhas), com preços de `formatBRL(PLAN_CONFIG…)`, benefícios de `getPlanBenefits()` e `SUPPORT_EMAIL` (`src/lib/support.ts`). |
+| E1 | Feito | "Boas-vindas ao Flert IA, {nome}". |
+| E2 | Feito | "Plano {label} ativo no Flert IA". |
+| E3 | Feito | Mecanismo no lugar de "IA treinada… marcar o encontro". |
+| E4 | Feito | Lista dos 3 planos com preço e limite vindos de `PLAN_CONFIG`. |
+| E5 | Feito | Removido; autoria: "Você decide o que usar: copie, edite ou descarte." |
+| E6 | Feito | "Para começar, abra “Analisar”…" (o item do menu se chama "Analisar"). |
+| E7 | Feito | "A IA sugere 3 respostas: você decide qual usar e pode editar antes de mandar." |
+| E8 | Feito | Sem urgência/competição. |
+| E9 | Feito | "Você escolhe, edita e manda do seu jeito". |
+| E10 | Feito | Assunto "Seu Flert IA está pronto, falta escolher um plano"; corpo proposto. |
+| E11 | Pendente (dono) | Sem opt-in nem descadastro (LGPD). Não foi criado link de "sair da lista" porque a função não existe. |
+| E12 | Feito | "Mensal R$ 29,90/mês · Anual R$ 147,00/ano · Vitalício R$ 297,00 (pagamento único)", via `formatBRL`. |
+| E13 | Feito | "…renove antes do fim: os dias que restam são somados ao novo período. Não há renovação automática." |
+| E14 | Feito | "Escolha seu plano para começar". |
+| E15 | Feito | Vitalício: "Pagamento único, sem mensalidade" (de `getPlanBenefits`). |
+| E16 | Feito | "Seu acesso é ilimitado e não tem data de expiração." |
+| E17 | Feito | "Seu acesso vale até {dd/mm/aaaa}. Não há renovação automática." (data de `decideActivation`, fuso de Brasília). |
+| E18 | Feito | "Quando travar na hora de responder, envie o print…" |
+| E19 | Feito | "Dúvidas? Fale com a gente em {SUPPORT_EMAIL}." |
+| E20 | Feito | Wordmark "Flert <span>IA</span>". |
+| E21 | Feito | Emoji do cabeçalho removido. |
+| E22 | Feito | "Olá, {nome}." |
+| E23 | Feito | "Seu plano Flert IA vence em {n} dias". |
+| E24 | Feito | Placeholder "Ex.: Novidades no Flert IA". |
+| E25 | Feito | "e-mail" no reset de senha e nos rodapés. |
+| D1 | Feito | "# Flert IA" (grafia confirmada pelo dono). |
+| D2 | Feito | README: `SMTP_FROM="Flert IA <noreply@flertia.com.br>"` (o `.env.example` já estava certo). Confirmar o domínio de envio no SMTP. |
+| D3 | Não aplicado | Doc técnica (fluxo de pagamento, UploadThing), não é copy para o usuário: fica para uma tarefa de docs. |
+| 6 · persona | Feito | `prompts.ts`: coach de conversa brasileiro, para qualquer gênero e orientação. |
+| 6 · "tem opções" | Feito | Removido; "com leveza e segurança, sem carência e sem pressão". |
+| 6 · "soar como IA" | Feito | Trocado por naturalidade ("Alguém mandaria isso de verdade nessa conversa?"). A copy fala em autoria. |
+| 6 · "invente / personagem" | Feito | Imagem difícil de ler: usa o que dá para ver e o contexto, não inventa detalhes, não finge reconhecer pessoas e não comenta a imagem. |
+
+---
+
 ## 1. Landing e SEO
 
 | # | Arquivo:linha | Texto atual | Problema | Proposta | Prior. |

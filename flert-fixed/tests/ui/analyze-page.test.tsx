@@ -43,7 +43,7 @@ async function openSituation() {
   const box = await screen.findByLabelText("O que está acontecendo?", undefined, T);
   await user.type(box, "Ela parou de responder");
   await user.click(screen.getByRole("radio", { name: "Engraçado" }));
-  await user.click(screen.getByRole("button", { name: /Resolver situação/ }));
+  await user.click(screen.getByRole("button", { name: /Gerar sugestões/ }));
   return user;
 }
 
@@ -93,8 +93,8 @@ describe("Analyze page", () => {
     render(<AnalyzePage />);
     await userEvent.setup().click(await screen.findByRole("button", { name: /Situação estranha/ }, T));
     await screen.findByLabelText("O que está acontecendo?", undefined, T);
-    expect(screen.getAllByRole("button", { name: /Resolver situação/ })).toHaveLength(1);
-    expect(screen.getByRole("button", { name: /Resolver situação/ })).toBeDisabled();
+    expect(screen.getAllByRole("button", { name: /Gerar sugestões/ })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: /Gerar sugestões/ })).toBeDisabled();
   });
 
   it("resposta 403 mostra o gate de assinatura", async () => {
@@ -104,7 +104,7 @@ describe("Analyze page", () => {
     });
     render(<AnalyzePage />);
     await openSituation();
-    expect(await screen.findByRole("heading", { name: "Recurso exclusivo para assinantes" }, T)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "As análises fazem parte dos planos" }, T)).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole("button", { name: "Ver planos" }));
     expect(mocks.push).toHaveBeenCalledWith("/pricing");
   });
@@ -135,7 +135,7 @@ describe("Analyze page", () => {
   it("sem plano na carga mostra o gate", async () => {
     mockFetch({ "/api/stats": { body: { isPaid: false, today: 0, dailyLimit: null } } });
     render(<AnalyzePage />);
-    expect(await screen.findByRole("heading", { name: "Recurso exclusivo para assinantes" }, T)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "As análises fazem parte dos planos" }, T)).toBeInTheDocument();
   });
 
   it("erro ao carregar o plano mostra 'Tentar novamente' que recarrega", async () => {

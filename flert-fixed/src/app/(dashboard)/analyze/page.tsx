@@ -353,7 +353,7 @@ export default function AnalyzePage() {
       {view === "analyze" && (
         <motion.div key="analyze" className="space-y-6 pb-24 lg:pb-0" {...slideIn} transition={transition}>
           {renderHeader("Sugestões de respostas", <>Analisar <span className="text-signal">print</span></>, "Envie o print e a IA gera 3 respostas no seu tom.")}
-          {renderImageGrid(false, "Fale sobre a pessoa, o que você quer alcançar, o clima da conversa...", 5, "Gerar sugestões")}
+          {renderImageGrid(false, "Conte o clima da conversa e o que você quer dizer…", 5, "Gerar sugestões")}
           {renderSuggestions(handleAnalyzeWithImage)}
         </motion.div>
       )}
@@ -391,7 +391,7 @@ export default function AnalyzePage() {
               <motion.div key="start-text" className="max-w-2xl space-y-6 pb-24 lg:pb-0" {...fadeStep} transition={transition}>
                 {renderContext(
                   "Sobre quem você quer falar?",
-                  "Ex: menina que estudou comigo, gosta de viajar e tem bom humor. Quero começar uma conversa leve...",
+                  "Ex.: alguém que estudou comigo, gosta de viajar e tem bom humor. Quero começar uma conversa leve…",
                   6,
                   true,
                 )}
@@ -404,7 +404,7 @@ export default function AnalyzePage() {
             {/* Sub-option: Enviar foto (stories tone included) */}
             {startStep === "photo" && (
               <motion.div key="start-photo" className="space-y-6 pb-24 lg:pb-0" {...fadeStep} transition={transition}>
-                {renderImageGrid(true, "Ex: vi o story dela e quero comentar algo...", 4, "Gerar resposta")}
+                {renderImageGrid(true, "Ex.: vi o story da viagem e quero comentar algo…", 4, "Gerar resposta")}
                 {renderSuggestions(handleAnalyzeWithImage)}
               </motion.div>
             )}
@@ -420,12 +420,12 @@ export default function AnalyzePage() {
           <div className="max-w-2xl space-y-6">
             {renderContext(
               "O que está acontecendo?",
-              "Ex: ela parou de responder depois de 3 dias, a última mensagem foi sobre filmes. Quero retomar sem parecer desesperado...",
+              "Ex.: a conversa parou há 3 dias e a última mensagem foi sobre filmes. Quero retomar de um jeito leve…",
               7,
               true,
             )}
             {renderTones()}
-            {renderBtn("Resolver situação", !context.trim(), () => handleAnalyzeWithText("situation"))}
+            {renderBtn("Gerar sugestões", !context.trim(), () => handleAnalyzeWithText("situation"))}
             {renderSuggestions(() => handleAnalyzeWithText("situation"))}
           </div>
         </motion.div>

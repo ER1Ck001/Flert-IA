@@ -40,7 +40,7 @@ async function safely(action: () => Promise<unknown>, label: string): Promise<vo
 const NOT_CHARGED =
   "A IA não conseguiu gerar sugestões agora. Tente novamente — esta tentativa não foi descontada do seu limite.";
 const CHARGED =
-  "A IA não conseguiu gerar sugestões válidas para este conteúdo. Esta tentativa foi descontada do seu limite, pois o número diário de tentativas devolvidas já foi atingido.";
+  "A IA não conseguiu gerar sugestões válidas para este conteúdo. Esta tentativa foi descontada do seu limite porque as 3 devoluções de hoje já foram usadas.";
 
 export async function runAnalysis(userId: string, input: GenerateInput, title: string): Promise<NextResponse> {
   // Rate limit de rajada (por instância; o limite diário persistente é a cota abaixo).
@@ -58,7 +58,7 @@ export async function runAnalysis(userId: string, input: GenerateInput, title: s
       {
         error: entitlement.isExpired
           ? "Seu plano expirou. Renove para continuar usando as análises."
-          : "Acesso restrito. Assine um plano para usar as análises.",
+          : "As análises fazem parte dos planos. Escolha um para começar.",
         expired: entitlement.isExpired,
       },
       { status: 403 }

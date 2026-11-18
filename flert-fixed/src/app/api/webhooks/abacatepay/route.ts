@@ -9,104 +9,17 @@ import {
   parseWebhookEvent,
   productPlanMapFromEnv,
 } from "@/lib/payments/abacatepay-webhook";
-import { PLAN_LABELS, getPlanBenefits, type PaidPlan } from "@/lib/plans";
-
-import { escapeHtml } from "@/lib/email/escape";
+import { type PaidPlan } from "@/lib/plans";
+import { planActivatedEmail } from "@/lib/email/templates";
 
 // Transação + e-mail de boas-vindas (SMTP com timeouts em lib/email/transport; pior caso ~40 s).
 export const maxDuration = 60;
 
 const transporter = createMailTransport();
 
-async function sendWelcomeEmail(email: string, name: string, plan: PaidPlan) {
-  const firstName = escapeHtml(name.split(" ")[0] || "você");
-  const label     = PLAN_LABELS[plan];
-  const perks     = getPlanBenefits(plan);
-  const appUrl    = process.env.NEXT_PUBLIC_APP_URL || "https://flertia.com.br";
-
-  const isLifetime = plan === "LIFETIME";
-
-  const perksHtml = perks
-    .map(p => `<li style="margin:0 0 8px;padding-left:8px">✦ ${p}</li>`)
-    .join("");
-
-  await transporter.sendMail({
-    from:    process.env.SMTP_FROM,
-    to:      email,
-    subject: `Bem-vindo ao Flert IA ${label}! Sua vida amorosa nunca mais será a mesma 💘`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head><meta charset="UTF-8" /></head>
-      <body style="margin:0;padding:0;background:#080608;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
-        <div style="max-width:520px;margin:40px auto;padding:0 16px">
-
-          <!-- Header -->
-          <div style="text-align:center;padding:40px 32px 32px;background:#0f090d;border-radius:20px 20px 0 0;border:1px solid rgba(201,168,76,0.15);border-bottom:none">
-            <div style="font-size:32px;margin-bottom:12px">💘</div>
-            <h1 style="margin:0;font-size:26px;font-weight:800;color:#F2EDE8;letter-spacing:-0.5px">
-              Flert<span style="color:#ff2d95">.</span>IA
-            </h1>
-            <p style="margin:8px 0 0;font-size:13px;color:#9E8E7E;letter-spacing:0.15em;text-transform:uppercase;font-weight:600">
-              Plano ${label} ativado
-            </p>
-          </div>
-
-          <!-- Body -->
-          <div style="background:#110c0e;padding:32px;border:1px solid rgba(201,168,76,0.15);border-top:none;border-bottom:none">
-
-            <p style="margin:0 0 20px;font-size:17px;color:#F2EDE8;line-height:1.6">
-              Olá, <strong>${firstName}</strong>! 🎉
-            </p>
-
-            <p style="margin:0 0 20px;font-size:15px;color:#C8B89A;line-height:1.7">
-              Sua compra foi confirmada e o plano <strong style="color:#ff2d95">${label}</strong> já está ativo na sua conta.
-              ${isLifetime
-                ? "Você agora tem acesso <strong style=\"color:#FF5FA0\">vitalício e ilimitado</strong> — nunca mais se preocupe com limites."
-                : "A partir de agora você tem tudo que precisa para transformar qualquer conversa em conexão real."
-              }
-            </p>
-
-            <p style="margin:0 0 16px;font-size:13px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#9E8E7E">
-              O que está incluso no seu plano
-            </p>
-
-            <ul style="margin:0 0 28px;padding:0;list-style:none;font-size:14px;color:#C8B89A;line-height:1.7">
-              ${perksHtml}
-            </ul>
-
-            <p style="margin:0 0 28px;font-size:15px;color:#C8B89A;line-height:1.7">
-              Chega de ficar sem resposta, de deixar a conversa esfriar ou de mandar mensagem e se arrepender. A IA vai analisar o contexto e gerar exatamente o que você precisa dizer — com o tom certo, na hora certa.
-            </p>
-
-            <!-- CTA -->
-            <div style="text-align:center;margin:0 0 12px">
-              <a href="${appUrl}/analyze"
-                style="display:inline-block;background:linear-gradient(135deg,#cc2277,#ff2d95);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 24px rgba(255,45,149,0.3)">
-                Começar a usar agora →
-              </a>
-            </div>
-            <p style="text-align:center;margin:0;font-size:12px;color:#5C4A52">
-              Acesse em <a href="${appUrl}" style="color:#ff2d95;text-decoration:none">flertia.com.br</a>
-            </p>
-          </div>
-
-          <!-- Footer -->
-          <div style="background:#0a0608;padding:24px 32px;border-radius:0 0 20px 20px;border:1px solid rgba(201,168,76,0.15);border-top:1px solid rgba(201,168,76,0.08)">
-            <p style="margin:0 0 8px;font-size:12px;color:#5C4A52;line-height:1.6">
-              Dúvidas? Fala com a gente pelo
-              <a href="mailto:erickdev@flertia.com.br" style="color:#ff2d95;text-decoration:none"> erickdev@flertia.com.br</a> — respondemos rápido.
-            </p>
-            <p style="margin:0;font-size:11px;color:#3d2d35">
-              Flert IA · flertia.com.br · Você recebeu este email porque realizou uma compra.
-            </p>
-          </div>
-
-        </div>
-      </body>
-      </html>
-    `,
-  });
+async function sendWelcomeEmail(email: string, name: string, plan: PaidPlan, expiresAt: Date | null) {
+  const { subject, html } = planActivatedEmail({ name, plan, expiresAt });
+  await transporter.sendMail({ from: process.env.SMTP_FROM, to: email, subject, html });
 }
 
 export async function POST(request: NextRequest) {
@@ -208,7 +121,7 @@ async function handle(request: NextRequest, rawBody: string): Promise<NextRespon
   }
 
   // 3b. Pagamento confirmado → ativa (idempotente, sem rebaixar LIFETIME).
-  const appliedPlan = await prisma.$transaction(async (tx: Tx): Promise<PaidPlan | null> => {
+  const applied = await prisma.$transaction(async (tx: Tx): Promise<{ plan: PaidPlan; expiresAt: Date | null } | null> => {
     await lockUser(tx, userId);
     const current = await tx.subscriptionStatus.findUnique({ where: { userId }, select: subscriptionSelect });
 
@@ -227,16 +140,16 @@ async function handle(request: NextRequest, rawBody: string): Promise<NextRespon
       paymentId: checkoutId,
     };
     await tx.subscriptionStatus.upsert({ where: { userId }, create: { userId, ...data }, update: data });
-    return decision.status;
+    return { plan: decision.status, expiresAt: decision.expiresAt };
   });
 
-  if (appliedPlan && user.email) {
+  if (applied && user.email) {
     try {
-      await sendWelcomeEmail(user.email, user.name ?? "você", appliedPlan);
+      await sendWelcomeEmail(user.email, user.name ?? "você", applied.plan, applied.expiresAt);
     } catch (emailErr) {
       console.error("Welcome email error:", emailErr instanceof Error ? emailErr.message : "unknown");
     }
   }
 
-  return NextResponse.json({ received: true, applied: appliedPlan !== null });
+  return NextResponse.json({ received: true, applied: applied !== null });
 }

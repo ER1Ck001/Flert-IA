@@ -73,8 +73,8 @@ function RegisterForm() {
 
   return (
     <AuthShell
-      title="Criar conta."
-      description="Crie sua conta para começar a usar o Flert IA."
+      title="Criar conta"
+      description="Crie sua conta. As análises fazem parte dos planos, que você escolhe em seguida."
       eyebrow={
         plan && planLabels[plan] ? (
           <Badge variant="violet">
@@ -103,7 +103,7 @@ function RegisterForm() {
             />
           )}
         </Field>
-        <Field id="email" label="Email" error={errors.email}>
+        <Field id="email" label="E-mail" error={errors.email}>
           {(control) => (
             <Input
               {...control}

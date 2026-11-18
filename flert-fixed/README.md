@@ -1,4 +1,4 @@
-# Flerte IA 🔥
+# Flert IA
 
 > Plataforma SaaS de IA para análise de prints de conversas e geração de sugestões de respostas inteligentes.
 
@@ -149,7 +149,7 @@ SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
 SMTP_USER="seu@gmail.com"
 SMTP_PASSWORD="sua-app-password"
-SMTP_FROM="Flerte IA <noreply@flerteia.com>"
+SMTP_FROM="Flert IA <noreply@flertia.com.br>"
 ```
 
 ### 3. Configurar banco de dados

@@ -15,7 +15,7 @@ const STEPS = [
   {
     icon: Copy,
     title: "Copie uma das 3",
-    text: "A IA sugere 3 respostas. Escolha a que combina com você e copie.",
+    text: "A IA sugere 3 respostas. Escolha a que combina com você, edite se quiser e copie.",
   },
 ] as const;
 

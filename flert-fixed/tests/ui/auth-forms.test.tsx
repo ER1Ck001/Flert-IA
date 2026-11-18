@@ -38,7 +38,7 @@ describe("Formulários de auth — validação inline e foco", () => {
     render(<RegisterPage />);
     const user = userEvent.setup();
     await user.type(screen.getByLabelText("Nome completo"), "Ana Lima");
-    await user.type(screen.getByLabelText("Email"), "ana@exemplo.com");
+    await user.type(screen.getByLabelText("E-mail"), "ana@exemplo.com");
     await user.type(screen.getByLabelText("Senha"), "fraquinha");
     await user.click(screen.getByRole("button", { name: "Criar conta" }));
 
@@ -55,7 +55,7 @@ describe("Formulários de auth — validação inline e foco", () => {
     render(<RegisterPage />);
     const user = userEvent.setup();
     await user.type(screen.getByLabelText("Nome completo"), "A");
-    await user.type(screen.getByLabelText("Email"), "ana@exemplo.com");
+    await user.type(screen.getByLabelText("E-mail"), "ana@exemplo.com");
     await user.type(screen.getByLabelText("Senha"), "SenhaForte1!");
     await user.click(screen.getByRole("button", { name: "Criar conta" }));
     const name = screen.getByLabelText("Nome completo");
@@ -68,9 +68,9 @@ describe("Formulários de auth — validação inline e foco", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) }) as Response));
     render(<ForgotPasswordPage />);
     const user = userEvent.setup();
-    await user.type(screen.getByLabelText("Email"), "ana@exemplo.com");
+    await user.type(screen.getByLabelText("E-mail"), "ana@exemplo.com");
     await user.click(screen.getByRole("button", { name: /Enviar link/ }));
-    const heading = await screen.findByRole("heading", { name: "Email enviado." });
+    const heading = await screen.findByRole("heading", { name: "E-mail enviado" });
     await waitFor(() => expect(heading).toHaveFocus());
   });
 
