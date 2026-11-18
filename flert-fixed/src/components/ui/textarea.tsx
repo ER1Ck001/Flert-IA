@@ -1,20 +1,59 @@
+"use client";
+
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { fieldControlClass } from "./input";
 
-export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  invalid?: boolean;
+  /** Mostra contador "n/maxLength" (aria-live polite). Requer maxLength. */
+  showCount?: boolean;
+}
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, ...props }, ref) => {
-    return (
+  ({ className, invalid, showCount, maxLength, value, defaultValue, onChange, "aria-invalid": ariaInvalid, ...props }, ref) => {
+    const isControlled = value !== undefined;
+    const [inner, setInner] = React.useState(() => String(defaultValue ?? ""));
+    const length = isControlled ? String(value ?? "").length : inner.length;
+    const counterId = React.useId();
+    const withCount = showCount && typeof maxLength === "number";
+
+    const describedBy = [props["aria-describedby"], withCount ? counterId : undefined].filter(Boolean).join(" ") || undefined;
+
+    const field = (
       <textarea
-        className={cn(
-          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-          className
-        )}
         ref={ref}
+        maxLength={maxLength}
+        value={value}
+        defaultValue={defaultValue}
+        aria-invalid={invalid || ariaInvalid || undefined}
+        onChange={(e) => {
+          if (!isControlled) setInner(e.target.value);
+          onChange?.(e);
+        }}
+        className={cn(fieldControlClass, "flex min-h-[120px] py-3 leading-relaxed", className)}
         {...props}
+        aria-describedby={describedBy}
       />
+    );
+
+    if (!withCount) return field;
+
+    const near = length >= maxLength! * 0.9;
+    return (
+      <div className="relative w-full">
+        {field}
+        <span
+          id={counterId}
+          aria-live="polite"
+          className={cn(
+            "pointer-events-none mt-1.5 block text-right text-xs tabular-nums",
+            near ? "text-warning" : "text-text-2"
+          )}
+        >
+          {length}/{maxLength}
+        </span>
+      </div>
     );
   }
 );

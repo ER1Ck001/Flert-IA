@@ -563,7 +563,7 @@ const AZ_CSS = `
 /* ── GATE ── */
 .az-gate { max-width:400px; margin:5rem auto; text-align:center; }
 .az-gate-icon { font-size:3rem; margin-bottom:1.5rem; }
-.az-gate-title { font-family:var(--font-cormorant),Georgia,serif; font-size:2rem; font-weight:600; color:var(--tx); margin-bottom:.75rem; letter-spacing:-0.02em; }
+.az-gate-title { font-family:'Cabinet Grotesk',var(--font-inter),sans-serif; font-size:2rem; font-weight:600; color:var(--tx); margin-bottom:.75rem; letter-spacing:-0.02em; }
 .az-gate-sub { font-size:.9rem; line-height:1.8; color:var(--tx-2); font-weight:300; margin-bottom:2rem; }
 .az-gate-btn { display:inline-block; padding:.9rem 2.5rem; background:linear-gradient(135deg,#8B0A2A,#B01234); color:#F2EDE8; font-size:10px; letter-spacing:.22em; text-transform:uppercase; font-weight:800; font-family:'Cabinet Grotesk',sans-serif; border:none; cursor:pointer; transition:opacity .2s,transform .15s; }
 .az-gate-btn:hover { opacity:.88; transform:translateY(-1px); }
@@ -574,7 +574,7 @@ const AZ_CSS = `
 /* ── HEADER ── */
 .az-header { display:flex; align-items:flex-start; justify-content:space-between; gap:2rem; }
 .az-eyebrow { font-size:9.5px; letter-spacing:.28em; text-transform:uppercase; font-weight:700; color:rgba(201,168,76,.75); margin-bottom:.75rem; }
-.az-title { font-family:var(--font-cormorant),Georgia,serif; font-size:clamp(2.2rem,4vw,3.2rem); font-weight:600; line-height:1.05; letter-spacing:-0.02em; color:var(--tx); }
+.az-title { font-family:'Cabinet Grotesk',var(--font-inter),sans-serif; font-size:clamp(2.2rem,4vw,3.2rem); font-weight:600; line-height:1.05; letter-spacing:-0.02em; color:var(--tx); }
 .az-title em { font-style:italic; color:#8B0A2A; }
 .az-sub { font-size:.875rem; color:var(--tx-2); font-weight:300; margin-top:.5rem; line-height:1.7; }
 
@@ -586,7 +586,7 @@ const AZ_CSS = `
 .az-counter { display:flex; align-items:baseline; gap:.2rem; padding:.6rem 1rem; border:1px solid rgba(139,10,42,.18); background:rgba(139,10,42,.04); flex-shrink:0; }
 .az-counter--warn { border-color:rgba(255,180,50,.3); background:rgba(255,180,50,.06); }
 .az-counter--warn .az-counter-n { color:#f59e0b; }
-.az-counter-n { font-family:var(--font-cormorant),Georgia,serif; font-size:1.8rem; font-weight:600; color:#8B0A2A; line-height:1; }
+.az-counter-n { font-family:'Cabinet Grotesk',var(--font-inter),sans-serif; font-size:1.8rem; font-weight:600; color:#8B0A2A; line-height:1; }
 .az-counter-sep { font-size:.9rem; color:var(--tx-3); margin:0 .1rem; }
 .az-counter-total { font-size:.9rem; color:var(--tx-3); }
 .az-counter-label { font-size:9px; letter-spacing:.2em; text-transform:uppercase; font-weight:700; color:var(--tx-3); margin-left:.5rem; }

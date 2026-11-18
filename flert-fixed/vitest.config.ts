@@ -5,10 +5,14 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },
   },
+  // tsconfig usa "jsx": "preserve" (Next); nos testes o esbuild precisa compilar o JSX.
+  esbuild: { jsx: "automatic" },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
-    setupFiles: ["./tests/setup.ts"],
+    // Só os testes de UI rodam em jsdom; API/lib/config continuam em node.
+    environmentMatchGlobs: [["tests/ui/**", "jsdom"]],
+    include: ["src/**/*.test.ts", "tests/**/*.test.ts", "tests/**/*.test.tsx"],
+    setupFiles: ["./tests/setup.ts", "./tests/ui/setup.ts"],
     clearMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,

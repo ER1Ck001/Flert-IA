@@ -184,7 +184,7 @@ const AUTH_CSS = `
 @keyframes au-orb2 { 0%,100% { transform:translate(0,0) scale(1); } 33% { transform:translate(-25px,20px) scale(0.92); } 66% { transform:translate(20px,-15px) scale(1.06); } }
 @keyframes hb { 0%,100%{transform:scale(1)}14%{transform:scale(1.3)}28%{transform:scale(1)}42%{transform:scale(1.15)}70%{transform:scale(1)} }
 
-.au { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; background:var(--bg); }
+.au { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; background:rgb(var(--bg)); }
 
 .au-left {
   position:relative; overflow:hidden;
@@ -204,7 +204,7 @@ const AUTH_CSS = `
 .au-left-orb--2 { width:220px; height:220px; background:rgba(109,8,32,0.13); bottom:8%; left:-50px; animation:au-orb2 10s ease-in-out infinite; }
 .au-left-wm {
   position:absolute; bottom:-0.1em; right:-0.05em;
-  font-family:var(--font-cormorant),Georgia,serif;
+  font-family:'Cabinet Grotesk',var(--font-inter),sans-serif;
   font-size:clamp(200px,30vw,360px); font-weight:700; font-style:italic;
   color:transparent; -webkit-text-stroke:1px rgba(139,10,42,0.07);
   line-height:1; pointer-events:none; user-select:none; letter-spacing:-0.05em;
@@ -220,7 +220,7 @@ const AUTH_CSS = `
 .au-left-body { position:relative; z-index:1; }
 .au-left-label { font-size:9.5px; letter-spacing:.3em; text-transform:uppercase; font-weight:600; color:rgba(201,168,76,0.75); margin-bottom:1.5rem; }
 .au-left-title {
-  font-family:var(--font-cormorant),Georgia,serif;
+  font-family:'Cabinet Grotesk',var(--font-inter),sans-serif;
   font-size:clamp(3rem,5vw,5.5rem); font-weight:600;
   line-height:1.05; letter-spacing:-0.02em; color:#F2EDE8; margin-bottom:1.5rem;
 }
@@ -241,7 +241,7 @@ const AUTH_CSS = `
 .au-form-wrap { width:100%; max-width:400px; position:relative; z-index:1; }
 .au-form-head { margin-bottom:2.5rem; }
 .au-logo {
-  font-family:var(--font-cormorant),Georgia,serif;
+  font-family:'Cabinet Grotesk',var(--font-inter),sans-serif;
   font-size:1.4rem; font-weight:600; font-style:italic;
   display:inline-flex; align-items:center; gap:.35rem;
   margin-bottom:2rem; color:var(--tx);
@@ -254,7 +254,7 @@ const AUTH_CSS = `
 }
 
 .au-title {
-  font-family:var(--font-cormorant),Georgia,serif;
+  font-family:'Cabinet Grotesk',var(--font-inter),sans-serif;
   font-size:clamp(2.2rem,4vw,3.2rem); font-weight:600;
   line-height:1.05; letter-spacing:-0.02em; color:var(--tx); margin-bottom:.75rem;
 }
@@ -270,7 +270,7 @@ const AUTH_CSS = `
   padding:.75rem 0; font-size:16px; color:var(--tx);
   font-family:'Cabinet Grotesk',sans-serif; outline:none;
   transition:border-color .3s;
-  -webkit-box-shadow:0 0 0 100px var(--bg) inset !important;
+  -webkit-box-shadow:0 0 0 100px rgb(var(--bg)) inset !important;
   -webkit-text-fill-color:var(--tx) !important;
   caret-color:#8B0A2A;
 }
@@ -312,7 +312,7 @@ const AUTH_CSS = `
 
 .au-spin { width:16px; height:16px; border:1.5px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:au-rot .7s linear infinite; display:inline-block; flex-shrink:0; }
 .au-spin--lg { width:28px; height:28px; border-color:rgba(139,10,42,.2); border-top-color:#8B0A2A; }
-.au-loading { min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg); }
+.au-loading { min-height:100vh; display:flex; align-items:center; justify-content:center; background:rgb(var(--bg)); }
 
 .au-plan-badge {
   display:inline-flex; align-items:center; gap:.5rem; margin-top:1rem;
@@ -321,7 +321,7 @@ const AUTH_CSS = `
 }
 
 [data-theme="light"] .au-input {
-  -webkit-box-shadow:0 0 0 100px var(--bg) inset !important;
+  -webkit-box-shadow:0 0 0 100px rgb(var(--bg)) inset !important;
   -webkit-text-fill-color:var(--tx) !important;
 }
 [data-theme="light"] .au-right-orb--1 { background:radial-gradient(circle, rgba(139,10,42,0.08) 0%, transparent 70%); }

@@ -1,24 +1,15 @@
-import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "react-hot-toast";
 import { Providers } from "./providers";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ConsentBanner } from "@/components/consent/ConsentBanner";
 import { FacebookPixel } from "@/components/consent/FacebookPixel";
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-cormorant",
-  display: "swap",
-});
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-inter",
   display: "swap",
 });
@@ -27,7 +18,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://flertia.com.br"),
   title: "Flert IA — Seu Assistente de Conversas",
   description: "Transforme suas conversas com o poder da Inteligência Artificial. Respostas inteligentes, envolventes e conexões reais.",
-  keywords: ["flert", "IA", "conversas", "dating", "inteligência artificial", "chat"],
+  keywords: ["flert", "IA", "conversas", "inteligência artificial", "chat"],
   authors: [{ name: "Flert IA" }],
   openGraph: {
     title: "Flert IA — Seu Assistente de Conversas",
@@ -39,46 +30,34 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#0B0814",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning className={`${cormorant.variable} ${inter.variable}`}>
+    <html lang="pt-BR" suppressHydrationWarning className={`dark ${inter.variable}`} style={{ colorScheme: "dark" }}>
       <head>
         <link rel="preconnect" href="https://api.fontshare.com" />
+        <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500,400,300&display=swap"
+          href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&display=swap"
         />
       </head>
-      <body className="font-cabinet antialiased">
+      <body className="font-sans bg-bg text-text antialiased">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[10000] focus:rounded-md focus:bg-violet-600 focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-white focus:shadow-2"
+        >
+          Pular para o conteúdo
+        </a>
         <Providers>
           {children}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#160E11',
-                color: '#F2EDE8',
-                border: '1px solid rgba(201,168,76,0.2)',
-                borderRadius: '2px',
-                fontFamily: "'Cabinet Grotesk', sans-serif",
-                fontSize: '14px',
-              },
-              success: {
-                iconTheme: { primary: '#C9A84C', secondary: '#160E11' },
-              },
-              error: {
-                iconTheme: { primary: '#8B0A2A', secondary: '#F2EDE8' },
-              },
-            }}
-          />
+          <Toaster />
         </Providers>
         {/* Pixel da Meta só com consentimento (LGPD) e nunca em /auth/* */}
         <FacebookPixel />
