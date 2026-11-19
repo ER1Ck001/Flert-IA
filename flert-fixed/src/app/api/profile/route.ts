@@ -3,42 +3,31 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { z } from "zod";
-import nodemailer from "nodemailer";
+import { createMailTransport } from "@/lib/email/transport";
+import { getEffectivePlan, isPlanExpired } from "@/lib/plans";
+import { assertSameOrigin, errorMessage, isPrismaError, parseJsonBody, tooMany } from "@/lib/http";
+import { rateLimit } from "@/lib/rate-limit";
+import { SESSION_VERSION_BUMP } from "@/lib/session-version";
+import { deleteAccountSchema, normalizeEmail, profileUpdateSchema } from "@/lib/validation/auth";
+import { findUserByEmail } from "@/lib/users";
+import { emailFirstName, escapeHtml } from "@/lib/email/escape";
+import { isReservedAdminEmail } from "@/lib/admin";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+const transporter = createMailTransport();
 
-const profileSchema = z.object({
-  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  email: z.string().email("Email inválido"),
-  currentPassword: z.string().optional(),
-  newPassword: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
-});
+const bad = (error: string) => NextResponse.json({ error }, { status: 400 });
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: {
-        subscriptionStatus: true,
-        profile: true,
-      },
+      include: { subscriptionStatus: true, profile: true },
     });
-
     if (!user) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
     }
@@ -49,36 +38,57 @@ export async function GET(request: NextRequest) {
         name: user.name,
         email: user.email,
         image: user.image,
-        subscriptionStatus: user.subscriptionStatus?.status || "FREE",
+        // Contas criadas pelo Google não têm senha: o front esconde troca de senha/e-mail.
+        hasPassword: Boolean(user.password),
+        marketingOptIn: user.marketingOptIn,
+        subscriptionStatus: getEffectivePlan(user.subscriptionStatus),
+        isExpired: isPlanExpired(user.subscriptionStatus),
+        expiresAt: user.subscriptionStatus?.expiresAt ?? null,
         profile: user.profile,
       },
     });
   } catch (error) {
-    console.error("Profile GET error:", error);
-    return NextResponse.json(
-      { error: "Erro ao buscar perfil" },
-      { status: 500 }
-    );
+    console.error("Profile GET error:", errorMessage(error));
+    return NextResponse.json({ error: "Erro ao buscar perfil" }, { status: 500 });
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
+    const crossSite = assertSameOrigin(request);
+    if (crossSite) return crossSite;
+
+    const limit = await rateLimit("account:delete", session.user.id, 5, 3600, { onError: "allow" });
+    if (!limit.allowed) return tooMany(limit.retryAfterSec);
+
+    // Confirmação explícita: digitar EXCLUIR e, se a conta tem senha, informá-la.
+    const parsed = await parseJsonBody(request, deleteAccountSchema);
+    if (!parsed.ok) return parsed.response;
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { name: true, email: true },
+      select: { name: true, email: true, password: true },
     });
+    if (!user) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    if (user.password) {
+      if (!parsed.data.password) return bad("Informe sua senha para excluir a conta.");
+      if (!(await bcrypt.compare(parsed.data.password, user.password))) return bad("Senha incorreta");
+    }
 
-    await prisma.user.delete({ where: { id: session.user.id } });
+    try {
+      await prisma.user.delete({ where: { id: session.user.id } });
+    } catch (error) {
+      if (isPrismaError(error, "P2025")) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+      throw error;
+    }
 
     if (user?.email) {
-      const firstName = user.name?.split(" ")[0] || "você";
+      const firstName = emailFirstName(user.name);
+      const appUrl = escapeHtml(process.env.NEXT_PUBLIC_APP_URL || "https://flertia.com.br");
       await transporter.sendMail({
         from: process.env.SMTP_FROM,
         to: user.email,
@@ -90,13 +100,13 @@ export async function DELETE() {
 
             <p style="margin:0 0 16px">Olá, <strong>${firstName}</strong>.</p>
             <p style="margin:0 0 16px;color:#ccc;line-height:1.6">
-              Sua conta no <strong style="color:#fff">Flert IA</strong> foi excluída com sucesso. Todos os seus dados — histórico de análises, perfil e informações de pagamento — foram removidos permanentemente dos nossos servidores.
+              Sua conta no <strong style="color:#fff">Flert IA</strong> foi excluída com sucesso. Seus dados — histórico de análises, perfil e registros de assinatura — foram removidos da nossa base de dados. Registros mantidos pelos nossos processadores (como a AbacatePay, para pagamentos) seguem as políticas deles e as obrigações legais aplicáveis.
             </p>
             <p style="margin:0 0 28px;color:#ccc;line-height:1.6">
               Se isso foi um engano ou se mudar de ideia, você pode criar uma nova conta a qualquer momento.
             </p>
 
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}" style="display:inline-block;background:#ff2d95;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">
+            <a href="${appUrl}" style="display:inline-block;background:#ff2d95;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">
               Criar nova conta
             </a>
 
@@ -106,12 +116,12 @@ export async function DELETE() {
             </p>
           </div>
         `,
-      }).catch((err) => console.error("Delete account email error:", err));
+      }).catch((err) => console.error("Delete account email error:", errorMessage(err)));
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Profile DELETE error:", error);
+    console.error("Profile DELETE error:", errorMessage(error));
     return NextResponse.json({ error: "Erro ao excluir conta" }, { status: 500 });
   }
 }
@@ -119,83 +129,78 @@ export async function DELETE() {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
+    const userId = session.user.id;
+    const crossSite = assertSameOrigin(request);
+    if (crossSite) return crossSite;
 
-    const body = await request.json();
-    const { name, email, currentPassword, newPassword } = profileSchema.parse(body);
+    // A senha atual pode ser testada aqui: limita para não virar força bruta com sessão roubada.
+    const limit = await rateLimit("profile:update", userId, 20, 900, { onError: "allow" });
+    if (!limit.allowed) return tooMany(limit.retryAfterSec);
 
-    // Check if email is already taken by another user
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const parsed = await parseJsonBody(request, profileUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name, email, currentPassword, newPassword } = parsed.data;
 
-    if (existingUser && existingUser.id !== session.user.id) {
-      return NextResponse.json(
-        { error: "Email já cadastrado" },
-        { status: 400 }
-      );
+    const current = await prisma.user.findUnique({ where: { id: userId } });
+    if (!current) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
     }
 
-    // Update password if requested
-    let passwordUpdate = {};
-    if (newPassword && currentPassword) {
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
+    // Diferença só de caixa/espaços não é troca de e-mail.
+    const emailChanged = email !== normalizeEmail(current.email ?? "");
+
+    if (emailChanged || newPassword) {
+      if (!current.password) {
+        return bad(
+          emailChanged
+            ? "Contas criadas com Google não podem alterar o e-mail."
+            : "Sua conta usa login com Google e não possui senha."
+        );
+      }
+      if (!currentPassword) return bad("Informe a senha atual para alterar o e-mail.");
+      if (!(await bcrypt.compare(currentPassword, current.password))) return bad("Senha atual inválida");
+    }
+
+    if (emailChanged) {
+      if (isReservedAdminEmail(email)) return bad("Email já cadastrado");
+      const other = await findUserByEmail(email);
+      if (other && other.id !== userId) return bad("Email já cadastrado");
+    }
+
+    let updated;
+    try {
+      updated = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name,
+          // Novo e-mail precisa ser verificado de novo.
+          ...(emailChanged ? { email, emailVerified: null } : {}),
+          ...(newPassword ? { password: await bcrypt.hash(newPassword, 12) } : {}),
+          // Troca de senha ou de e-mail derruba as sessões abertas em outros dispositivos.
+          ...(emailChanged || newPassword ? SESSION_VERSION_BUMP : {}),
+        },
+        include: { subscriptionStatus: true },
       });
-
-      if (!user?.password) {
-        return NextResponse.json(
-          { error: "Senha atual não definida" },
-          { status: 400 }
-        );
-      }
-
-      const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
-      if (!isPasswordValid) {
-        return NextResponse.json(
-          { error: "Senha atual inválida" },
-          { status: 400 }
-        );
-      }
-
-      passwordUpdate = { password: await bcrypt.hash(newPassword, 12) };
+    } catch (error) {
+      if (isPrismaError(error, "P2002")) return bad("Email já cadastrado");
+      throw error;
     }
-
-    const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        name,
-        email,
-        ...passwordUpdate,
-      },
-      include: {
-        subscriptionStatus: true,
-      },
-    });
 
     return NextResponse.json({
       user: {
-        id: updatedUser.id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        image: updatedUser.image,
-        subscriptionStatus: updatedUser.subscriptionStatus?.status || "FREE",
+        id: updated.id,
+        name: updated.name,
+        email: updated.email,
+        image: updated.image,
+        subscriptionStatus: getEffectivePlan(updated.subscriptionStatus),
+        isExpired: isPlanExpired(updated.subscriptionStatus),
       },
     });
   } catch (error) {
-    console.error("Profile PUT error:", error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.errors[0].message },
-        { status: 400 }
-      );
-    }
-    return NextResponse.json(
-      { error: "Erro ao atualizar perfil" },
-      { status: 500 }
-    );
+    console.error("Profile PUT error:", errorMessage(error));
+    return NextResponse.json({ error: "Erro ao atualizar perfil" }, { status: 500 });
   }
 }

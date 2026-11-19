@@ -1,15 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { User, Mail, Camera, Save, Loader2, Lock } from "lucide-react";
+import { User, Mail, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import toast from "react-hot-toast";
+import { PLAN_LABELS } from "@/lib/plans";
+import { PASSWORD_RULES_HINT, normalizeEmail, profileUpdateSchema } from "@/lib/validation/auth";
+import { focusFirstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
+
+const FIELD_ORDER = ["name", "email", "currentPassword", "newPassword"] as const;
 
 function getInitials(name: string | null | undefined) {
   if (!name) return "U";
@@ -26,6 +34,11 @@ export default function ProfilePage() {
     newPassword: "",
   });
   const [subscriptionStatus, setSubscriptionStatus] = useState("FREE");
+  const [isExpired, setIsExpired] = useState(false);
+  const [hasPassword, setHasPassword] = useState(true);
+  const [savedEmail, setSavedEmail] = useState("");
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const clearError = (key: string) => { if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined })); };
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -38,6 +51,9 @@ export default function ProfilePage() {
           email: data.user.email || "",
         });
         setSubscriptionStatus(data.user.subscriptionStatus || "FREE");
+        setIsExpired(Boolean(data.user.isExpired));
+        setHasPassword(data.user.hasPassword !== false);
+        setSavedEmail(data.user.email || "");
       } catch {
         // silently fail — session data is still usable
       }
@@ -48,29 +64,39 @@ export default function ProfilePage() {
         name: session.user.name || "",
         email: session.user.email || "",
       });
+      // Base para detectar troca de e-mail mesmo se o GET /api/profile falhar.
+      setSavedEmail((prev) => prev || session.user?.email || "");
       loadProfile();
     }
   }, [session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Mesmas regras do servidor (src/lib/validation/auth.ts).
+    const parsed = profileUpdateSchema.safeParse({ ...formData, ...passwordData });
+    // Erros de validação aparecem no próprio campo (role=alert + aria-invalid) e o foco vai até ele.
+    if (!parsed.success) {
+      const fieldErrors = toFieldErrors(parsed.error.issues);
+      setErrors(fieldErrors);
+      focusFirstError(fieldErrors, FIELD_ORDER);
+      return;
+    }
+    const emailChanged = parsed.data.email !== normalizeEmail(savedEmail);
+    if (emailChanged && !parsed.data.currentPassword) {
+      const fieldErrors = { currentPassword: "Informe a senha atual para alterar o e-mail." };
+      setErrors(fieldErrors);
+      focusFirstError(fieldErrors, FIELD_ORDER);
+      return;
+    }
+    setErrors({});
+
     setLoading(true);
-
     try {
-      const payload: Record<string, string> = {
-        name: formData.name,
-        email: formData.email,
-      };
-
-      if (passwordData.newPassword && passwordData.currentPassword) {
-        payload.currentPassword = passwordData.currentPassword;
-        payload.newPassword = passwordData.newPassword;
-      }
-
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(parsed.data),
       });
 
       const data = await res.json();
@@ -79,6 +105,13 @@ export default function ProfilePage() {
         throw new Error(data.error || "Erro ao atualizar perfil");
       }
 
+      // Trocar senha ou e-mail encerra todas as sessões (inclusive esta): volta ao login.
+      if (emailChanged || parsed.data.newPassword) {
+        toast.success("Dados de acesso alterados. Entre novamente.");
+        await signOut({ callbackUrl: "/auth/login" });
+        return;
+      }
+      setSavedEmail(data.user.email || parsed.data.email);
       await update();
       toast.success("Perfil atualizado com sucesso!");
       setPasswordData({ currentPassword: "", newPassword: "" });
@@ -90,160 +123,158 @@ export default function ProfilePage() {
     }
   };
 
-  const planLabel: Record<string, string> = {
-    FREE: "Grátis",
-    PREMIUM: "Premium",
-    LIFETIME: "Vitalício",
-  };
+  const planLabel: Record<string, string> = PLAN_LABELS;
 
-  const planColor: Record<string, string> = {
-    FREE: "bg-muted text-muted-foreground",
-    PREMIUM: "bg-brand-500/10 text-brand-500",
-    LIFETIME: "bg-yellow-500/10 text-yellow-500",
+  const planVariant: Record<string, BadgeProps["variant"]> = {
+    FREE: "neutral",
+    PREMIUM: "violet",
+    ANNUAL: "violet",
+    LIFETIME: "pink",
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Perfil</h1>
-        <p className="text-muted-foreground mt-1">Gerencie suas informações pessoais</p>
-      </div>
+    <div className="mx-auto w-full max-w-2xl space-y-6">
+      <PageHeader eyebrow="Sua conta" title="Perfil" description="Gerencie suas informações pessoais" className="mb-2" />
 
-      <Card className="border-border/50">
-        <CardHeader className="text-center">
-          <div className="relative w-24 h-24 mx-auto mb-4">
-            <Avatar className="w-24 h-24">
-              <AvatarImage src={session?.user?.image || undefined} />
-              <AvatarFallback className="bg-gradient-to-br from-brand-500 to-purple-500 text-white text-2xl font-semibold">
-                {getInitials(session?.user?.name)}
-              </AvatarFallback>
-            </Avatar>
-            <button className="absolute bottom-0 right-0 p-2 rounded-full bg-brand-500 text-white hover:bg-brand-600 transition-colors shadow-lg">
-              <Camera className="h-4 w-4" />
-            </button>
-          </div>
-          <CardTitle>Informações Pessoais</CardTitle>
+      <Card>
+        <CardHeader className="items-center p-4 text-center sm:p-6">
+          <Avatar className="mb-3 h-24 w-24 ring-2 ring-violet-500/40 ring-offset-2 ring-offset-surface">
+            <AvatarImage src={session?.user?.image || undefined} alt="" />
+            <AvatarFallback className="bg-signal font-display text-2xl font-bold text-white">
+              {getInitials(session?.user?.name)}
+            </AvatarFallback>
+          </Avatar>
+          <CardTitle>Informações pessoais</CardTitle>
           <CardDescription>Atualize seus dados de perfil</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="pl-10"
-                  required
-                  minLength={2}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="border-t border-border/50 pt-4 space-y-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                Alterar senha (opcional)
-              </p>
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">Senha atual</Label>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
+            <Field label="Nome" id="name" error={errors.name}>
+              {(control) => (
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <User className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-text-3" aria-hidden />
                   <Input
-                    id="currentPassword"
-                    type="password"
-                    value={passwordData.currentPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                    className="pl-10"
-                    placeholder="••••••••"
+                    {...control}
+                    value={formData.name}
+                    onChange={(e) => { setFormData({ ...formData, name: e.target.value }); clearError("name"); }}
+                    className="pl-11"
+                    autoComplete="name"
+                    required
+                    minLength={2}
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">Nova senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                    className="pl-10"
-                    placeholder="••••••••"
-                    minLength={6}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full" variant="brand" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Salvar Alterações
-                </>
               )}
+            </Field>
+
+            <Field
+              label="E-mail"
+              id="email"
+              error={errors.email}
+              hint={
+                hasPassword
+                  ? "Para trocar o e-mail, informe também a senha atual abaixo."
+                  : "Contas criadas com Google não podem alterar o e-mail."
+              }
+            >
+              {(control) => (
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-text-3" aria-hidden />
+                  <Input
+                    {...control}
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); clearError("email"); }}
+                    className="pl-11"
+                    autoComplete="email"
+                    required
+                    maxLength={254}
+                    disabled={!hasPassword}
+                  />
+                </div>
+              )}
+            </Field>
+
+            {hasPassword && (
+              <div role="group" aria-labelledby="password-group-title" className="space-y-4 border-t border-border pt-5">
+                <p id="password-group-title" className="text-sm font-medium text-text-2">
+                  Senha atual (obrigatória para trocar e-mail ou senha)
+                </p>
+                <Field label="Senha atual" id="currentPassword" error={errors.currentPassword}>
+                  {(control) => (
+                    <PasswordInput
+                      {...control}
+                      value={passwordData.currentPassword}
+                      onChange={(e) => { setPasswordData({ ...passwordData, currentPassword: e.target.value }); clearError("currentPassword"); }}
+                      autoComplete="current-password"
+                      placeholder="••••••••"
+                    />
+                  )}
+                </Field>
+                <Field label="Nova senha" id="newPassword" hint={PASSWORD_RULES_HINT} error={errors.newPassword}>
+                  {(control) => (
+                    <PasswordInput
+                      {...control}
+                      value={passwordData.newPassword}
+                      onChange={(e) => { setPasswordData({ ...passwordData, newPassword: e.target.value }); clearError("newPassword"); }}
+                      autoComplete="new-password"
+                      minLength={8}
+                      maxLength={72}
+                    />
+                  )}
+                </Field>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              variant="signal"
+              loading={loading}
+              leftIcon={<Save className="h-4 w-4" aria-hidden />}
+            >
+              {loading ? "Salvando..." : "Salvar alterações"}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      <Card className="border-border/50">
-        <CardHeader>
+      <Card>
+        <CardHeader className="p-4 sm:p-6">
           <CardTitle>Conta</CardTitle>
           <CardDescription>Informações da sua conta</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex justify-between items-center py-3 border-b border-border/50">
-            <div>
-              <p className="font-medium">Plano atual</p>
-              <p className="text-sm text-muted-foreground">Sua assinatura atual</p>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          <dl className="divide-y divide-border">
+            <div className="flex items-center justify-between gap-4 py-3">
+              <dt className="min-w-0">
+                <span className="block font-medium text-text">Plano atual</span>
+                <span className="block text-sm text-text-2">Sua assinatura atual</span>
+              </dt>
+              <dd>
+                <Badge
+                  variant={isExpired ? "warning" : planVariant[subscriptionStatus] || planVariant.FREE}
+                  className="text-sm"
+                >
+                  {isExpired ? "Expirado" : planLabel[subscriptionStatus] || PLAN_LABELS.FREE}
+                </Badge>
+              </dd>
             </div>
-            <span
-              className={`px-3 py-1 rounded-full text-sm font-medium ${planColor[subscriptionStatus] || planColor.FREE}`}
-            >
-              {planLabel[subscriptionStatus] || "Grátis"}
-            </span>
-          </div>
-          <div className="flex justify-between items-center py-3 border-b border-border/50">
-            <div>
-              <p className="font-medium">Tipo de conta</p>
-              <p className="text-sm text-muted-foreground">Método de autenticação</p>
+            <div className="flex items-center justify-between gap-4 py-3">
+              <dt className="min-w-0">
+                <span className="block font-medium text-text">Tipo de conta</span>
+                <span className="block text-sm text-text-2">Método de autenticação</span>
+              </dt>
+              <dd className="text-sm text-text-2">{hasPassword ? "E-mail e senha" : "Google"}</dd>
             </div>
-            <span className="text-sm text-muted-foreground">
-              {session?.user?.image?.includes("googleusercontent") ? "Google" : "Email"}
-            </span>
-          </div>
-          <div className="flex justify-between items-center py-3">
-            <div>
-              <p className="font-medium">Email</p>
-              <p className="text-sm text-muted-foreground">Conta cadastrada</p>
+            <div className="flex items-center justify-between gap-4 py-3">
+              <dt className="shrink-0">
+                <span className="block font-medium text-text">E-mail</span>
+                <span className="block text-sm text-text-2">Conta cadastrada</span>
+              </dt>
+              <dd className="min-w-0 truncate text-sm text-text-2">{session?.user?.email}</dd>
             </div>
-            <span className="text-sm text-muted-foreground truncate max-w-[200px]">
-              {session?.user?.email}
-            </span>
-          </div>
+          </dl>
         </CardContent>
       </Card>
     </div>

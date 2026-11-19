@@ -1,6 +1,10 @@
 import type { Config } from 'tailwindcss'
 import { fontFamily } from 'tailwindcss/defaultTheme'
 
+const rgb = (name: string) => `rgb(var(--${name}) / <alpha-value>)`
+
+const displayStack = ['var(--font-display)', 'var(--font-inter)', ...fontFamily.sans]
+
 const config = {
   darkMode: ['class'],
   content: [
@@ -18,13 +22,51 @@ const config = {
     },
     extend: {
       fontFamily: {
-        cormorant: ['var(--font-cormorant)', 'Georgia', 'serif'],
-        cabinet: ["'Cabinet Grotesk'", ...fontFamily.sans],
-        display: ['var(--font-cormorant)', 'Georgia', 'serif'],
-        sans: ["'Cabinet Grotesk'", ...fontFamily.sans],
+        sans: ['var(--font-inter)', ...fontFamily.sans],
+        display: displayStack,
+      },
+      fontSize: {
+        display: ['clamp(2.5rem, 5vw + 1rem, 4.5rem)', { lineHeight: '1.02', fontWeight: '800', letterSpacing: '-0.03em' }],
+        h1: ['clamp(1.75rem, 2.5vw + 1rem, 2.5rem)', { lineHeight: '1.1', fontWeight: '700', letterSpacing: '-0.02em' }],
+        h2: ['clamp(1.375rem, 1.5vw + 1rem, 2rem)', { lineHeight: '1.15', fontWeight: '700' }],
+        h3: ['1.125rem', { lineHeight: '1.3', fontWeight: '700' }],
+        body: ['1rem', { lineHeight: '1.6' }],
+        small: ['.875rem', { lineHeight: '1.5' }],
+        caption: ['.75rem', { lineHeight: '1.4', fontWeight: '500', letterSpacing: '0.02em' }],
       },
       colors: {
-        border: 'hsl(var(--border))',
+        // ── Paleta Faísca ──
+        bg: rgb('bg'),
+        surface: {
+          DEFAULT: rgb('surface'),
+          2: rgb('surface-2'),
+          3: rgb('surface-3'),
+        },
+        text: {
+          DEFAULT: rgb('text'),
+          2: rgb('text-2'),
+          3: rgb('text-3'),
+        },
+        violet: {
+          400: rgb('violet-400'),
+          500: rgb('violet-500'),
+          600: rgb('violet-600'),
+        },
+        pink: {
+          400: rgb('pink-400'),
+          500: rgb('pink-500'),
+          600: rgb('pink-600'),
+        },
+        coral: { DEFAULT: rgb('coral-500'), 500: rgb('coral-500') },
+        success: rgb('success'),
+        warning: rgb('warning'),
+        danger: rgb('danger'),
+
+        // ── shadcn (mantidos) ──
+        border: {
+          DEFAULT: 'hsl(var(--border))',
+          strong: 'hsl(var(--border-strong))',
+        },
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
@@ -57,36 +99,52 @@ const config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+
+        // Alias permanente (admin usa brand-*): escala violeta. 500 = #7C3AED (5,7:1 com texto
+        // branco — #8B5CF6 dava 4,2:1 e reprovava no AA em `bg-brand-500 text-white`).
         brand: {
-          50:  '#FFF0F3',
-          100: '#FFD8E0',
-          200: '#FFB0C1',
-          300: '#FF7A9A',
-          400: '#D4395A',
-          500: '#8B0A2A',
-          600: '#6D0820',
-          700: '#520618',
-          800: '#3A040F',
-          900: '#24020A',
-          950: '#120105',
-        },
-        gold: {
-          50:  '#fdf9ed',
-          100: '#faf0d0',
-          200: '#f5e0a0',
-          300: '#eecb65',
-          400: '#e6b53a',
-          500: '#C9A84C',
-          600: '#b08e38',
-          700: '#8d6e28',
-          800: '#705422',
-          900: '#5c4520',
+          50: '#F5F3FF',
+          100: '#EDE9FE',
+          200: '#DDD6FE',
+          300: '#C4B5FD',
+          400: '#A78BFA',
+          500: '#7C3AED',
+          600: '#6D28D9',
+          700: '#6D28D9',
+          800: '#5B21B6',
+          900: '#4C1D95',
+          950: '#2E1065',
         },
       },
       borderRadius: {
-        lg: '4px',
-        md: '2px',
-        sm: '2px',
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        xl: 'var(--radius-xl)',
+        '2xl': 'calc(var(--radius-xl) + 4px)',
+      },
+      boxShadow: {
+        1: 'var(--shadow-1)',
+        2: 'var(--shadow-2)',
+        'glow-violet': 'var(--glow-violet)',
+        'glow-pink': 'var(--glow-pink)',
+      },
+      backgroundImage: {
+        signal: 'var(--grad-signal)',
+        cta: 'var(--grad-cta)',
+        aurora: 'var(--grad-aurora)',
+      },
+      transitionTimingFunction: {
+        out: 'cubic-bezier(.16,1,.3,1)',
+        'in-out': 'cubic-bezier(.65,0,.35,1)',
+      },
+      maxWidth: {
+        app: '960px',
+        site: '1120px',
+      },
+      spacing: {
+        nav: 'var(--nav-h)',
+        topbar: 'var(--topbar-h)',
       },
       keyframes: {
         'accordion-down': {
@@ -98,34 +156,34 @@ const config = {
           to: { height: '0' },
         },
         'fade-up': {
-          '0%':   { opacity: '0', transform: 'translateY(20px)' },
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         'fade-in': {
-          '0%':   { opacity: '0' },
+          '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
-        marquee: {
-          from: { transform: 'translateX(0)' },
-          to:   { transform: 'translateX(-50%)' },
+        spark: {
+          '0%, 100%': { transform: 'scale(.85) rotate(0deg)', opacity: '.75' },
+          '50%': { transform: 'scale(1.12) rotate(45deg)', opacity: '1' },
         },
-        rotate360: {
-          from: { transform: 'rotate(0deg)' },
-          to:   { transform: 'rotate(360deg)' },
+        shimmer: {
+          from: { backgroundPosition: '-200% 0' },
+          to: { backgroundPosition: '200% 0' },
         },
-        bob: {
-          '0%,100%': { transform: 'translateY(0)' },
-          '50%':     { transform: 'translateY(8px)' },
+        'signal-sweep': {
+          '0%': { backgroundPosition: '0% 50%' },
+          '100%': { backgroundPosition: '200% 50%' },
         },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up':   'accordion-up 0.2s ease-out',
-        'fade-up':   'fade-up 0.7s cubic-bezier(0.16,1,0.3,1) forwards',
-        'fade-in':   'fade-in 0.5s ease forwards',
-        marquee:     'marquee 32s linear infinite',
-        rotate360:   'rotate360 18s linear infinite',
-        bob:         'bob 2.5s ease-in-out infinite',
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        'fade-up': 'fade-up 0.56s cubic-bezier(.16,1,.3,1) forwards',
+        'fade-in': 'fade-in 0.32s ease forwards',
+        spark: 'spark 1.4s cubic-bezier(.65,0,.35,1) infinite',
+        shimmer: 'shimmer 1.6s linear infinite',
+        'signal-sweep': 'signal-sweep 0.6s cubic-bezier(.16,1,.3,1) 1',
       },
     },
   },

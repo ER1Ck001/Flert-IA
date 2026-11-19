@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import crypto from "node:crypto";
+import { EXTERNAL_ID_PREFIX } from "@/lib/payments/abacatepay-webhook";
+import { rateLimit } from "@/lib/rate-limit";
+import { assertSameOrigin, errorMessage, tooMany } from "@/lib/http";
+import { requireAdultConfirmed } from "@/lib/adult";
+import {
+  PLAN_CONFIG,
+  getEffectivePlan,
+  isPlanExpired,
+  planFromCheckoutKey,
+  type PaidPlan,
+} from "@/lib/plans";
+
+// Chamada ao gateway com timeout próprio (abaixo) dentro do limite da função.
+export const maxDuration = 30;
+const GATEWAY_TIMEOUT_MS = 15_000;
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,12 +32,15 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      status: subscription?.status || "FREE",
+      // Plano que vale agora (expirado → FREE); o registro original segue em storedStatus.
+      status: getEffectivePlan(subscription),
+      storedStatus: subscription?.status ?? "FREE",
+      isExpired: isPlanExpired(subscription),
       activatedAt: subscription?.activatedAt,
       expiresAt: subscription?.expiresAt,
     });
   } catch (error) {
-    console.error("Payment status error:", error);
+    console.error("Payment status error:", errorMessage(error));
     return NextResponse.json(
       { error: "Erro ao buscar status do pagamento" },
       { status: 500 }
@@ -33,36 +52,54 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id || !session.user.email || !session.user.name) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { plan } = body;
+    const crossSite = assertSameOrigin(request);
+    if (crossSite) return crossSite;
 
+    const limit = await rateLimit("payment", session.user.id, 10, 3600, { onError: "allow" });
+    if (!limit.allowed) return tooMany(limit.retryAfterSec, "Muitas tentativas de pagamento. Aguarde alguns minutos.");
+
+    // 18+ (Tarefa 10): sem confirmação no banco, não cria cobrança.
+    const notAdult = await requireAdultConfirmed(session.user.id);
+    if (notAdult) return notAdult;
+
+    const body = await request.json().catch(() => null);
+    const plan: unknown = body?.plan;
+
+    const paidPlan = planFromCheckoutKey(plan);
+    if (!paidPlan) {
+      return NextResponse.json({ error: "Plano inválido" }, { status: 400 });
+    }
+
+    const productIds: Record<PaidPlan, string | undefined> = {
+      PREMIUM: process.env.ABACATEPAY_PRODUCT_ID_MONTHLY,
+      ANNUAL: process.env.ABACATEPAY_PRODUCT_ID_ANNUAL,
+      LIFETIME: process.env.ABACATEPAY_PRODUCT_ID_LIFETIME,
+    };
+    const selected = { id: productIds[paidPlan], methods: [...PLAN_CONFIG[paidPlan].methods], status: paidPlan };
     const apiKey = process.env.ABACATEPAY_API_KEY;
     const baseUrl = process.env.ABACATEPAY_BASE_URL;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    const productMap: Record<string, { id: string; methods: string[]; status: string }> = {
-      monthly:  { id: process.env.ABACATEPAY_PRODUCT_ID_MONTHLY  || "", methods: ["CARD"],       status: "PREMIUM"  },
-      annual:   { id: process.env.ABACATEPAY_PRODUCT_ID_ANNUAL   || "", methods: ["CARD"],       status: "ANNUAL"   },
-      lifetime: { id: process.env.ABACATEPAY_PRODUCT_ID_LIFETIME || "", methods: ["PIX", "CARD"], status: "LIFETIME" },
-    };
-
-    const selected = productMap[plan];
-
-    if (!apiKey || !baseUrl || !selected) {
-      console.error("AbacatePay: configuração incompleta", { apiKey: !!apiKey, baseUrl, plan });
+    if (!apiKey || !baseUrl || !selected.id) {
+      console.error("AbacatePay: configuração incompleta", { apiKey: !!apiKey, baseUrl: !!baseUrl, productId: !!selected.id });
       return NextResponse.json(
         { error: "Configuração de pagamento incompleta" },
         { status: 500 }
       );
     }
 
+    // externalId único por tentativa (a AbacatePay devolve o checkout existente se repetir)
+    // e identifica o usuário no webhook mesmo que o metadata não seja reenviado.
+    const externalId = `${EXTERNAL_ID_PREFIX}:${session.user.id}:${plan}:${crypto.randomUUID()}`;
+
     const requestBody = {
       items: [{ id: selected.id, quantity: 1 }],
       methods: selected.methods,
+      externalId,
       returnUrl: `${appUrl}/dashboard?payment=success`,
       completionUrl: `${appUrl}/dashboard?payment=success`,
       metadata: {
@@ -71,8 +108,6 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    console.log("AbacatePay request:", JSON.stringify(requestBody));
-
     const abacateResponse = await fetch(`${baseUrl}/checkouts/create`, {
       method: "POST",
       headers: {
@@ -80,11 +115,12 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(GATEWAY_TIMEOUT_MS),
     });
 
     if (!abacateResponse.ok) {
-      const errorText = await abacateResponse.text();
-      console.error("AbacatePay API error:", abacateResponse.status, errorText);
+      // Só o status: o corpo de erro do gateway pode conter dados do cliente.
+      console.error("AbacatePay API error:", abacateResponse.status);
       return NextResponse.json(
         { error: "Erro ao criar cobrança no gateway de pagamento" },
         { status: 502 }
@@ -95,7 +131,7 @@ export async function POST(request: NextRequest) {
     const checkoutUrl = abacateData?.data?.url || abacateData?.url;
 
     if (!checkoutUrl) {
-      console.error("AbacatePay: URL de checkout não retornada", abacateData);
+      console.error("AbacatePay: URL de checkout não retornada");
       return NextResponse.json(
         { error: "Gateway não retornou URL de pagamento" },
         { status: 502 }
@@ -104,7 +140,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: checkoutUrl });
   } catch (error) {
-    console.error("Payment create error:", error);
+    console.error("Payment create error:", errorMessage(error));
     return NextResponse.json(
       { error: "Erro ao criar pagamento" },
       { status: 500 }

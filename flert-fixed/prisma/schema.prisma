@@ -32,6 +32,8 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+
+  @@index([userId])
 }
 
 model Session {
@@ -41,6 +43,8 @@ model Session {
   expires      DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -62,6 +66,15 @@ model User {
   emailVerified  DateTime?
   image          String?
   password       String?   // bcryptjs hash (credentials login)
+  sessionVersion Int       @default(0) // incrementar invalida todas as sessões (JWT) do usuário
+
+  // Consentimentos (Tarefa 10, LGPD). Contas existentes começam sem opt-in e sem confirmação 18+.
+  marketingOptIn   Boolean   @default(false) // aceitou e-mails promocionais (campanhas do admin)
+  marketingOptInAt DateTime? // quando o opt-in atual foi dado (null quando desligado)
+  adultConfirmedAt DateTime? // confirmou ter 18 anos ou mais
+  termsAcceptedAt  DateTime? // aceitou os Termos/Política (só quando publicados)
+  termsVersion     String?   // LEGAL_VERSION aceita (src/content/legal/config.ts)
+
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -71,6 +84,8 @@ model User {
   subscriptionStatus SubscriptionStatus?
   conversations      Conversation[]
   passwordResetTokens PasswordResetToken[]
+  processedPayments  ProcessedPayment[]
+  dailyUsage         DailyUsage[]
 }
 
 model Profile {
@@ -113,6 +128,44 @@ model SubscriptionStatus {
   @@map("subscription_statuses")
 }
 
+// Checkouts da AbacatePay já aplicados — garante idempotência mesmo com reenvio fora de ordem.
+model ProcessedPayment {
+  checkoutId String           @id
+  userId     String
+  plan       SubscriptionPlan
+  createdAt  DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("processed_payments")
+}
+
+// Rate limit persistente (janela fixa). `key` = HMAC(escopo:identificador) — sem e-mail/IP em claro.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+  @@map("rate_limits")
+}
+
+// Cota diária de análises. `day` é a data no fuso America/Sao_Paulo (YYYY-MM-DD).
+// Independente do histórico: apagar análises não libera cota.
+model DailyUsage {
+  userId    String
+  day       String
+  count     Int      @default(0)
+  refunds   Int      @default(0)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day])
+  @@map("daily_usage")
+}
+
 // =============================================
 // AI Conversations (OpenAI)
 // =============================================
@@ -126,6 +179,8 @@ model Conversation {
   updatedAt DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model Message {
@@ -136,6 +191,8 @@ model Message {
   createdAt      DateTime     @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }
 
 // =============================================
@@ -151,4 +208,6 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

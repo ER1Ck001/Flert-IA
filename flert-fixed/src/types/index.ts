@@ -1,17 +1,13 @@
-export const SUBSCRIPTION_PLANS = {
-  FREE: "FREE",
-  PREMIUM: "PREMIUM",
-  LIFETIME: "LIFETIME",
-} as const;
-
-export type SubscriptionPlan = keyof typeof SUBSCRIPTION_PLANS;
+// Tipos de plano vêm da fonte única em @/lib/plans.
+export type { PlanId as SubscriptionPlan, PaidPlan } from "@/lib/plans";
+import type { PlanId } from "@/lib/plans";
 
 export interface UserProfile {
   id: string;
   name: string | null;
   email: string | null;
   image: string | null;
-  subscriptionStatus: SubscriptionPlan;
+  subscriptionStatus: PlanId;
 }
 
 export interface AnalysisHistory {

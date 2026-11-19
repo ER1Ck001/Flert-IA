@@ -1,10 +1,10 @@
-# Flerte IA 🔥
+# Flert IA
 
 > Plataforma SaaS de IA para análise de prints de conversas e geração de sugestões de respostas inteligentes.
 
 ## Stack
 
-- **Frontend**: Next.js 14+ (App Router) + TypeScript
+- **Frontend**: Next.js 15.5 (App Router) + React 19 + TypeScript
 - **Banco de dados**: PostgreSQL + Prisma ORM
 - **Autenticação**: NextAuth.js (Email/Senha + Google OAuth)
 - **IA**: OpenAI GPT-4o Vision
@@ -121,15 +121,6 @@ OPENAI_API_KEY="sk-..."
 OPENAI_MODEL="gpt-4o"
 ```
 
-#### UploadThing
-1. Acesse [uploadthing.com](https://uploadthing.com)
-2. Crie uma app → copie as credenciais
-
-```
-UPLOADTHING_SECRET="sk_live_..."
-UPLOADTHING_APP_ID="..."
-```
-
 #### Abacate Pay
 1. Acesse [abacatepay.com](https://abacatepay.com)
 2. Crie uma conta e obtenha a API Key
@@ -149,7 +140,7 @@ SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
 SMTP_USER="seu@gmail.com"
 SMTP_PASSWORD="sua-app-password"
-SMTP_FROM="Flerte IA <noreply@flerteia.com>"
+SMTP_FROM="Flert IA <noreply@flertia.com.br>"
 ```
 
 ### 3. Configurar banco de dados
@@ -252,9 +243,11 @@ Exibe sugestões com botão "Copiar" ✅
 - **Session** - Sessões JWT
 - **VerificationToken** - Tokens de verificação
 - **PasswordResetToken** - Tokens de recuperação de senha
-- **Payment** - Registro de pagamentos Abacate Pay
-- **SubscriptionStatus** - Status do acesso (FREE | LIFETIME)
-- **AnalysisHistory** - Histórico de análises com sugestões
+- **SubscriptionStatus** - Plano (FREE | PREMIUM | ANNUAL | LIFETIME) e expiração
+- **ProcessedPayment** - Checkouts da AbacatePay já aplicados (idempotência do webhook)
+- **Conversation / Message** - Histórico de análises com as sugestões geradas
+- **DailyUsage** - Cota diária de análises (fuso America/Sao_Paulo)
+- **RateLimit** - Limites de tentativas (chave HMAC, sem e-mail/IP em claro)
 
 ---
 
@@ -264,13 +257,18 @@ Exibe sugestões com botão "Copiar" ✅
 |----------|-----------|
 | `DATABASE_URL` | URL de conexão PostgreSQL |
 | `NEXTAUTH_URL` | URL base da aplicação |
-| `NEXTAUTH_SECRET` | Secret para JWT |
+| `NEXTAUTH_SECRET` | Secret do JWT (também usado no HMAC das chaves de rate limit) |
 | `OPENAI_API_KEY` | Chave da API OpenAI |
-| `UPLOADTHING_SECRET` | Secret UploadThing |
-| `UPLOADTHING_APP_ID` | App ID UploadThing |
 | `ABACATEPAY_API_KEY` | Chave API Abacate Pay |
-| `ABACATEPAY_WEBHOOK_SECRET` | Secret para verificar webhooks |
-| `NEXT_PUBLIC_APP_URL` | URL pública da aplicação |
+| `ABACATEPAY_PRODUCT_ID_MONTHLY` / `_ANNUAL` / `_LIFETIME` | IDs dos produtos — o webhook deduz o plano pelo produto pago |
+| `ABACATEPAY_WEBHOOK_SECRET` | Secret do webhook (sem ele o webhook recusa tudo) |
+| `ABACATEPAY_PUBLIC_KEY` | Chave pública HMAC da AbacatePay — obrigatória em produção |
+| `ADMIN_EMAIL` | E-mail exato da conta admin — sem ele ninguém acessa o painel |
+| `NEXT_PUBLIC_APP_URL` | URL pública (links nos e-mails e checagem de origem/CSRF) |
+
+> Depois de atualizar o código, rode `npm run db:migrate` antes de subir a nova versão.
+> Leia os comentários no topo de `prisma/migrations/20261118000000_normalize_emails/migration.sql`:
+> há duas consultas para rodar antes (a migration aborta sozinha se encontrar problemas).
 
 ### Variáveis opcionais:
 | Variável | Descrição |
@@ -279,6 +277,28 @@ Exibe sugestões com botão "Copiar" ✅
 | `GOOGLE_CLIENT_SECRET` | Login com Google |
 | `SMTP_*` | Para envio de emails |
 | `OPENAI_MODEL` | Modelo (padrão: gpt-4o) |
+
+---
+
+## Termos, Privacidade e consentimentos (LGPD)
+
+> **rascunho — revisar com advogado antes de publicar.** Os textos de `src/content/legal/termos.ts` e
+> `src/content/legal/privacidade.ts` descrevem o que o código faz hoje, mas não são parecer jurídico.
+
+- Enquanto `LEGAL_PUBLISHED = false` (`src/content/legal/config.ts`), `/termos` e `/privacidade` dão 404 em
+  produção e aparecem em dev com o banner "Rascunho — não publicado"; os links do rodapé e do cadastro
+  ficam escondidos e as páginas não entram no sitemap.
+- Para publicar: preencher `[NOME/RAZÃO SOCIAL]`, `[CPF/CNPJ]`, `[ENDEREÇO]` e `[E-MAIL DO ENCARREGADO]`
+  (constante `CONTROLLER` em `config.ts`), revisar com advogado, atualizar `LEGAL_VERSION` e `LAST_UPDATED`
+  e trocar `LEGAL_PUBLISHED` para `true`. O teste `tests/config/legal-docs.test.ts` falha se algum
+  placeholder `[...]` sobrar. Publicado, o cadastro passa a exigir o aceite dos Termos na mesma caixa do 18+.
+- 18+: obrigatório no cadastro; contas Google e contas antigas confirmam em `/auth/confirmar-idade`
+  (o middleware redireciona as páginas do app; análises e criação de pagamento respondem 403 sem a confirmação).
+- E-mails promocionais (campanhas do admin): só para `User.marketingOptIn = true` (contas existentes começam
+  sem), com link "Não quero mais receber" e `List-Unsubscribe` one-click (`/api/email/unsubscribe`).
+  Os links são assinados com `NEXTAUTH_SECRET`: trocar o segredo invalida os links já enviados.
+- Migration: `prisma/migrations/20261121000000_legal_consent` (só `ADD COLUMN IF NOT EXISTS`).
+- Reembolso: integral em até 7 dias após a compra (CDC art. 49), pedido manual por e-mail ao suporte.
 
 ---
 

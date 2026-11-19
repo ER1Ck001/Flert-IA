@@ -1,36 +1,47 @@
-import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
-import { Toaster } from "react-hot-toast";
 import { Providers } from "./providers";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import Script from "next/script";
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-cormorant",
-  display: "swap",
-});
+import { ConsentBanner } from "@/components/consent/ConsentBanner";
+import { FacebookPixel } from "@/components/consent/FacebookPixel";
+import { Toaster } from "@/components/ui/toaster";
+import { SITE_URL } from "@/lib/seo";
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-inter",
   display: "swap",
 });
 
+// Fonte de display (títulos e logo): Bricolage Grotesque, licença SIL OFL 1.1 (src/fonts/bricolage/OFL.txt).
+// Arquivos no repositório e servidos pela própria origem — sem CSS externo bloqueando o render e sem
+// depender de rede no build.
+const display = localFont({
+  src: [
+    { path: "../fonts/bricolage/bricolage-grotesque-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/bricolage/bricolage-grotesque-latin-700-normal.woff2", weight: "700", style: "normal" },
+    { path: "../fonts/bricolage/bricolage-grotesque-latin-800-normal.woff2", weight: "800", style: "normal" },
+  ],
+  variable: "--font-display",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://flertia.com.br"),
-  title: "Flert IA — Seu Assistente de Conversas",
-  description: "Transforme suas conversas com o poder da Inteligência Artificial. Respostas inteligentes, envolventes e conexões reais.",
-  keywords: ["flert", "IA", "conversas", "dating", "inteligência artificial", "chat"],
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Flert IA — Assistente de conversa com IA",
+    template: "%s · Flert IA",
+  },
+  description:
+    "Envie o print da conversa ou descreva a situação. A IA sugere 3 respostas em 7 tons — você escolhe e copia.",
+  keywords: ["assistente de conversa", "responder mensagem", "responder story", "flerte", "IA"],
   authors: [{ name: "Flert IA" }],
   openGraph: {
-    title: "Flert IA — Seu Assistente de Conversas",
-    description: "Transforme suas conversas com o poder da Inteligência Artificial.",
+    title: "Flert IA — Assistente de conversa com IA",
+    description: "A IA sugere 3 respostas em 7 tons para a sua conversa — você escolhe e copia.",
     url: "https://flertia.com.br",
     siteName: "Flert IA",
     type: "website",
@@ -38,64 +49,30 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#0B0814",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning className={`${cormorant.variable} ${inter.variable}`}>
-      <head>
-        <link rel="preconnect" href="https://api.fontshare.com" />
-        <link
-          rel="stylesheet"
-          href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500,400,300&display=swap"
-        />
-        {/* Facebook Pixel */}
-        <Script id="facebook-pixel" strategy="afterInteractive">{`
-          !function(f,b,e,v,n,t,s)
-          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-          n.queue=[];t=b.createElement(e);t.async=!0;
-          t.src=v;s=b.getElementsByTagName(e)[0];
-          s.parentNode.insertBefore(t,s)}(window,document,'script',
-          'https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init','1546365726869734');
-          fbq('track','PageView');
-        `}</Script>
-        <noscript>
-          <img height="1" width="1" style={{ display: "none" }}
-            src="https://www.facebook.com/tr?id=1546365726869734&ev=PageView&noscript=1" />
-        </noscript>
-      </head>
-      <body className="font-cabinet antialiased">
+    <html lang="pt-BR" suppressHydrationWarning className={`dark ${inter.variable} ${display.variable}`} style={{ colorScheme: "dark" }}>
+      <body className="font-sans bg-bg text-text antialiased">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[10000] focus:rounded-md focus:bg-violet-600 focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-white focus:shadow-2"
+        >
+          Pular para o conteúdo
+        </a>
         <Providers>
           {children}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#160E11',
-                color: '#F2EDE8',
-                border: '1px solid rgba(201,168,76,0.2)',
-                borderRadius: '2px',
-                fontFamily: "'Cabinet Grotesk', sans-serif",
-                fontSize: '14px',
-              },
-              success: {
-                iconTheme: { primary: '#C9A84C', secondary: '#160E11' },
-              },
-              error: {
-                iconTheme: { primary: '#8B0A2A', secondary: '#F2EDE8' },
-              },
-            }}
-          />
+          <Toaster />
         </Providers>
+        {/* Pixel da Meta só com consentimento (LGPD) e nunca em /auth/* */}
+        <FacebookPixel />
+        <ConsentBanner />
         <Analytics />
         <SpeedInsights />
       </body>
