@@ -8,6 +8,7 @@ import { stagger, suggestionIn, useMotionSafe } from "@/lib/motion";
 import { ToneChipGroup, type ToneOption } from "@/components/ui/tone-chip";
 import { FaiscaLoader } from "@/components/ui/faisca-loader";
 import { StoryMock } from "./StoryMock";
+import { ChatMock } from "./ChatMock";
 import {
   DEMO_LABEL,
   DEMO_LOADING_MS,
@@ -95,16 +96,7 @@ export function InteractiveDemo() {
         {scenario.id === "story" ? (
           <StoryMock caption={scenario.messages[0]?.text ?? ""} />
         ) : (
-          <ul className="mt-4 space-y-2" aria-label="Mensagens recebidas no exemplo">
-            {scenario.messages.map((msg) => (
-              <li
-                key={msg.text}
-                className="max-w-[85%] rounded-2xl rounded-bl-md bg-surface-2 px-4 py-2.5 text-sm text-text"
-              >
-                {msg.text}
-              </li>
-            ))}
-          </ul>
+          <ChatMock messages={scenario.messages} />
         )}
       </div>
 
