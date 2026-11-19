@@ -192,21 +192,19 @@ const daysText = (days: number) => `${days} dia${days !== 1 ? "s" : ""}`;
 
 export const expiringSubject = (days: number) => `Seu plano Flert IA vence em ${daysText(days)}`;
 
+// Aviso de plano vencendo: TRANSACIONAL (informa sobre o serviço contratado), vai para todos com
+// plano vencendo, sem exigir opt-in — por isso sem descadastro e sem conteúdo promocional.
 export function expiringEmail({
   name,
   days,
-  unsubscribe,
 }: {
   name: string | null | undefined;
   days: number;
-  unsubscribe: UnsubscribeLinks;
 }): EmailContent {
   return {
     subject: expiringSubject(days),
-    headers: unsubscribeHeaders(unsubscribe),
     html: layout({
-      footerNote: CAMPAIGN_FOOTER,
-      unsubscribeUrl: unsubscribe.pageUrl,
+      footerNote: "Você recebeu este e-mail porque seu plano no Flert IA está perto de vencer.",
       body: [
         greeting(emailFirstName(name)),
         p(`Seu plano no <strong style="color:#ff2d95">Flert IA</strong> vence em <strong style="color:#F2EDE8">${daysText(days)}</strong>.`),

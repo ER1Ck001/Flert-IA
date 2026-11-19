@@ -42,7 +42,7 @@ const all = () => [
   welcomeEmail({ name: "Ana Lima" }),
   ...PLANS_IN_ORDER.map((p) => planActivatedEmail({ name: "Ana", plan: p.id, expiresAt: new Date("2026-12-18T15:00:00Z") })),
   freeUpsellEmail({ name: "Ana", unsubscribe: UNSUB }),
-  expiringEmail({ name: "Ana", days: 3, unsubscribe: UNSUB }),
+  expiringEmail({ name: "Ana", days: 3 }),
   customEmail({ name: "Ana", subject: "Novidades no Flert IA", body: "Linha 1\nLinha 2", unsubscribe: UNSUB }),
 ];
 
@@ -132,7 +132,13 @@ describe("campanhas do admin", () => {
   it("expiring: assunto sem emoji, singular e plural", () => {
     expect(expiringSubject(1)).toBe("Seu plano Flert IA vence em 1 dia");
     expect(expiringSubject(3)).toBe("Seu plano Flert IA vence em 3 dias");
-    expect(expiringEmail({ name: "Ana", days: 3, unsubscribe: UNSUB }).html).toContain("os dias que restam são somados ao novo período");
+    expect(expiringEmail({ name: "Ana", days: 3 }).html).toContain("os dias que restam são somados ao novo período");
+  });
+
+  it("expiring é transacional: rodapé explica o motivo e não fala em novidades e ofertas", () => {
+    const { html } = expiringEmail({ name: "Ana", days: 3 });
+    expect(html).toContain("porque seu plano no Flert IA está perto de vencer");
+    expect(html).not.toContain("aceitou receber novidades e ofertas");
   });
 
   it("custom: escapa o corpo e limpa o assunto", () => {

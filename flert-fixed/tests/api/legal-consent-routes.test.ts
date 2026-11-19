@@ -222,14 +222,41 @@ describe("/api/email/unsubscribe (link assinado, sem login)", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-describe("POST /api/admin/email — só quem aceitou (opt-in)", () => {
-  it("todas as seleções em massa filtram marketingOptIn = true (demais filtros iguais)", async () => {
+describe("POST /api/admin/email — promocionais só para quem aceitou (opt-in)", () => {
+  it("seleções promocionais filtram marketingOptIn = true; aviso de vencimento (transacional) não", async () => {
     await adminEmail(json("/api/admin/email", "POST", { template: "free_upsell" }));
     expect(m.prisma.user.findMany.mock.calls[0][0].where).toEqual({ subscriptionStatus: { status: "FREE" }, marketingOptIn: true });
     await adminEmail(json("/api/admin/email", "POST", { template: "custom", targetPlan: "ALL", customSubject: "a", customBody: "b" }));
     expect(m.prisma.user.findMany.mock.calls[1][0].where).toEqual({ marketingOptIn: true });
     await adminEmail(json("/api/admin/email", "POST", { template: "expiring" }));
-    expect(m.prisma.subscriptionStatus.findMany.mock.calls[0][0].where.user).toEqual({ marketingOptIn: true });
+    expect(m.prisma.subscriptionStatus.findMany.mock.calls[0][0].where.user).toBeUndefined();
+  });
+
+  it("aviso de vencimento individual vai mesmo sem opt-in, sem descadastro", async () => {
+    m.prisma.user.findUnique.mockResolvedValue({
+      email: "u@x.com",
+      name: "Ana",
+      marketingOptIn: false,
+      subscriptionStatus: { status: "PREMIUM", expiresAt: new Date(Date.now() + 3 * 86400000) },
+    });
+    const res = await adminEmail(json("/api/admin/email", "POST", { template: "expiring", userId: ID }));
+    expect(res.status).toBe(200);
+    const mail = m.sendMail.mock.calls[0][0];
+    expect(mail.headers).toBeUndefined();
+    expect(mail.html).not.toContain("Não quero mais receber");
+  });
+
+  it.each([
+    ["sem assinatura", null],
+    ["plano gratuito", { status: "FREE", expiresAt: null }],
+    ["vitalício", { status: "LIFETIME", expiresAt: null }],
+    ["plano já vencido", { status: "PREMIUM", expiresAt: new Date(Date.now() - 86400000) }],
+  ])("aviso de vencimento individual: 409 quando %s, sem enviar", async (_n, sub) => {
+    m.prisma.user.findUnique.mockResolvedValue({ email: "u@x.com", name: "Ana", marketingOptIn: true, subscriptionStatus: sub });
+    const res = await adminEmail(json("/api/admin/email", "POST", { template: "expiring", userId: ID }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/plano/);
+    expect(m.sendMail).not.toHaveBeenCalled();
   });
 
   it("envio individual para quem não aceitou: 409 e nada enviado", async () => {

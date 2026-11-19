@@ -95,7 +95,6 @@ describe("templates: promocionais têm descadastro; transacionais não", () => {
   const links = { pageUrl: "https://app.test/descadastrar?u=u1&t=abc", oneClickUrl: "https://app.test/api/email/unsubscribe?u=u1&t=abc" };
   const promos = [
     ["freeUpsell", freeUpsellEmail({ name: "Ana", unsubscribe: links })],
-    ["expiring", expiringEmail({ name: "Ana", days: 3, unsubscribe: links })],
     ["custom", customEmail({ name: "Ana", subject: "Oi", body: "Texto", unsubscribe: links })],
   ] as const;
 
@@ -109,8 +108,12 @@ describe("templates: promocionais têm descadastro; transacionais não", () => {
     });
   });
 
-  it("boas-vindas e plano ativo seguem sem descadastro (transacionais)", () => {
-    for (const mail of [welcomeEmail({ name: "Ana" }), planActivatedEmail({ name: "Ana", plan: "PREMIUM", expiresAt: null })]) {
+  it("boas-vindas, plano ativo e plano vencendo seguem sem descadastro (transacionais)", () => {
+    for (const mail of [
+      welcomeEmail({ name: "Ana" }),
+      planActivatedEmail({ name: "Ana", plan: "PREMIUM", expiresAt: null }),
+      expiringEmail({ name: "Ana", days: 3 }),
+    ]) {
       expect(mail.html).not.toContain(UNSUBSCRIBE_LABEL);
       expect(mail.headers).toBeUndefined();
     }

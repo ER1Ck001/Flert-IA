@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SubscriptionPlan } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -10,10 +11,13 @@ import { customEmail, expiringEmail, freeUpsellEmail } from "@/lib/email/templat
 import { EMAIL_CONCURRENCY, EMAIL_SEND_DEADLINE_MS, EMAIL_START_CUTOFF_MS } from "@/lib/email/bulk";
 import { unsubscribeLinks } from "@/lib/email/unsubscribe";
 
-// Campanhas do admin são e-mails promocionais (LGPD): só para quem deu opt-in
-// (User.marketingOptIn = true), sempre com link e cabeçalhos de descadastro.
+// Campanhas do admin ("free_upsell" e "custom") são e-mails promocionais (LGPD): só para quem deu
+// opt-in (User.marketingOptIn = true), sempre com link e cabeçalhos de descadastro.
+// "expiring" (plano vencendo) é TRANSACIONAL: vai para todos com plano Mensal/Anual vencendo.
 const OPTED_IN = { marketingOptIn: true } as const;
 const NOT_OPTED_IN = "Este usuário não aceitou receber e-mails promocionais.";
+const NO_EXPIRING_PLAN = "Este usuário não tem plano Mensal ou Anual com vencimento futuro.";
+const EXPIRING_PLANS: SubscriptionPlan[] = ["PREMIUM", "ANNUAL"];
 
 // Envio em lotes (ver lib/email/bulk.ts): responde antes deste limite e devolve o que falta.
 export const maxDuration = 60; // seconds
@@ -47,10 +51,19 @@ export async function POST(request: NextRequest) {
     if (userId) {
       const u = await prisma.user.findUnique({
         where:  { id: userId },
-        select: { email: true, name: true, marketingOptIn: true, subscriptionStatus: { select: { expiresAt: true } } },
+        select: { email: true, name: true, marketingOptIn: true, subscriptionStatus: { select: { status: true, expiresAt: true } } },
       });
       if (!u?.email) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
-      if (!u.marketingOptIn) return NextResponse.json({ error: NOT_OPTED_IN }, { status: 409 });
+      if (template === "expiring") {
+        // Transacional só faz sentido (e só é honesto) se o plano realmente vence no futuro.
+        const sub = u.subscriptionStatus;
+        const expiresAt = sub?.expiresAt ? new Date(sub.expiresAt).getTime() : NaN;
+        if (!sub || !EXPIRING_PLANS.includes(sub.status) || !(expiresAt > Date.now())) {
+          return NextResponse.json({ error: NO_EXPIRING_PLAN }, { status: 409 });
+        }
+      } else if (!u.marketingOptIn) {
+        return NextResponse.json({ error: NOT_OPTED_IN }, { status: 409 });
+      }
       targets = [{ id: userId, email: u.email, name: u.name, expiresAt: u.subscriptionStatus?.expiresAt }];
     } else if (template === "free_upsell") {
       targets = await prisma.user.findMany({
@@ -60,7 +73,7 @@ export async function POST(request: NextRequest) {
     } else if (template === "expiring") {
       const in7days = new Date(Date.now() + 7 * 86400000);
       const subs = await prisma.subscriptionStatus.findMany({
-        where: { status: { in: ["PREMIUM", "ANNUAL"] }, expiresAt: { lte: in7days, gte: new Date() }, user: OPTED_IN },
+        where: { status: { in: EXPIRING_PLANS }, expiresAt: { lte: in7days, gte: new Date() } },
         include: { user: { select: { id: true, email: true, name: true } } },
       });
       targets = subs.map(s => ({ id: s.user.id, email: s.user.email, name: s.user.name, expiresAt: s.expiresAt }));
@@ -74,14 +87,14 @@ export async function POST(request: NextRequest) {
     const pending = cursor ? targets.filter(t => t.id > cursor) : targets;
 
     const buildMail = (target: Target) => {
-      const unsubscribe = unsubscribeLinks(target.id);
-      if (template === "free_upsell") return freeUpsellEmail({ name: target.name, unsubscribe });
       if (template === "expiring") {
         const days = target.expiresAt
           ? Math.max(1, Math.ceil((new Date(target.expiresAt).getTime() - Date.now()) / 86400000))
           : 1;
-        return expiringEmail({ name: target.name, days, unsubscribe });
+        return expiringEmail({ name: target.name, days });
       }
+      const unsubscribe = unsubscribeLinks(target.id);
+      if (template === "free_upsell") return freeUpsellEmail({ name: target.name, unsubscribe });
       return customEmail({ name: target.name, subject: customSubject, body: customBody, unsubscribe });
     };
 

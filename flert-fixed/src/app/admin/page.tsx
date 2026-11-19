@@ -177,10 +177,11 @@ export default function AdminPage() {
   const paidUsers   = users.filter(u => u.subscription !== "FREE").length;
   const mrr         = users.reduce((acc, u) => acc + (PLAN_PRICES[u.subscription] ?? 0), 0);
 
-  // Email campaign counts — só quem deu opt-in recebe (o servidor aplica o mesmo filtro).
+  // Email campaign counts — promocionais só para quem deu opt-in (o servidor aplica o mesmo filtro);
+  // o aviso de plano vencendo é transacional e conta todos com plano vencendo.
   const optedIn       = users.filter(u => u.marketingOptIn);
   const freeCount     = optedIn.filter(u => u.subscription === "FREE").length;
-  const expiringCount = optedIn.filter(u => {
+  const expiringCount = users.filter(u => {
     if (!u.expiresAt || u.subscription === "FREE" || u.subscription === "LIFETIME") return false;
     const d = daysUntil(u.expiresAt);
     return d !== null && d >= 0 && d <= 7;
@@ -833,8 +834,8 @@ export default function AdminPage() {
               <h2 className="font-display text-h3 text-text">Envio de emails</h2>
               <p className="mt-1 text-sm text-text-2">Envie emails em massa para segmentos específicos de usuários.</p>
               <p className="mt-1 text-sm text-text-2">
-                Só recebem as campanhas os usuários que aceitaram e-mails de novidades e ofertas ({optedIn.length} de {users.length}).
-                Cada e-mail leva o link &ldquo;Não quero mais receber&rdquo;.
+                Campanhas promocionais só vão para quem aceitou e-mails de novidades e ofertas ({optedIn.length} de {users.length}),
+                sempre com o link &ldquo;Não quero mais receber&rdquo;. O aviso de plano vencendo é transacional e vai para todos com plano vencendo.
               </p>
             </div>
 
@@ -918,7 +919,7 @@ export default function AdminPage() {
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-sm font-semibold text-text">Plano expirando em breve</h3>
-                      <p className="text-sm text-text-2">Planos expirando em até 7 dias</p>
+                      <p className="text-sm text-text-2">Planos expirando em até 7 dias · aviso transacional</p>
                     </div>
                   </div>
                   <span className={cn(
@@ -1068,9 +1069,10 @@ export default function AdminPage() {
 
             {/* Template selector */}
             <div className="max-h-[60dvh] space-y-2 overflow-y-auto px-5 py-4">
-              {!emailModal.marketingOptIn && (
+              {!emailModal.marketingOptIn && modalTemplate !== "expiring" && (
                 <p role="note" className="mb-3 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-text">
                   Este usuário não aceitou receber e-mails promocionais: o envio será recusado.
+                  O aviso de plano expirando (transacional) pode ser enviado.
                 </p>
               )}
               <p className="mb-3 text-caption font-semibold uppercase text-text-2" id="modal-template-label">Escolha o email</p>

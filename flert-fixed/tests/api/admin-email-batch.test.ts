@@ -82,7 +82,17 @@ describe("POST /api/admin/email em lotes", () => {
     const where = m.prisma.subscriptionStatus.findMany.mock.calls[0][0].where;
     expect(where.status).toEqual({ in: ["PREMIUM", "ANNUAL"] });
     expect(Object.keys(where.expiresAt).sort()).toEqual(["gte", "lte"]);
-    expect(where.user).toEqual({ marketingOptIn: true });
+    // Aviso de plano vencendo é transacional: todos com plano vencendo, sem exigir opt-in.
+    expect(where.user).toBeUndefined();
+  });
+
+  it("expiring em massa: sem cabeçalhos de descadastro", async () => {
+    m.prisma.subscriptionStatus.findMany.mockResolvedValue([
+      { expiresAt: new Date(Date.now() + 3 * 86400000), user: { id: "a", email: "a@x.com", name: "A" } },
+    ]);
+    const { json } = await run({ template: "expiring" });
+    expect(json.sent).toBe(1);
+    expect(m.sendMail.mock.calls[0][0].headers).toBeUndefined();
   });
 
   it("no máximo 5 envios simultâneos", async () => {
